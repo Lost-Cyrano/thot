@@ -122,6 +122,17 @@
       transition: width 0.4s ease;
     }
 
+    /* Message info inventaire précédent */
+    .info-banner {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      color: #1565c0;
+      text-align: center;
+    }
+
     /* Liste des inventaires */
     .inventory-grid {
       display: grid;
@@ -341,6 +352,12 @@
       transform: translateY(-1px);
     }
 
+    .btn-finalize:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
     .btn-find-missing {
       flex: 1;
       min-width: 180px;
@@ -370,17 +387,6 @@
     .btn-find-missing.disabled:hover {
       background: #ccc;
       transform: none;
-    }
-
-    /* Message finalisation */
-    .finalize-message {
-      background: var(--card-bg);
-      border: 2px solid var(--ok);
-      border-radius: var(--radius);
-      padding: 16px;
-      text-align: center;
-      font-weight: 600;
-      color: #2e7d32;
     }
 
     /* Modals */
@@ -488,6 +494,7 @@
     let inventoryData = null;
     let checkedItems = {};
     let userRole = null;
+    let isViewingPreviousFinalized = false; // true si on voit le résultat d'un inventaire finalisé mais on peut en relancer un
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -496,7 +503,6 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Initialiser les paramètres d'URL
     function getUrlParams() {
       return new URLSearchParams(window.location.search);
     }
@@ -509,6 +515,15 @@
         params.delete(key);
       }
       const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    function removeUrlParam(key) {
+      const params = getUrlParams();
+      params.delete(key);
+      const newUrl = params.toString() 
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
 
@@ -529,7 +544,6 @@
         return;
       }
 
-      // Déterminer le rôle
       try {
         const adminSnap = await getDoc(doc(db, 'A', currentNivol));
         if (adminSnap.exists()) {
@@ -544,16 +558,8 @@
         userRole = 'user';
       }
 
-      // Configurer le bouton retour
-      btnBack.onclick = () => {
-        if (userRole === 'admin') {
-          window.location.href = './admin.html';
-        } else {
-          window.location.href = './user.html';
-        }
-      };
-
-      // Charger le contenu
+      updateBackButton();
+      
       const invParam = getInvFromUrl();
       if (invParam) {
         await loadInventory(invParam);
@@ -567,6 +573,28 @@
       window.location.href = `./login.html?redirect=${currentUrl}`;
     }
 
+    function getHomeUrl() {
+      return userRole === 'admin' ? './admin.html' : './user.html';
+    }
+
+    function updateBackButton() {
+      const invParam = getInvFromUrl();
+      if (invParam) {
+        // Dans un inventaire → retour à la liste
+        btnBack.textContent = '← Liste des inventaires';
+        btnBack.onclick = () => {
+          removeUrlParam('inv');
+          showInventoryList();
+        };
+      } else {
+        // Sur la liste → retour à l'accueil
+        btnBack.textContent = '← Retour';
+        btnBack.onclick = () => {
+          window.location.href = getHomeUrl();
+        };
+      }
+    }
+
     // Déconnexion
     document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
@@ -578,8 +606,10 @@
 
     // Afficher la liste des inventaires
     async function showInventoryList() {
+      isViewingPreviousFinalized = false;
       headerTitle.textContent = 'Thot – Inventaires';
       progressContainer.style.display = 'none';
+      updateBackButton();
 
       let html = '<div class="inventory-grid">';
       try {
@@ -591,7 +621,11 @@
             const data = docSnap.data();
             const nom = data.nom || docSnap.id;
             const totalObjets = countObjets(data.objets || {});
-            const statusText = data.finalise ? '✅ Finalisé' : `${totalObjets} objet(s)`;
+            let statusText = `${totalObjets} objet(s)`;
+            if (data.finaliseDate) {
+              const d = new Date(data.finaliseDate);
+              statusText = `📅 Dernier : ${d.toLocaleDateString('fr-FR')}`;
+            }
             html += `
               <div class="inventory-card" data-inv="${docSnap.id}">
                 📋 ${nom}
@@ -633,7 +667,7 @@
       return all;
     }
 
-    // Charger un inventaire spécifique
+    // Charger un inventaire
     async function loadInventory(invId) {
       try {
         const docSnap = await getDoc(doc(db, 'I', invId));
@@ -644,14 +678,12 @@
         }
         inventoryData = docSnap.data();
         currentInventory = invId;
+        updateBackButton();
 
+        // Réinitialiser les checks pour un nouvel inventaire
         checkedItems = {};
-        if (inventoryData.checks) {
-          inventoryData.checks.forEach(key => {
-            checkedItems[key] = true;
-          });
-        }
-
+        isViewingPreviousFinalized = false;
+        
         renderInventory();
       } catch(e) {
         contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>';
@@ -659,7 +691,6 @@
       }
     }
 
-    // Déterminer le statut de la date
     function getDateStatus(dateStr) {
       if (!dateStr) return null;
       const now = new Date();
@@ -691,7 +722,6 @@
       return Object.keys(items).every(objName => checkedItems[`${cat}|${objName}`]);
     }
 
-    // Rendu de l'inventaire
     function renderInventory() {
       headerTitle.textContent = `📋 ${inventoryData.nom || currentInventory}`;
       progressContainer.style.display = 'block';
@@ -710,6 +740,7 @@
 
       // Bouton Chercher
       const btnFindMissing = document.getElementById('btn-find-missing');
+      const btnFinalize = document.getElementById('btn-finalize');
       const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
 
       if (missingObjets.length === 0) {
@@ -722,26 +753,24 @@
         btnFindMissing.disabled = false;
       }
 
-      // Affichage si finalisé
-      if (inventoryData.finalise) {
-        contentEl.innerHTML = `
-          <div class="finalize-message">
-            ✅ Cet inventaire a été finalisé le ${new Date(inventoryData.finaliseDate || '').toLocaleString('fr-FR')}
-            ${inventoryData.finalisePar ? `<br>Par : ${inventoryData.finalisePar}` : ''}
-            ${inventoryData.manquants && inventoryData.manquants.length > 0 
-              ? `<br><br>⚠️ Objets manquants lors de la finalisation :<br>${inventoryData.manquants.join('<br>')}` 
-              : '<br><br>🎉 Aucun objet manquant !'}
+      btnFinalize.disabled = false;
+      btnFinalize.textContent = '✅ Finaliser l\'inventaire';
+      btnFinalize.style.display = '';
+      btnFindMissing.style.display = '';
+
+      // Message d'info si déjà finalisé
+      let infoHtml = '';
+      if (inventoryData.finaliseDate) {
+        const d = new Date(inventoryData.finaliseDate);
+        infoHtml = `
+          <div class="info-banner">
+            📅 Dernier inventaire réalisé le ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR')} par ${inventoryData.finalisePar || 'quelqu\'un'}.<br>
+            Vous pouvez lancer un nouvel inventaire ci-dessous.
           </div>
         `;
-        document.getElementById('btn-finalize').style.display = 'none';
-        document.getElementById('btn-find-missing').style.display = 'none';
-        return;
-      } else {
-        document.getElementById('btn-finalize').style.display = '';
-        document.getElementById('btn-find-missing').style.display = '';
       }
 
-      let html = '';
+      let html = infoHtml;
 
       if (categories.length === 0) {
         html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
@@ -758,7 +787,7 @@
             <div class="section-header">
               <span>
                 <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
-                ${cat}
+                ${escapeHtml(cat)}
               </span>
               <span style="font-size:0.85rem;color:var(--text-light);">
                 ${catCheckedCount}/${itemKeys.length}
@@ -804,19 +833,17 @@
 
       contentEl.innerHTML = html;
 
-      // Événements de clic sur les objets
+      // Événements clic objets
       document.querySelectorAll('.obj-item').forEach(item => {
         item.addEventListener('click', (e) => {
-          // Ne pas déclencher si on a cliqué sur le bouton de mise à jour de date
           if (e.target.classList.contains('btn-update-date')) return;
-
           const cat = item.dataset.cat;
           const objName = item.dataset.obj;
           toggleCheck(cat, objName);
         });
       });
 
-      // Événements pour les boutons de mise à jour de date
+      // Événements boutons mise à jour date
       document.querySelectorAll('.btn-update-date').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -831,10 +858,8 @@
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Toggle check d'un objet
+    // Toggle check
     async function toggleCheck(cat, objName) {
-      if (inventoryData.finalise) return;
-
       const checkKey = `${cat}|${objName}`;
 
       if (checkedItems[checkKey]) {
@@ -860,14 +885,14 @@
       }
     }
 
-    // Modal mise à jour date de péremption
+    // Modal mise à jour date
     function openUpdateDateModal(cat, objName) {
       const obj = inventoryData.objets[cat][objName];
       const currentDate = obj.d || '';
 
       modalContent.innerHTML = `
         <h3>Nouvelle date de péremption</h3>
-        <p><strong>${escapeHtml(objName)}</strong> (${cat})</p>
+        <p><strong>${escapeHtml(objName)}</strong> (${escapeHtml(cat)})</p>
         <p style="font-size:0.85rem;color:var(--text-light);">Date actuelle : ${currentDate ? new Date(currentDate).toLocaleDateString('fr-FR') : 'Aucune'}</p>
         <input type="date" id="modal-new-date" value="${currentDate}" min="${new Date().toISOString().split('T')[0]}">
         <div class="modal-actions">
@@ -880,7 +905,6 @@
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', async () => {
         const newDate = document.getElementById('modal-new-date').value;
-
         if (!newDate) return alert('Veuillez sélectionner une date.');
 
         try {
@@ -897,10 +921,8 @@
       });
     }
 
-    // Finaliser l'inventaire
+    // Finaliser
     document.getElementById('btn-finalize').addEventListener('click', () => {
-      if (inventoryData.finalise) return;
-
       const allObjets = getAllObjets(inventoryData.objets || {});
       const manquants = allObjets
         .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
@@ -943,13 +965,10 @@
       });
     });
 
-    // Chercher objet manquant
+    // Chercher manquant
     document.getElementById('btn-find-missing').addEventListener('click', () => {
-      if (inventoryData.finalise) return;
-
       const allObjets = getAllObjets(inventoryData.objets || {});
       const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
-
       if (missing.length === 0) return;
 
       const firstMissing = missing[0];
@@ -964,7 +983,6 @@
       }
     });
 
-    // Ajouter un log
     async function addLog(action) {
       const log = {
         n: currentNivol,
