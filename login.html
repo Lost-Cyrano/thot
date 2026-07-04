@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thot – Login</title>
+  <title>Thot – Connexion</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 400px; margin: 50px auto; padding: 0 20px; }
     .error { color: #c00; margin-top: 10px; }
@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h1>Thot – Login</h1>
+  <h1>Thot – Connexion</h1>
   <form id="login-form">
     <label for="nivol">NIVOL</label>
     <input type="text" id="nivol" placeholder="ex: 01100142696Z" required pattern="[0-9A-Za-z]{12}">
@@ -55,11 +55,11 @@
       }
 
       try {
-        // 1. Connexion anonyme + récupération de l'utilisateur
+        // 1. Connexion anonyme
         const userCredential = await signInAnonymously(auth);
         const user = userCredential.user;
 
-        // 2. Vérifier dans les collections "u" et "a"
+        // 2. Vérifier dans les collections "U" et "A"
         const [userSnap, adminSnap] = await Promise.all([
           getDoc(doc(db, 'U', nivol)),
           getDoc(doc(db, 'A', nivol))
@@ -72,18 +72,37 @@
           return;
         }
 
-        // 3. Mise à jour du profil et redirection
+        // 3. Centraliser TOUTES les infos dans le profil Auth
         let redirectUrl = '';
+        
         if (userSnap.exists()) {
           const data = userSnap.data();
-          await updateProfile(user, { displayName: data.I });
+          
+          // Tout dans le profil Auth (utilisateur simple)
+          await updateProfile(user, {
+            displayName: data.I,           // Nom
+            photoURL: nivol                // NIVOL comme identifiant principal
+          });
+          
+          // Métadonnées de session dans localStorage
           localStorage.setItem('userRole', 'user');
+          
           redirectUrl = './user.html';
+          
         } else if (adminSnap.exists()) {
           const data = adminSnap.data();
-          await updateProfile(user, { displayName: data.I });
-          localStorage.setItem('userFunction', data.F || '');
+          
+          // Tout dans le profil Auth (administrateur)
+          await updateProfile(user, {
+            displayName: data.I,           // Nom
+            photoURL: nivol                // NIVOL
+            // Note: La fonction sera dans le localStorage, pas dans photoURL
+          });
+          
+          // Métadonnées dans localStorage
           localStorage.setItem('userRole', 'admin');
+          localStorage.setItem('userFunction', data.F || '');
+          
           redirectUrl = './admin.html';
         }
 
@@ -92,7 +111,6 @@
       } catch (error) {
         console.error('Erreur:', error);
         messageEl.textContent = 'Une erreur technique est survenue. Veuillez réessayer.';
-        // Nettoyage de la session si elle existe encore
         if (auth.currentUser) {
           try { await deleteUser(auth.currentUser); } catch (e) {}
         }
