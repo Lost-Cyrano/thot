@@ -5,21 +5,173 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Connexion</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 400px; margin: 50px auto; padding: 0 20px; }
-    .error { color: #c00; margin-top: 10px; }
-    input, button { padding: 10px; width: 100%; margin: 5px 0; box-sizing: border-box; }
-    button { background: #e60000; color: white; border: none; cursor: pointer; }
-    button:hover { background: #b30000; }
+    :root {
+      --red: #e60000;
+      --red-hover: #b30000;
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #333;
+      --text-light: #666;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .login-card h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      color: var(--red);
+    }
+
+    .login-card .subtitle {
+      text-align: center;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      margin-top: -12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .form-group input {
+      padding: 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: monospace;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(230,0,0,0.1);
+    }
+
+    .btn-login {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-login:hover { background: var(--red-hover); }
+
+    .btn-login:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .error {
+      background: #fff0f0;
+      color: #c00;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      display: none;
+    }
+
+    .error.visible { display: block; }
+
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .home-link {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .home-link a {
+      color: var(--red);
+      text-decoration: none;
+    }
+
+    .home-link a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>Thot – Connexion</h1>
-  <form id="login-form">
-    <label for="nivol">NIVOL</label>
-    <input type="text" id="nivol" placeholder="ex: 01234567890A" required pattern="[0-9A-Za-z]{12}">
-    <button type="submit">Se connecter</button>
-  </form>
-  <p id="message" class="error"></p>
+  <div class="login-card">
+    <h1>🔐 Thot</h1>
+    <p class="subtitle">Gestion des inventaires – Croix-Rouge d'Embrun</p>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="nivol">NIVOL</label>
+        <input
+          type="text"
+          id="nivol"
+          placeholder="ex: 01100142696Z"
+          required
+          pattern="[0-9A-Za-z]{12}"
+          maxlength="12"
+          minlength="12"
+          autocomplete="off"
+          autofocus
+        >
+      </div>
+
+      <button type="submit" class="btn-login" id="btn-submit">Se connecter</button>
+    </form>
+
+    <div class="error" id="error-message"></div>
+
+    <p class="home-link">
+      <a href="./index.html">← Retour à l'accueil</a>
+    </p>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -40,57 +192,150 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // --- Récupérer le paramètre de redirection ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect');
+
+    // --- Éléments DOM ---
     const form = document.getElementById('login-form');
     const nivolInput = document.getElementById('nivol');
-    const messageEl = document.getElementById('message');
+    const btnSubmit = document.getElementById('btn-submit');
+    const errorMessage = document.getElementById('error-message');
 
+    // --- Normaliser le NIVOL ---
+    nivolInput.addEventListener('input', () => {
+      nivolInput.value = nivolInput.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+    });
+
+    // --- Vérifier si déjà connecté ---
+    // (optionnel : si l'utilisateur revient avec une session encore active)
+    auth.onAuthStateChanged(async (user) => {
+      if (user && user.displayName) {
+        // Déjà connecté avec un NIVOL → rediriger directement
+        const target = redirectUrl || getDefaultRedirect(user.displayName);
+        window.location.href = target;
+      }
+    });
+
+    // --- Déterminer la page par défaut selon le NIVOL ---
+    async function getDefaultRedirect(nivol) {
+      try {
+        const [userSnap, adminSnap] = await Promise.all([
+          getDoc(doc(db, 'U', nivol)),
+          getDoc(doc(db, 'A', nivol))
+        ]);
+        if (adminSnap.exists()) return './admin.html';
+        if (userSnap.exists()) return './user.html';
+        return './user.html'; // fallback
+      } catch(e) {
+        return './user.html';
+      }
+    }
+
+    // --- Afficher une erreur ---
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.classList.add('visible');
+      nivolInput.focus();
+      nivolInput.select();
+    }
+
+    function hideError() {
+      errorMessage.classList.remove('visible');
+    }
+
+    function setLoading(loading) {
+      if (loading) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="loader"></span> Connexion...';
+      } else {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Se connecter';
+      }
+    }
+
+    // --- Soumission du formulaire ---
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      messageEl.textContent = '';
+      hideError();
 
       const nivol = nivolInput.value.trim().toUpperCase();
+
+      // Validation du format
       if (!/^[0-9A-Z]{12}$/.test(nivol)) {
-        messageEl.textContent = 'Format de NIVOL invalide (12 caractères alphanumériques).';
+        showError('Format de NIVOL invalide. Il doit contenir exactement 12 caractères (chiffres et lettres).');
         return;
       }
 
+      setLoading(true);
+
       try {
-        // 1. Connexion anonyme
+        // 1. Connexion anonyme temporaire
         const userCredential = await signInAnonymously(auth);
         const user = userCredential.user;
 
-        // 2. Vérifier dans les collections A et U
+        // 2. Vérifier dans les collections U et A (majuscules)
         const [userSnap, adminSnap] = await Promise.all([
           getDoc(doc(db, 'U', nivol)),
           getDoc(doc(db, 'A', nivol))
         ]);
 
+        // NIVOL inconnu → suppression du compte anonyme
         if (!userSnap.exists() && !adminSnap.exists()) {
           await deleteUser(user);
-          messageEl.textContent = 'NIVOL non reconnu. Veuillez réessayer.';
+          showError('NIVOL non reconnu. Veuillez vérifier votre numéro et réessayer.');
+          setLoading(false);
           return;
         }
 
-        // 3. Stocker le NIVOL dans le profil Auth (seule info persistante)
+        // 3. Stocker le NIVOL dans le profil Auth
         await updateProfile(user, {
-          displayName: nivol  // Le NIVOL devient l'identifiant de session
+          displayName: nivol
         });
 
-        // 4. Redirection selon le rôle
-        if (adminSnap.exists()) {
-          window.location.href = './admin.html';
+        // 4. Déterminer la destination
+        let destination;
+
+        if (redirectUrl) {
+          // Redirection vers l'URL demandée (ex: ./inventaire.html?inv=lot-a)
+          destination = redirectUrl;
+        } else if (adminSnap.exists()) {
+          // Admin → page admin par défaut
+          destination = './admin.html';
         } else {
-          window.location.href = './user.html';
+          // Utilisateur → page user par défaut
+          destination = './user.html';
         }
 
+        // 5. Redirection
+        window.location.href = destination;
+
       } catch (error) {
-        console.error('Erreur:', error);
-        messageEl.textContent = 'Une erreur technique est survenue. Veuillez réessayer.';
+        console.error('Erreur de connexion :', error);
+
+        // Gestion des erreurs spécifiques
+        switch (error.code) {
+          case 'auth/unauthorized-domain':
+            showError('Domaine non autorisé. Contactez un administrateur.');
+            break;
+          case 'permission-denied':
+            showError('Erreur de permissions Firebase. Vérifiez les règles Firestore.');
+            break;
+          default:
+            showError('Une erreur technique est survenue. Veuillez réessayer.');
+        }
+
+        // Nettoyer la session si elle existe
         if (auth.currentUser) {
           try { await deleteUser(auth.currentUser); } catch (e) {}
         }
+
+        setLoading(false);
       }
     });
+
+    // --- Focus automatique ---
+    nivolInput.focus();
   </script>
 </body>
 </html>
