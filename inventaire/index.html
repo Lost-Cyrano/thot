@@ -728,4 +728,268 @@
           <div class="finalize-message">
             ✅ Cet inventaire a été finalisé le ${new Date(inventoryData.finaliseDate || '').toLocaleString('fr-FR')}
             ${inventoryData.finalisePar ? `<br>Par : ${inventoryData.finalisePar}` : ''}
-            ${inventoryData.manqua
+            ${inventoryData.manquants && inventoryData.manquants.length > 0 
+              ? `<br><br>⚠️ Objets manquants lors de la finalisation :<br>${inventoryData.manquants.join('<br>')}` 
+              : '<br><br>🎉 Aucun objet manquant !'}
+          </div>
+        `;
+        document.getElementById('btn-finalize').style.display = 'none';
+        document.getElementById('btn-find-missing').style.display = 'none';
+        return;
+      } else {
+        document.getElementById('btn-finalize').style.display = '';
+        document.getElementById('btn-find-missing').style.display = '';
+      }
+
+      let html = '';
+
+      if (categories.length === 0) {
+        html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
+      }
+
+      categories.forEach(cat => {
+        const items = objets[cat];
+        const itemKeys = Object.keys(items);
+        const catFullyChecked = isCategoryFullyChecked(cat, items);
+        const catCheckedCount = itemKeys.filter(objName => checkedItems[`${cat}|${objName}`]).length;
+
+        html += `
+          <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/[^a-zA-Z0-9]/g, '-')}">
+            <div class="section-header">
+              <span>
+                <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
+                ${cat}
+              </span>
+              <span style="font-size:0.85rem;color:var(--text-light);">
+                ${catCheckedCount}/${itemKeys.length}
+              </span>
+            </div>
+            <ul class="obj-list">
+        `;
+
+        itemKeys.forEach(objName => {
+          const obj = items[objName];
+          const q = obj.q || 0;
+          const d = obj.d || null;
+          const checkKey = `${cat}|${objName}`;
+          const isChecked = checkedItems[checkKey];
+          const dateStatus = getDateStatus(d);
+          const showUpdateBtn = dateStatus === 'warning' || dateStatus === 'danger';
+
+          html += `
+            <li class="obj-item ${isChecked ? 'checked' : ''}" 
+                data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}" 
+                id="obj-${cat.replace(/[^a-zA-Z0-9]/g, '-')}-${objName.replace(/[^a-zA-Z0-9]/g, '-')}">
+              <div class="obj-left">
+                <div class="check-circle">${isChecked ? '✓' : ''}</div>
+                <div class="obj-info">
+                  <span class="obj-name">${escapeHtml(objName)}</span>
+                  ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}
+                    ${showUpdateBtn ? `<button class="btn-update-date" data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}">📅 Nouvelle date</button>` : ''}
+                  </span>` : ''}
+                </div>
+              </div>
+              <div class="obj-right">
+                <span class="obj-quantity">×${q}</span>
+              </div>
+            </li>
+          `;
+        });
+
+        html += `
+            </ul>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = html;
+
+      // Événements de clic sur les objets
+      document.querySelectorAll('.obj-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          // Ne pas déclencher si on a cliqué sur le bouton de mise à jour de date
+          if (e.target.classList.contains('btn-update-date')) return;
+
+          const cat = item.dataset.cat;
+          const objName = item.dataset.obj;
+          toggleCheck(cat, objName);
+        });
+      });
+
+      // Événements pour les boutons de mise à jour de date
+      document.querySelectorAll('.btn-update-date').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const objName = btn.dataset.obj;
+          openUpdateDateModal(cat, objName);
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Toggle check d'un objet
+    async function toggleCheck(cat, objName) {
+      if (inventoryData.finalise) return;
+
+      const checkKey = `${cat}|${objName}`;
+
+      if (checkedItems[checkKey]) {
+        delete checkedItems[checkKey];
+      } else {
+        checkedItems[checkKey] = true;
+      }
+
+      try {
+        const allChecks = Object.keys(checkedItems);
+        await updateDoc(doc(db, 'I', currentInventory), {
+          checks: allChecks
+        });
+        inventoryData.checks = allChecks;
+        renderInventory();
+      } catch(e) {
+        if (checkedItems[checkKey]) {
+          delete checkedItems[checkKey];
+        } else {
+          checkedItems[checkKey] = true;
+        }
+        alert('Erreur lors de la sauvegarde : ' + e.message);
+      }
+    }
+
+    // Modal mise à jour date de péremption
+    function openUpdateDateModal(cat, objName) {
+      const obj = inventoryData.objets[cat][objName];
+      const currentDate = obj.d || '';
+
+      modalContent.innerHTML = `
+        <h3>Nouvelle date de péremption</h3>
+        <p><strong>${escapeHtml(objName)}</strong> (${cat})</p>
+        <p style="font-size:0.85rem;color:var(--text-light);">Date actuelle : ${currentDate ? new Date(currentDate).toLocaleDateString('fr-FR') : 'Aucune'}</p>
+        <input type="date" id="modal-new-date" value="${currentDate}" min="${new Date().toISOString().split('T')[0]}">
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Mettre à jour</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const newDate = document.getElementById('modal-new-date').value;
+
+        if (!newDate) return alert('Veuillez sélectionner une date.');
+
+        try {
+          await updateDoc(doc(db, 'I', currentInventory), {
+            [`objets.${cat}.${objName}.d`]: newDate
+          });
+          await addLog(`Nouvelle date pour ${objName} (${cat}) : ${newDate}`);
+          inventoryData.objets[cat][objName].d = newDate;
+          closeModal();
+          renderInventory();
+        } catch(e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Finaliser l'inventaire
+    document.getElementById('btn-finalize').addEventListener('click', () => {
+      if (inventoryData.finalise) return;
+
+      const allObjets = getAllObjets(inventoryData.objets || {});
+      const manquants = allObjets
+        .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
+        .map(o => `${o.objName} (${o.cat})`);
+
+      const message = manquants.length > 0
+        ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :\n\n${manquants.join('\n')}\n\nConfirmer la finalisation ?`
+        : '🎉 Tous les objets ont été vérifiés !\n\nConfirmer la finalisation de l\'inventaire ?';
+
+      modalContent.innerHTML = `
+        <h3>Finaliser l'inventaire</h3>
+        <p style="white-space:pre-line;">${message}</p>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-confirm" id="modal-confirm">Finaliser</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-confirm').addEventListener('click', async () => {
+        try {
+          await updateDoc(doc(db, 'I', currentInventory), {
+            finalise: true,
+            finaliseDate: new Date().toISOString(),
+            finalisePar: currentNivol,
+            manquants: manquants,
+            checks: Object.keys(checkedItems)
+          });
+          await addLog(`Finalisation de l'inventaire (${manquants.length} manquants)`);
+          inventoryData.finalise = true;
+          inventoryData.finaliseDate = new Date().toISOString();
+          inventoryData.finalisePar = currentNivol;
+          inventoryData.manquants = manquants;
+          closeModal();
+          renderInventory();
+        } catch(e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    });
+
+    // Chercher objet manquant
+    document.getElementById('btn-find-missing').addEventListener('click', () => {
+      if (inventoryData.finalise) return;
+
+      const allObjets = getAllObjets(inventoryData.objets || {});
+      const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
+
+      if (missing.length === 0) return;
+
+      const firstMissing = missing[0];
+      const elementId = `obj-${firstMissing.cat.replace(/[^a-zA-Z0-9]/g, '-')}-${firstMissing.objName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const element = document.getElementById(elementId);
+
+      if (element) {
+        document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('missing-highlight');
+        setTimeout(() => element.classList.remove('missing-highlight'), 3000);
+      }
+    });
+
+    // Ajouter un log
+    async function addLog(action) {
+      const log = {
+        n: currentNivol,
+        t: new Date().toISOString(),
+        a: action
+      };
+      try {
+        const snap = await getDoc(doc(db, 'I', currentInventory));
+        const currentLogs = snap.data().logs || [];
+        currentLogs.push(log);
+        const trimmed = currentLogs.slice(-50);
+        await updateDoc(doc(db, 'I', currentInventory), { logs: trimmed });
+      } catch(e) {
+        console.error('Log error:', e);
+      }
+    }
+
+    function closeModal() {
+      modalOverlay.style.display = 'none';
+      modalContent.innerHTML = '';
+    }
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+  </script>
+</body>
+</html>
