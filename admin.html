@@ -1,1 +1,90 @@
-admin
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thot – Administration</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; }
+    button { padding: 10px 20px; background: #e60000; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #b30000; }
+  </style>
+</head>
+<body>
+  <h1>Thot – Panneau d'administration</h1>
+  <div class="card" id="infos-compte">
+    <p><strong>Nom :</strong> <span id="nom"></span></p>
+    <p><strong>NIVOL :</strong> <span id="nivol"></span></p>
+    <p><strong>Fonction :</strong> <span id="fonction"></span></p>
+    <button id="logout-btn">Se déconnecter (supprimer le compte)</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
+      authDomain: "crf--thot.firebaseapp.com",
+      projectId: "crf--thot",
+      storageBucket: "crf--thot.firebasestorage.app",
+      messagingSenderId: "242106713414",
+      appId: "1:242106713414:web:76f4c6977264539ef85147",
+      measurementId: "G-NF6W8FS69P"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Éléments de la page
+    const nomSpan = document.getElementById('nom');
+    const nivolSpan = document.getElementById('nivol');
+    const fonctionSpan = document.getElementById('fonction');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Vérification de l'état de connexion
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Pas connecté → retour à la connexion
+        window.location.href = './login.html';
+        return;
+      }
+
+      // Vérifier le rôle stocké dans le localStorage
+      const role = localStorage.getItem('userRole');
+      if (role !== 'admin') {
+        // N'est pas administrateur → on nettoie et redirige
+        deleteUser(user).catch(() => {});
+        localStorage.clear();
+        window.location.href = './login.html';
+        return;
+      }
+
+      // L'utilisateur est connecté et a le rôle admin → affichage des infos
+      const nom = user.displayName || 'Inconnu';
+      const nivol = localStorage.getItem('nivol') || 'Non disponible';
+      const fonction = localStorage.getItem('userFunction') || 'Non définie';
+
+      nomSpan.textContent = nom;
+      nivolSpan.textContent = nivol;
+      fonctionSpan.textContent = fonction;
+    });
+
+    // Déconnexion avec suppression du compte anonyme
+    logoutBtn.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await deleteUser(user);           // supprime définitivement le compte anonyme
+          localStorage.clear();             // nettoie les données locales
+          window.location.href = './login.html';  // retour à la connexion
+        } catch (error) {
+          console.error('Erreur lors de la suppression du compte :', error);
+          alert('Impossible de supprimer le compte. Veuillez réessayer.');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
