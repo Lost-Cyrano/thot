@@ -1,1 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thot – Connexion</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 400px; margin: 50px auto; padding: 0 20px; }
+    .error { color: #c00; margin-top: 10px; }
+    input, button { padding: 10px; width: 100%; margin: 5px 0; box-sizing: border-box; }
+    button { background: #e60000; color: white; border: none; cursor: pointer; }
+    button:hover { background: #b30000; }
+  </style>
+</head>
+<body>
+  <h1>Thot – Inventaires</h1>
+  <form id="login-form">
+    <label for="nivol">NIVOL</label>
+    <input type="text" id="nivol" placeholder="ex: 01100142696Z" required pattern="[0-9A-Za-z]{12}">
+    <button type="submit">Se connecter</button>
+  </form>
+  <p id="message" class="error"></p>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAuth, signInAnonymously, updateProfile, signOut, deleteUser, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
+      authDomain: "crf--thot.firebaseapp.com",
+      projectId: "crf--thot",
+      storageBucket: "crf--thot.firebasestorage.app",
+      messagingSenderId: "242106713414",
+      appId: "1:242106713414:web:76f4c6977264539ef85147",
+      measurementId: "G-NF6W8FS69P" // optionnel, non utilisé ici
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById('login-form');
+    const nivolInput = document.getElementById('nivol');
+    const messageEl = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      messageEl.textContent = '';
+
+      const nivol = nivolInput.value.trim().toUpperCase();
+      if (!/^[0-9A-Z]{12}$/.test(nivol)) {
+        messageEl.textContent = 'Format de NIVOL invalide (12 caractères alphanumériques).';
+        return;
+      }
+
+      try {
+        // 1. Connexion anonyme temporaire pour vérifier en base
+        await signInAnonymously(auth);
+        const user = auth.currentUser;
+
+        // 2. Vérifier l'existence dans les collections "u" et "a"
+        const [userSnap, adminSnap] = await Promise.all([
+          getDoc(doc(db, 'u', nivol)),
+          getDoc(doc(db, 'a', nivol))
+        ]);
+
+        // Si le NIVOL n'existe nulle part → suppression du compte anonyme
+        if (!userSnap.exists() && !adminSnap.exists()) {
+          await deleteUser(user); // efface définitivement le compte anonyme
+          messageEl.textContent = 'NIVOL non reconnu. Veuillez réessayer.';
+          return;
+        }
+
+        // 3. Le NIVOL existe → mise à jour du profil
+        let redirectUrl = '';
+        if (userSnap.exists()) {
+          // Utilisateur simple (collection "u")
+          const data = userSnap.data();
+          await updateProfile(user, { displayName: data.I }); // champ "I" = nom
+          localStorage.setItem('userRole', 'user');
+          redirectUrl = './user.html';
+        } else if (adminSnap.exists()) {
+          // Administrateur (collection "a")
+          const data = adminSnap.data();
+          await updateProfile(user, { displayName: data.I }); // nom
+          localStorage.setItem('userFunction', data.F || ''); // fonction (champ "F")
+          localStorage.setItem('userRole', 'admin');
+          redirectUrl = './admin.html';
+        }
+
+        // 4. Redirection
+        window.location.href = redirectUrl;
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        messageEl.textContent = 'Une erreur technique est survenue. Veuillez réessayer.';
+        // Si une session existe encore, on la supprime pour éviter les traces
+        if (auth.currentUser) {
+          try { await deleteUser(auth.currentUser); } catch (e) {}
+        }
+      }
+    });
+  </script>
+</body>
+</html>
