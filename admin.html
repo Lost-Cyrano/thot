@@ -59,7 +59,7 @@
       font-size: 0.95rem;
     }
 
-    .identity-info .avatar {
+    .avatar {
       width: 44px;
       height: 44px;
       border-radius: 50%;
@@ -75,7 +75,6 @@
 
     .identity-text .name {
       font-weight: 600;
-      color: var(--text);
     }
 
     .identity-text .details {
@@ -101,7 +100,7 @@
       color: #fff;
     }
 
-    /* Section listes */
+    /* Sections */
     .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -124,7 +123,6 @@
     .section-header h2 {
       font-size: 1rem;
       font-weight: 600;
-      color: var(--text);
     }
 
     .badge {
@@ -136,7 +134,7 @@
       font-weight: 600;
     }
 
-    .section-header .actions {
+    .actions {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
@@ -186,14 +184,14 @@
 
     .list-item:last-child { border-bottom: none; }
 
-    .list-item .user-info {
+    .user-info {
       display: flex;
       align-items: center;
       gap: 10px;
       min-width: 0;
     }
 
-    .list-item .user-avatar {
+    .user-avatar {
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -207,17 +205,17 @@
       color: #666;
     }
 
-    .list-item .user-name {
+    .user-name {
       font-weight: 600;
       font-size: 0.95rem;
     }
 
-    .list-item .user-nivol {
+    .user-nivol {
       color: var(--text-light);
       font-size: 0.8rem;
     }
 
-    .list-item .user-func {
+    .user-func {
       font-size: 0.8rem;
       background: #f0f0f0;
       padding: 2px 8px;
@@ -225,7 +223,7 @@
       color: #555;
     }
 
-    .list-item .item-actions {
+    .item-actions {
       display: flex;
       gap: 6px;
       flex-shrink: 0;
@@ -270,7 +268,7 @@
 
     .modal h3 { font-size: 1.1rem; }
 
-    .modal input, .modal select {
+    .modal input {
       width: 100%;
       padding: 10px;
       border: 1.5px solid var(--border);
@@ -294,56 +292,22 @@
       font-size: 0.9rem;
     }
 
-    .btn-cancel {
-      background: #eee;
-      color: #333;
-    }
-
-    .btn-save {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .btn-danger {
-      background: #c00;
-      color: #fff;
-    }
-
-    /* Loader */
-    .loader {
-      text-align: center;
-      padding: 20px;
-      color: var(--text-light);
-    }
-
-    .error {
-      background: #fff0f0;
-      color: #c00;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
+    .btn-cancel { background: #eee; color: #333; }
+    .btn-save { background: var(--red); color: #fff; }
+    .btn-danger { background: #c00; color: #fff; }
 
     /* Responsive */
     @media (max-width: 480px) {
-      .identity-bar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .list-item {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .list-item .item-actions {
-        align-self: flex-end;
-      }
+      .identity-bar { flex-direction: column; align-items: flex-start; }
+      .list-item { flex-direction: column; align-items: flex-start; }
+      .item-actions { align-self: flex-end; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Barre d'identité -->
-    <div class="identity-bar" id="identity-bar">
+    <div class="identity-bar">
       <div class="identity-info">
         <div class="avatar" id="avatar-initial"></div>
         <div class="identity-text">
@@ -354,7 +318,7 @@
       <button class="btn-logout" id="logout-btn">Déconnexion</button>
     </div>
 
-    <!-- Section Administrateurs -->
+    <!-- Administrateurs -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -366,7 +330,7 @@
       <ul class="list" id="admin-list"></ul>
     </div>
 
-    <!-- Section Utilisateurs -->
+    <!-- Utilisateurs -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -379,7 +343,7 @@
     </div>
   </div>
 
-  <!-- Modal caché -->
+  <!-- Modal -->
   <div class="modal-overlay" id="modal-overlay" style="display:none;">
     <div class="modal" id="modal-content"></div>
   </div>
@@ -403,12 +367,44 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // État global
-    let currentAdmin = null; // { nivol, nom, fonction }
+    // Ordre hiérarchique (index 0 = plus haut)
+    const HIERARCHY = ['Dieu', 'PUL', 'MOT'];
+
+    function getHierarchyLevel(fonction) {
+      const idx = HIERARCHY.indexOf(fonction);
+      return idx === -1 ? HIERARCHY.length : idx; // "Autre" = niveau le plus bas
+    }
+
+    // Mon niveau est-il strictement supérieur à celui de la cible ?
+    function isStrictlyAbove(myFonc, targetFonc) {
+      return getHierarchyLevel(myFonc) < getHierarchyLevel(targetFonc);
+    }
+
+    // Mon niveau est-il supérieur ou égal à celui de la cible ?
+    function isAboveOrEqual(myFonc, targetFonc) {
+      return getHierarchyLevel(myFonc) <= getHierarchyLevel(targetFonc);
+    }
+
+    // Puis-je attribuer cette fonction ?
+    function canAssignFunction(myFonc, functionToAssign) {
+      if (myFonc === 'Dieu') return true;
+      // Ne peut pas attribuer Dieu
+      if (functionToAssign === 'Dieu') return false;
+      if (myFonc === 'PUL') {
+        // PUL ne peut pas s'auto-attribuer ni attribuer PUL (sauf Dieu)
+        return functionToAssign !== 'PUL';
+      }
+      // MOT et autres : ne peuvent attribuer que des fonctions de niveau inférieur ou égal au leur
+      // mais jamais Dieu ni PUL
+      if (functionToAssign === 'PUL') return false;
+      return isAboveOrEqual(myFonc, functionToAssign);
+    }
+
+    let currentAdmin = null;
     let admins = [];
     let users = [];
 
-    // Éléments DOM
+    // DOM
     const avatarInitial = document.getElementById('avatar-initial');
     const identityName = document.getElementById('identity-name');
     const identityDetails = document.getElementById('identity-details');
@@ -421,12 +417,9 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Vérification connexion + chargement données
+    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = './login.html';
-        return;
-      }
+      if (!user) { window.location.href = './login.html'; return; }
       const nivol = user.displayName;
       if (!nivol) {
         await deleteUser(user).catch(() => {});
@@ -454,7 +447,6 @@
         identityName.textContent = currentAdmin.nom;
         identityDetails.textContent = `NIVOL : ${currentAdmin.nivol}${currentAdmin.fonction ? ' · ' + currentAdmin.fonction : ''}`;
 
-        // Charger les listes
         await loadAllData();
 
       } catch (err) {
@@ -473,64 +465,30 @@
       }
     });
 
-    // Charger tous les admins et users
     async function loadAllData() {
-      // Admins
       const adminSnap = await getDocs(collection(db, 'A'));
       admins = [];
-      adminSnap.forEach(docSnap => {
-        admins.push({
-          nivol: docSnap.id,
-          nom: docSnap.data().I || 'Inconnu',
-          fonction: docSnap.data().F || ''
-        });
-      });
+      adminSnap.forEach(d => admins.push({ nivol: d.id, nom: d.data().I || 'Inconnu', fonction: d.data().F || '' }));
       renderAdminList();
 
-      // Users
       const userSnap = await getDocs(collection(db, 'U'));
       users = [];
-      userSnap.forEach(docSnap => {
-        users.push({
-          nivol: docSnap.id,
-          nom: docSnap.data().I || 'Inconnu'
-        });
-      });
+      userSnap.forEach(d => users.push({ nivol: d.id, nom: d.data().I || 'Inconnu' }));
       renderUserList();
     }
 
-    // Permissions
-    function canEditAdmins() {
+    function canEditAnything() {
       if (!currentAdmin) return false;
-      return ['Dieu', 'PUL', 'MOT'].includes(currentAdmin.fonction);
+      return HIERARCHY.includes(currentAdmin.fonction);
     }
 
-    function canEditUsers() {
-      if (!currentAdmin) return false;
-      return ['Dieu', 'PUL', 'MOT'].includes(currentAdmin.fonction);
-    }
-
-    function canDeleteTarget(targetFonction) {
-      if (currentAdmin.fonction === 'Dieu') return true;
-      if (currentAdmin.fonction === 'PUL' && targetFonction !== 'Dieu') return true;
-      if (currentAdmin.fonction === 'MOT' && targetFonction !== 'Dieu' && targetFonction !== 'PUL') return true;
-      return false;
-    }
-
-    function canEditTarget(targetFonction) {
-      if (currentAdmin.fonction === 'Dieu') return true;
-      if (currentAdmin.fonction === 'PUL' && targetFonction !== 'Dieu') return true;
-      if (currentAdmin.fonction === 'MOT' && targetFonction !== 'Dieu' && targetFonction !== 'PUL') return true;
-      return false;
-    }
-
-    // Liste admins
+    // Rendu liste admins
     function renderAdminList() {
       adminList.innerHTML = '';
       adminCount.textContent = admins.length;
       adminActions.innerHTML = '';
 
-      if (canEditAdmins()) {
+      if (canEditAnything()) {
         const btn = document.createElement('button');
         btn.className = 'btn-sm add';
         btn.textContent = '+ Ajouter';
@@ -554,35 +512,39 @@
         `;
         const actionsDiv = li.querySelector('.item-actions');
 
-        if (canEditAdmins() && canEditTarget(a.fonction)) {
+        // Peut modifier si strictement supérieur OU si c'est soi-même
+        const canModify = canEditAnything() && (isStrictlyAbove(currentAdmin.fonction, a.fonction) || a.nivol === currentAdmin.nivol);
+        const canDelete = canEditAnything() && isStrictlyAbove(currentAdmin.fonction, a.fonction);
+
+        if (canModify) {
           const editBtn = document.createElement('button');
           editBtn.className = 'btn-icon';
           editBtn.textContent = '✏️';
           editBtn.title = 'Modifier';
           editBtn.addEventListener('click', () => openEditModal('A', a));
           actionsDiv.appendChild(editBtn);
+        }
 
-          if (canDeleteTarget(a.fonction)) {
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-icon delete';
-            delBtn.textContent = '🗑️';
-            delBtn.title = 'Supprimer';
-            delBtn.addEventListener('click', () => confirmDelete('A', a));
-            actionsDiv.appendChild(delBtn);
-          }
+        if (canDelete) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'btn-icon delete';
+          delBtn.textContent = '🗑️';
+          delBtn.title = 'Supprimer';
+          delBtn.addEventListener('click', () => confirmDelete('A', a));
+          actionsDiv.appendChild(delBtn);
         }
 
         adminList.appendChild(li);
       });
     }
 
-    // Liste users
+    // Rendu liste users
     function renderUserList() {
       userList.innerHTML = '';
       userCount.textContent = users.length;
       userActions.innerHTML = '';
 
-      if (canEditUsers()) {
+      if (canEditAnything()) {
         const btn = document.createElement('button');
         btn.className = 'btn-sm add';
         btn.textContent = '+ Ajouter';
@@ -605,7 +567,7 @@
         `;
         const actionsDiv = li.querySelector('.item-actions');
 
-        if (canEditUsers()) {
+        if (canEditAnything()) {
           const editBtn = document.createElement('button');
           editBtn.className = 'btn-icon';
           editBtn.textContent = '✏️';
@@ -632,13 +594,7 @@
         <h3>Ajouter un ${isAdmin ? 'administrateur' : 'utilisateur'}</h3>
         <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
         <input type="text" id="modal-nom" placeholder="Prénom Nom">
-        ${isAdmin ? `
-          <select id="modal-fonction">
-            <option value="">— Aucune fonction —</option>
-            ${currentAdmin.fonction === 'Dieu' ? '<option value="PUL">PUL</option>' : ''}
-            <option value="MOT">MOT</option>
-          </select>
-        ` : ''}
+        ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction (laisser vide = Autre)">' : ''}
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-save" id="modal-save">Ajouter</button>
@@ -650,10 +606,24 @@
       document.getElementById('modal-save').addEventListener('click', async () => {
         const nivol = document.getElementById('modal-nivol').value.trim().toUpperCase();
         const nom = document.getElementById('modal-nom').value.trim();
-        const fonction = isAdmin ? document.getElementById('modal-fonction').value : '';
+        const fonction = isAdmin ? document.getElementById('modal-fonction').value.trim() : '';
 
-        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide');
+        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide (12 caractères alphanumériques)');
         if (!nom) return alert('Nom requis');
+
+        // Vérifier permissions sur la fonction attribuée
+        if (isAdmin && fonction && !canAssignFunction(currentAdmin.fonction, fonction)) {
+          return alert(`Vous ne pouvez pas attribuer la fonction "${fonction}".`);
+        }
+
+        // Vérifier que le NIVOL n'existe pas déjà
+        const [existsInA, existsInU] = await Promise.all([
+          getDoc(doc(db, 'A', nivol)),
+          getDoc(doc(db, 'U', nivol))
+        ]);
+        if (existsInA.exists() || existsInU.exists()) {
+          return alert('Ce NIVOL existe déjà.');
+        }
 
         try {
           const data = { I: nom };
@@ -670,16 +640,12 @@
     // Modal Modifier
     function openEditModal(collectionName, item) {
       const isAdmin = collectionName === 'A';
+      const isSelf = item.nivol === currentAdmin.nivol;
+
       modalContent.innerHTML = `
         <h3>Modifier ${item.nom}</h3>
         <input type="text" id="modal-nom" value="${item.nom}" placeholder="Prénom Nom">
-        ${isAdmin ? `
-          <select id="modal-fonction">
-            <option value="">— Aucune fonction —</option>
-            ${currentAdmin.fonction === 'Dieu' ? '<option value="PUL"' + (item.fonction==='PUL'?' selected':'') + '>PUL</option>' : ''}
-            <option value="MOT" ${item.fonction==='MOT'?' selected':''}>MOT</option>
-          </select>
-        ` : ''}
+        ${isAdmin ? `<input type="text" id="modal-fonction" value="${item.fonction || ''}" placeholder="Fonction">` : ''}
         <p style="font-size:0.85rem;color:#666;">NIVOL : ${item.nivol} (non modifiable)</p>
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
@@ -691,20 +657,33 @@
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', async () => {
         const nom = document.getElementById('modal-nom').value.trim();
-        const fonction = isAdmin ? document.getElementById('modal-fonction').value : undefined;
+        const fonctionInput = isAdmin ? document.getElementById('modal-fonction') : null;
+        const nouvelleFonction = fonctionInput ? fonctionInput.value.trim() : undefined;
 
         if (!nom) return alert('Nom requis');
 
-        // Vérification : ne pas modifier Dieu/PUL vers autre chose
-        if (isAdmin && (item.fonction === 'Dieu' || item.fonction === 'PUL')) {
-          if (fonction !== item.fonction && currentAdmin.fonction !== 'Dieu') {
-            return alert("Vous ne pouvez pas modifier cette fonction.");
+        // Si admin, vérifier permissions sur la fonction
+        if (isAdmin && nouvelleFonction !== undefined) {
+          const oldFonction = item.fonction || '';
+
+          // Si on modifie sa propre fonction
+          if (isSelf && nouvelleFonction !== oldFonction) {
+            return alert('Vous ne pouvez pas modifier votre propre fonction.');
+          }
+
+          // Si on essaie de changer la fonction de quelqu'un d'autre
+          if (!isSelf && nouvelleFonction !== oldFonction) {
+            if (!canAssignFunction(currentAdmin.fonction, nouvelleFonction)) {
+              return alert(`Vous ne pouvez pas attribuer la fonction "${nouvelleFonction}".`);
+            }
           }
         }
 
         try {
           const data = { I: nom };
-          if (isAdmin && fonction !== undefined) data.F = fonction;
+          if (isAdmin && nouvelleFonction !== undefined) {
+            data.F = nouvelleFonction;
+          }
           await setDoc(doc(db, collectionName, item.nivol), data, { merge: true });
           closeModal();
           await loadAllData();
@@ -716,6 +695,10 @@
 
     // Confirmation suppression
     function confirmDelete(collectionName, item) {
+      if (item.nivol === currentAdmin.nivol) {
+        return alert('Vous ne pouvez pas vous supprimer vous-même.');
+      }
+
       modalContent.innerHTML = `
         <h3>Confirmer la suppression</h3>
         <p>Supprimer définitivement <strong>${item.nom}</strong> (${item.nivol}) ?</p>
