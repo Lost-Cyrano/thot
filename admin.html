@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thot – Administration</title>
+  <title>Thot – Inventaire</title>
   <style>
     :root {
       --red: #e60000;
@@ -15,6 +15,9 @@
       --text-light: #666;
       --radius: 12px;
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --warning: #f5a623;
+      --danger: #e60000;
+      --ok: #4caf50;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +40,8 @@
       gap: 16px;
     }
 
-    /* Header identité */
-    .identity-bar {
+    /* Header */
+    .header {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -51,42 +54,24 @@
       box-shadow: var(--shadow);
     }
 
-    .identity-info {
+    .header-left {
       display: flex;
+      align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.95rem;
     }
 
-    .avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--red);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-    }
-
-    .identity-text .name {
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: 600;
+      font-size: 0.9rem;
     }
 
-    .identity-text .details {
-      color: var(--text-light);
-      font-size: 0.85rem;
-    }
-
-    .header-buttons {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .btn-back:hover { background: #eee; }
 
     .btn-logout {
       background: transparent;
@@ -97,33 +82,36 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 0.9rem;
-      transition: all 0.2s;
-      white-space: nowrap;
     }
 
-    .btn-logout:hover {
-      background: var(--red);
-      color: #fff;
+    .btn-logout:hover { background: var(--red); color: #fff; }
+
+    /* Liste des inventaires */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
     }
 
-    .btn-inventory {
-      background: var(--red);
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
+    .inventory-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
       transition: all 0.2s;
-      white-space: nowrap;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: var(--shadow);
     }
 
-    .btn-inventory:hover {
-      background: var(--red-hover);
+    .inventory-card:hover {
+      border-color: var(--red);
+      transform: translateY(-2px);
     }
 
-    /* Sections */
+    /* Sections catégories */
     .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -133,150 +121,98 @@
     }
 
     .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       padding: 14px 18px;
       background: #fafafa;
       border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .section-header h2 {
-      font-size: 1rem;
       font-weight: 600;
-    }
-
-    .badge {
-      background: var(--red);
-      color: #fff;
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .actions {
       display: flex;
-      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .btn-sm {
-      background: transparent;
-      border: 1.5px solid #ccc;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
+    .obj-list { list-style: none; }
 
-    .btn-sm:hover {
-      background: #eee;
-      border-color: #aaa;
-    }
-
-    .btn-sm.add {
-      border-color: var(--red);
-      color: var(--red);
-    }
-
-    .btn-sm.add:hover {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .list {
-      list-style: none;
-    }
-
-    .list-item {
+    .obj-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 18px;
       border-bottom: 1px solid #f0f0f0;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .list-item:last-child { border-bottom: none; }
+    .obj-item:last-child { border-bottom: none; }
 
-    .user-info {
+    .obj-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .obj-name { font-weight: 600; }
+
+    .obj-date {
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-width: 0;
+      gap: 6px;
     }
 
-    .user-avatar {
-      width: 36px;
-      height: 36px;
+    .date-ok { color: var(--ok); }
+    .date-warning { color: var(--warning); font-weight: 600; }
+    .date-danger { color: var(--danger); font-weight: 700; }
+
+    .obj-quantity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qty-btn {
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background: #eee;
+      border: 1.5px solid #ccc;
+      background: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
-      font-size: 0.9rem;
-      flex-shrink: 0;
-      color: #666;
+      transition: all 0.2s;
+      line-height: 1;
     }
 
-    .user-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
+    .qty-btn:hover { background: #f0f0f0; }
+    .qty-num { font-weight: 600; font-size: 1.1rem; min-width: 30px; text-align: center; }
 
-    .user-nivol {
+    /* Boutons actions */
+    .btn-add-obj {
+      background: transparent;
+      border: 1.5px dashed #ccc;
       color: var(--text-light);
-      font-size: 0.8rem;
-    }
-
-    .user-func {
-      font-size: 0.8rem;
-      background: #f0f0f0;
-      padding: 2px 8px;
-      border-radius: 10px;
-      color: #555;
-    }
-
-    .item-actions {
-      display: flex;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
-    .btn-icon {
-      background: none;
-      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 1.1rem;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: background 0.2s;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-top: 4px;
     }
 
-    .btn-icon:hover { background: #f0f0f0; }
-    .btn-icon.delete:hover { color: var(--red); background: #fff0f0; }
+    .btn-add-obj:hover { border-color: var(--red); color: var(--red); }
 
-    /* Bouton Afficher plus */
-    .show-more {
-      padding: 10px 18px;
-      text-align: center;
-      color: var(--red);
+    .btn-add-cat {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: 600;
       font-size: 0.9rem;
-      cursor: pointer;
-      border-top: 1px solid #f0f0f0;
-      transition: background 0.2s;
-    }
-
-    .show-more:hover {
-      background: #fafafa;
     }
 
     /* Modals */
@@ -304,110 +240,55 @@
     }
 
     .modal h3 { font-size: 1.1rem; }
+    .modal input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
-    .modal input {
-      width: 100%;
-      padding: 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-
-    .modal .modal-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     .btn-cancel { background: #eee; color: #333; }
     .btn-save { background: var(--red); color: #fff; }
     .btn-danger { background: #c00; color: #fff; }
 
-    /* Responsive */
+    /* Logs */
+    .logs-section {
+      margin-top: 8px;
+    }
+
+    .logs-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      padding: 8px 0;
+    }
+
+    .log-item {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 4px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
     @media (max-width: 480px) {
-      .identity-bar { flex-direction: column; align-items: flex-start; }
-      .header-buttons { width: 100%; justify-content: flex-end; }
-      .list-item { flex-direction: column; align-items: flex-start; }
-      .item-actions { align-self: flex-end; }
+      .obj-item { flex-direction: column; align-items: flex-start; }
+      .obj-quantity { align-self: flex-end; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Barre d'identité -->
-    <div class="identity-bar">
-      <div class="identity-info">
-        <div class="avatar" id="avatar-initial"></div>
-        <div class="identity-text">
-          <div class="name" id="identity-name"></div>
-          <div class="details" id="identity-details"></div>
-        </div>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <span id="header-title" style="font-weight:600;">Thot – Inventaires</span>
       </div>
-      <div class="header-buttons">
-        <button class="btn-inventory" id="inventory-btn">Faire des vérifications</button>
-        <button class="btn-logout" id="logout-btn">Déconnexion</button>
+      <div>
+        <button class="btn-back" id="btn-admin" style="display:none;">← Administration</button>
+        <button class="btn-logout" id="btn-logout">Déconnexion</button>
       </div>
     </div>
 
-    <!-- Administrateurs -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Administrateurs</h2>
-          <span class="badge" id="admin-count">0</span>
-        </div>
-        <div class="actions" id="admin-actions"></div>
-      </div>
-      <ul class="list" id="admin-list"></ul>
-      <div class="show-more" id="admin-show-more" style="display:none;">Afficher plus</div>
-    </div>
-
-    <!-- Utilisateurs -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Utilisateurs</h2>
-          <span class="badge" id="user-count">0</span>
-        </div>
-        <div class="actions" id="user-actions"></div>
-      </div>
-      <ul class="list" id="user-list"></ul>
-      <div class="show-more" id="user-show-more" style="display:none;">Afficher plus</div>
-    </div>
-
-    <!-- Inventaires -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Inventaires</h2>
-          <span class="badge" id="inventory-count">0</span>
-        </div>
-      </div>
-      <ul class="list" id="inventory-list"></ul>
-      <div class="show-more" id="inventory-show-more" style="display:none;">Afficher plus</div>
-    </div>
-
-    <!-- Périmés -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Périmés</h2>
-          <span class="badge" id="expired-count">0</span>
-        </div>
-      </div>
-      <ul class="list" id="expired-list"></ul>
-      <div class="show-more" id="expired-show-more" style="display:none;">Afficher plus</div>
-    </div>
+    <!-- Contenu dynamique -->
+    <div id="content"></div>
   </div>
 
   <!-- Modal -->
@@ -418,7 +299,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -434,103 +315,56 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const HIERARCHY = ['Dieu', 'PUL', 'MOT'];
-    const ITEMS_PER_PAGE = 2;
+    let currentNivol = null;
+    let currentInventory = null;
+    let inventoryData = null;
 
-    function getHierarchyLevel(fonction) {
-      const idx = HIERARCHY.indexOf(fonction);
-      return idx === -1 ? HIERARCHY.length : idx;
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedInventory = urlParams.get('inv');
 
-    function isStrictlyAbove(myFonc, targetFonc) {
-      return getHierarchyLevel(myFonc) < getHierarchyLevel(targetFonc);
-    }
-
-    function isAboveOrEqual(myFonc, targetFonc) {
-      return getHierarchyLevel(myFonc) <= getHierarchyLevel(targetFonc);
-    }
-
-    function canAssignFunction(myFonc, functionToAssign) {
-      if (myFonc === 'Dieu') return true;
-      if (functionToAssign === 'Dieu') return false;
-      if (myFonc === 'PUL') return functionToAssign !== 'PUL';
-      if (functionToAssign === 'PUL') return false;
-      return isAboveOrEqual(myFonc, functionToAssign);
-    }
-
-    let currentAdmin = null;
-    let admins = [];
-    let users = [];
-    let inventories = [];
-    let expireds = [];
-
-    // États d'affichage
-    let adminShowAll = false;
-    let userShowAll = false;
-    let inventoryShowAll = false;
-    let expiredShowAll = false;
-
-    // DOM
-    const avatarInitial = document.getElementById('avatar-initial');
-    const identityName = document.getElementById('identity-name');
-    const identityDetails = document.getElementById('identity-details');
-    const adminCount = document.getElementById('admin-count');
-    const userCount = document.getElementById('user-count');
-    const inventoryCount = document.getElementById('inventory-count');
-    const expiredCount = document.getElementById('expired-count');
-    const adminList = document.getElementById('admin-list');
-    const userList = document.getElementById('user-list');
-    const inventoryList = document.getElementById('inventory-list');
-    const expiredList = document.getElementById('expired-list');
-    const adminActions = document.getElementById('admin-actions');
-    const userActions = document.getElementById('user-actions');
-    const adminShowMore = document.getElementById('admin-show-more');
-    const userShowMore = document.getElementById('user-show-more');
-    const inventoryShowMore = document.getElementById('inventory-show-more');
-    const expiredShowMore = document.getElementById('expired-show-more');
+    const contentEl = document.getElementById('content');
+    const headerTitle = document.getElementById('header-title');
+    const btnAdmin = document.getElementById('btn-admin');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
     // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { window.location.href = './login.html'; return; }
-      const nivol = user.displayName;
-      if (!nivol) {
+      if (!user) {
+        redirectToLogin();
+        return;
+      }
+      currentNivol = user.displayName;
+      if (!currentNivol) {
         await deleteUser(user).catch(() => {});
-        window.location.href = './login.html';
+        redirectToLogin();
         return;
       }
 
+      // Vérifier si c'est un admin (pour le bouton retour)
       try {
-        const adminSnap = await getDoc(doc(db, 'A', nivol));
-        if (!adminSnap.exists()) {
-          await deleteUser(user).catch(() => {});
-          window.location.href = './login.html';
-          return;
+        const adminSnap = await getDoc(doc(db, 'A', currentNivol));
+        if (adminSnap.exists()) {
+          btnAdmin.style.display = 'inline-block';
+          btnAdmin.addEventListener('click', () => { window.location.href = './admin.html'; });
         }
+      } catch(e) {}
 
-        currentAdmin = {
-          nivol,
-          nom: adminSnap.data().I || 'Inconnu',
-          fonction: adminSnap.data().F || ''
-        };
-
-        const initial = (currentAdmin.nom.charAt(0) || '?').toUpperCase();
-        avatarInitial.textContent = initial;
-        identityName.textContent = currentAdmin.nom;
-        identityDetails.textContent = `NIVOL : ${currentAdmin.nivol}${currentAdmin.fonction ? ' · ' + currentAdmin.fonction : ''}`;
-
-        await loadAllData();
-
-      } catch (err) {
-        console.error(err);
-        if (auth.currentUser) await deleteUser(auth.currentUser).catch(() => {});
-        window.location.href = './login.html';
+      // Charger le contenu selon le paramètre
+      if (selectedInventory) {
+        await loadInventory(selectedInventory);
+      } else {
+        await showInventoryList();
       }
     });
 
+    function redirectToLogin() {
+      const currentUrl = encodeURIComponent(window.location.href);
+      window.location.href = `./login.html?redirect=${currentUrl}`;
+    }
+
     // Déconnexion
-    document.getElementById('logout-btn').addEventListener('click', async () => {
+    document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
         await deleteUser(user).catch(() => {});
@@ -538,208 +372,288 @@
       }
     });
 
-    // Vérifications
-    document.getElementById('inventory-btn').addEventListener('click', () => {
-      window.location.href = './inventaire';
-    });
+    // Afficher la liste des inventaires
+    async function showInventoryList() {
+      headerTitle.textContent = 'Thot – Inventaires';
+      btnAdmin.style.display = 'none';
 
-    async function loadAllData() {
-      // Admins
-      const adminSnap = await getDocs(collection(db, 'A'));
-      admins = [];
-      adminSnap.forEach(d => admins.push({ nivol: d.id, nom: d.data().I || 'Inconnu', fonction: d.data().F || '' }));
-      renderAdminList();
-
-      // Users
-      const userSnap = await getDocs(collection(db, 'U'));
-      users = [];
-      userSnap.forEach(d => users.push({ nivol: d.id, nom: d.data().I || 'Inconnu' }));
-      renderUserList();
-
-      // Inventaires (à adapter selon ta structure Firestore)
+      let html = '<div class="inventory-grid">';
       try {
-        const invSnap = await getDocs(collection(db, 'inventaires'));
-        inventories = [];
-        invSnap.forEach(d => inventories.push({ id: d.id, ...d.data() }));
-      } catch(e) { inventories = []; }
-      renderInventoryList();
+        const snap = await getDocs(collection(db, 'I'));
+        if (snap.empty) {
+          html += '<p>Aucun inventaire trouvé.</p>';
+        } else {
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const nom = data.nom || docSnap.id;
+            html += `
+              <div class="inventory-card" data-inv="${docSnap.id}">
+                📋 ${nom}
+              </div>
+            `;
+          });
+        }
+      } catch(e) {
+        html += '<p>Erreur lors du chargement.</p>';
+      }
+      html += '</div>';
+      contentEl.innerHTML = html;
 
-      // Périmés (à adapter)
+      // Clic sur une carte
+      document.querySelectorAll('.inventory-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const invId = card.dataset.inv;
+          window.location.href = `./inventaire.html?inv=${encodeURIComponent(invId)}`;
+        });
+      });
+    }
+
+    // Charger un inventaire spécifique
+    async function loadInventory(invId) {
       try {
-        const expSnap = await getDocs(collection(db, 'perimes'));
-        expireds = [];
-        expSnap.forEach(d => expireds.push({ id: d.id, ...d.data() }));
-      } catch(e) { expireds = []; }
-      renderExpiredList();
-    }
-
-    function canEditAnything() {
-      if (!currentAdmin) return false;
-      return HIERARCHY.includes(currentAdmin.fonction);
-    }
-
-    // Rendu liste générique avec show more
-    function renderListWithShowMore(items, listEl, showMoreEl, countEl, showAll, toggleFn, renderItemFn) {
-      listEl.innerHTML = '';
-      countEl.textContent = items.length;
-
-      const visibleItems = showAll ? items : items.slice(0, ITEMS_PER_PAGE);
-      visibleItems.forEach(item => renderItemFn(item, listEl));
-
-      if (items.length > ITEMS_PER_PAGE) {
-        showMoreEl.style.display = 'block';
-        showMoreEl.textContent = showAll ? 'Afficher moins' : `Afficher plus (${items.length - ITEMS_PER_PAGE} restants)`;
-        showMoreEl.onclick = toggleFn;
-      } else {
-        showMoreEl.style.display = 'none';
+        const docSnap = await getDoc(doc(db, 'I', invId));
+        if (!docSnap.exists()) {
+          contentEl.innerHTML = '<p>Inventaire introuvable.</p>';
+          return;
+        }
+        inventoryData = docSnap.data();
+        currentInventory = invId;
+        renderInventory();
+      } catch(e) {
+        contentEl.innerHTML = '<p>Erreur lors du chargement.</p>';
       }
     }
 
-    // Rendu liste admins
-    function renderAdminList() {
-      adminActions.innerHTML = '';
-      if (canEditAnything()) {
-        const btn = document.createElement('button');
-        btn.className = 'btn-sm add';
-        btn.textContent = '+ Ajouter';
-        btn.addEventListener('click', () => openAddModal('A'));
-        adminActions.appendChild(btn);
+    // Déterminer le statut de la date
+    function getDateStatus(dateStr) {
+      if (!dateStr) return null;
+      const now = new Date();
+      const date = new Date(dateStr);
+      const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) return 'danger';   // Périmé
+      if (diffDays <= 7) return 'danger';   // Imminent (1 semaine)
+      if (diffDays <= 30) return 'warning'; // Proche (1 mois)
+      return 'ok';
+    }
+
+    function getDateLabel(dateStr) {
+      if (!dateStr) return '';
+      const status = getDateStatus(dateStr);
+      const formatted = new Date(dateStr).toLocaleDateString('fr-FR');
+      if (status === 'danger') return `⚠️ ${formatted} — PÉRIMÉ`;
+      if (status === 'danger') return `🔴 ${formatted} — Imminent`;
+      if (status === 'warning') return `🟠 ${formatted} — Proche`;
+      return `🟢 ${formatted}`;
+    }
+
+    function getDateClass(dateStr) {
+      const status = getDateStatus(dateStr);
+      if (status === 'danger') return 'date-danger';
+      if (status === 'warning') return 'date-warning';
+      return 'date-ok';
+    }
+
+    // Rendu de l'inventaire
+    function renderInventory() {
+      headerTitle.textContent = `📋 ${inventoryData.nom || currentInventory}`;
+      btnAdmin.style.display = 'inline-block';
+
+      const objets = inventoryData.objets || {};
+      const categories = Object.keys(objets);
+
+      let html = '';
+
+      if (categories.length === 0) {
+        html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
       }
 
-      renderListWithShowMore(admins, adminList, adminShowMore, adminCount, adminShowAll,
-        () => { adminShowAll = !adminShowAll; renderAdminList(); },
-        (a, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">${(a.nom.charAt(0)||'?').toUpperCase()}</div>
-              <div>
-                <div class="user-name">${a.nom}</div>
-                <div class="user-nivol">${a.nivol}</div>
-              </div>
-              <span class="user-func">${a.fonction || '—'}</span>
+      categories.forEach(cat => {
+        const items = objets[cat];
+        const itemKeys = Object.keys(items);
+        html += `
+          <div class="section">
+            <div class="section-header">
+              <span>📁 ${cat}</span>
+              <span style="font-size:0.85rem;color:var(--text-light);">${itemKeys.length} objet(s)</span>
             </div>
-            <div class="item-actions"></div>
+            <ul class="obj-list">
+        `;
+
+        itemKeys.forEach(objName => {
+          const obj = items[objName];
+          const q = obj.q || 0;
+          const d = obj.d || null;
+          html += `
+            <li class="obj-item" data-cat="${cat}" data-obj="${objName}">
+              <div class="obj-info">
+                <span class="obj-name">${objName}</span>
+                ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : ''}
+              </div>
+              <div class="obj-quantity">
+                <button class="qty-btn qty-minus" data-cat="${cat}" data-obj="${objName}">−</button>
+                <span class="qty-num">${q}</span>
+                <button class="qty-btn qty-plus" data-cat="${cat}" data-obj="${objName}">+</button>
+                <button class="btn-icon delete" data-cat="${cat}" data-obj="${objName}" style="margin-left:6px;" title="Supprimer">🗑️</button>
+              </div>
+            </li>
           `;
-          const actionsDiv = li.querySelector('.item-actions');
-          const canModify = canEditAnything() && (isStrictlyAbove(currentAdmin.fonction, a.fonction) || a.nivol === currentAdmin.nivol);
-          const canDelete = canEditAnything() && isStrictlyAbove(currentAdmin.fonction, a.fonction);
-
-          if (canModify) {
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-icon';
-            editBtn.textContent = '✏️';
-            editBtn.title = 'Modifier';
-            editBtn.addEventListener('click', () => openEditModal('A', a));
-            actionsDiv.appendChild(editBtn);
-          }
-          if (canDelete) {
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-icon delete';
-            delBtn.textContent = '🗑️';
-            delBtn.title = 'Supprimer';
-            delBtn.addEventListener('click', () => confirmDelete('A', a));
-            actionsDiv.appendChild(delBtn);
-          }
-          listEl.appendChild(li);
         });
-    }
 
-    // Rendu liste users
-    function renderUserList() {
-      userActions.innerHTML = '';
-      if (canEditAnything()) {
-        const btn = document.createElement('button');
-        btn.className = 'btn-sm add';
-        btn.textContent = '+ Ajouter';
-        btn.addEventListener('click', () => openAddModal('U'));
-        userActions.appendChild(btn);
+        html += `
+            </ul>
+            <button class="btn-add-obj" data-cat="${cat}">+ Ajouter un objet</button>
+          </div>
+        `;
+      });
+
+      // Bouton ajouter catégorie
+      html += `
+        <div style="text-align:center;margin-top:8px;">
+          <button class="btn-add-cat" id="btn-add-cat">+ Nouvelle catégorie</button>
+        </div>
+      `;
+
+      // Logs
+      const logs = inventoryData.logs || [];
+      if (logs.length > 0) {
+        html += `
+          <details class="logs-section">
+            <summary>Historique des modifications (${logs.length})</summary>
+            ${logs.slice().reverse().map(l => `
+              <div class="log-item">${new Date(l.t).toLocaleString('fr-FR')} — ${l.n} — ${l.a}</div>
+            `).join('')}
+          </details>
+        `;
       }
 
-      renderListWithShowMore(users, userList, userShowMore, userCount, userShowAll,
-        () => { userShowAll = !userShowAll; renderUserList(); },
-        (u, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">${(u.nom.charAt(0)||'?').toUpperCase()}</div>
-              <div>
-                <div class="user-name">${u.nom}</div>
-                <div class="user-nivol">${u.nivol}</div>
-              </div>
-            </div>
-            <div class="item-actions"></div>
-          `;
-          const actionsDiv = li.querySelector('.item-actions');
-          if (canEditAnything()) {
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-icon';
-            editBtn.textContent = '✏️';
-            editBtn.title = 'Modifier';
-            editBtn.addEventListener('click', () => openEditModal('U', u));
-            actionsDiv.appendChild(editBtn);
+      contentEl.innerHTML = html;
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-icon delete';
-            delBtn.textContent = '🗑️';
-            delBtn.title = 'Supprimer';
-            delBtn.addEventListener('click', () => confirmDelete('U', u));
-            actionsDiv.appendChild(delBtn);
-          }
-          listEl.appendChild(li);
-        });
+      // Événements
+      attachEvents();
     }
 
-    // Rendu liste inventaires
-    function renderInventoryList() {
-      renderListWithShowMore(inventories, inventoryList, inventoryShowMore, inventoryCount, inventoryShowAll,
-        () => { inventoryShowAll = !inventoryShowAll; renderInventoryList(); },
-        (inv, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">📦</div>
-              <div>
-                <div class="user-name">${inv.nom || inv.id || 'Sans nom'}</div>
-                <div class="user-nivol">${inv.date || ''}</div>
-              </div>
-            </div>
-          `;
-          listEl.appendChild(li);
+    function attachEvents() {
+      // Modifier quantité (+)
+      document.querySelectorAll('.qty-plus').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          await updateQuantity(cat, obj, 1);
         });
+      });
+
+      // Modifier quantité (-)
+      document.querySelectorAll('.qty-minus').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          const currentQty = inventoryData.objets[cat][obj].q || 0;
+          if (currentQty <= 0) return;
+          await updateQuantity(cat, obj, -1);
+        });
+      });
+
+      // Supprimer objet
+      document.querySelectorAll('.btn-icon.delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          await deleteObject(cat, obj);
+        });
+      });
+
+      // Ajouter objet
+      document.querySelectorAll('.btn-add-obj').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cat = btn.dataset.cat;
+          openAddObjectModal(cat);
+        });
+      });
+
+      // Ajouter catégorie
+      const btnAddCat = document.getElementById('btn-add-cat');
+      if (btnAddCat) {
+        btnAddCat.addEventListener('click', openAddCategoryModal);
+      }
+
+      // Clic sur objet → éditer date/nom
+      document.querySelectorAll('.obj-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const cat = item.dataset.cat;
+          const obj = item.dataset.obj;
+          openEditObjectModal(cat, obj);
+        });
+      });
     }
 
-    // Rendu liste périmés
-    function renderExpiredList() {
-      renderListWithShowMore(expireds, expiredList, expiredShowMore, expiredCount, expiredShowAll,
-        () => { expiredShowAll = !expiredShowAll; renderExpiredList(); },
-        (exp, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">⚠️</div>
-              <div>
-                <div class="user-name">${exp.nom || exp.id || 'Sans nom'}</div>
-                <div class="user-nivol">${exp.date || ''}</div>
-              </div>
-            </div>
-          `;
-          listEl.appendChild(li);
+    // Mise à jour quantité
+    async function updateQuantity(cat, objName, delta) {
+      const path = `objets.${cat}.${objName}.q`;
+      const currentQty = inventoryData.objets[cat][objName].q || 0;
+      const newQty = Math.max(0, currentQty + delta);
+
+      try {
+        await updateDoc(doc(db, 'I', currentInventory), {
+          [path]: newQty
         });
+        await addLog(`Qté ${objName}: ${currentQty} → ${newQty}`);
+        inventoryData.objets[cat][objName].q = newQty;
+        renderInventory();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
     }
 
-    // Modal Ajouter
-    function openAddModal(collectionName) {
-      const isAdmin = collectionName === 'A';
+    // Supprimer objet
+    async function deleteObject(cat, objName) {
+      if (!confirm(`Supprimer "${objName}" ?`)) return;
+      try {
+        // Supprimer le champ
+        const path = `objets.${cat}.${objName}`;
+        await updateDoc(doc(db, 'I', currentInventory), {
+          [path]: firebase.firestore.FieldValue.delete()
+        });
+        await addLog(`Suppression de ${objName} (${cat})`);
+        delete inventoryData.objets[cat][objName];
+        if (Object.keys(inventoryData.objets[cat]).length === 0) {
+          delete inventoryData.objets[cat];
+        }
+        renderInventory();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
+    }
+
+    // Ajouter un log
+    async function addLog(action) {
+      const log = {
+        n: currentNivol,
+        t: new Date().toISOString(),
+        a: action
+      };
+      try {
+        const snap = await getDoc(doc(db, 'I', currentInventory));
+        const currentLogs = snap.data().logs || [];
+        currentLogs.push(log);
+        // Garder max 50 logs
+        const trimmed = currentLogs.slice(-50);
+        await updateDoc(doc(db, 'I', currentInventory), { logs: trimmed });
+        inventoryData.logs = trimmed;
+      } catch(e) {
+        console.error('Log error:', e);
+      }
+    }
+
+    // Modal ajout objet
+    function openAddObjectModal(cat) {
       modalContent.innerHTML = `
-        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'utilisateur'}</h3>
-        <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
-        <input type="text" id="modal-nom" placeholder="Prénom Nom">
-        ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction">' : ''}
+        <h3>Ajouter un objet dans "${cat}"</h3>
+        <input type="text" id="modal-nom" placeholder="Nom de l'objet">
+        <input type="number" id="modal-qty" placeholder="Quantité" value="1" min="0">
+        <input type="date" id="modal-date" placeholder="Date de péremption (optionnel)">
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-save" id="modal-save">Ajouter</button>
@@ -749,47 +663,41 @@
 
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', async () => {
-        const nivol = document.getElementById('modal-nivol').value.trim().toUpperCase();
         const nom = document.getElementById('modal-nom').value.trim();
-        const fonction = isAdmin ? document.getElementById('modal-fonction').value.trim() : '';
+        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+        const date = document.getElementById('modal-date').value;
 
-        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide (12 caractères alphanumériques)');
         if (!nom) return alert('Nom requis');
 
-        if (isAdmin && fonction && !canAssignFunction(currentAdmin.fonction, fonction)) {
-          return alert(`Vous ne pouvez pas attribuer la fonction "${fonction}".`);
-        }
-
-        const [existsInA, existsInU] = await Promise.all([
-          getDoc(doc(db, 'A', nivol)),
-          getDoc(doc(db, 'U', nivol))
-        ]);
-        if (existsInA.exists() || existsInU.exists()) {
-          return alert('Ce NIVOL existe déjà.');
-        }
+        const objData = { q: qty };
+        if (date) objData.d = date;
 
         try {
-          const data = { I: nom };
-          if (isAdmin && fonction) data.F = fonction;
-          await setDoc(doc(db, collectionName, nivol), data);
+          await updateDoc(doc(db, 'I', currentInventory), {
+            [`objets.${cat}.${nom}`]: objData
+          });
+          await addLog(`Ajout de ${nom} (${cat})`);
+          if (!inventoryData.objets[cat]) inventoryData.objets[cat] = {};
+          inventoryData.objets[cat][nom] = objData;
           closeModal();
-          await loadAllData();
-        } catch (e) {
+          renderInventory();
+        } catch(e) {
           alert('Erreur : ' + e.message);
         }
       });
     }
 
-    // Modal Modifier
-    function openEditModal(collectionName, item) {
-      const isAdmin = collectionName === 'A';
-      const isSelf = item.nivol === currentAdmin.nivol;
-
+    // Modal édition objet
+    function openEditObjectModal(cat, objName) {
+      const obj = inventoryData.objets[cat][objName];
       modalContent.innerHTML = `
-        <h3>Modifier ${item.nom}</h3>
-        <input type="text" id="modal-nom" value="${item.nom}" placeholder="Prénom Nom">
-        ${isAdmin ? `<input type="text" id="modal-fonction" value="${item.fonction || ''}" placeholder="Fonction">` : ''}
-        <p style="font-size:0.85rem;color:#666;">NIVOL : ${item.nivol} (non modifiable)</p>
+        <h3>Modifier "${objName}"</h3>
+        <label>Nom :</label>
+        <input type="text" id="modal-nom" value="${objName}">
+        <label>Quantité :</label>
+        <input type="number" id="modal-qty" value="${obj.q || 0}" min="0">
+        <label>Date de péremption :</label>
+        <input type="date" id="modal-date" value="${obj.d || ''}">
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-save" id="modal-save">Enregistrer</button>
@@ -799,59 +707,69 @@
 
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', async () => {
-        const nom = document.getElementById('modal-nom').value.trim();
-        const fonctionInput = isAdmin ? document.getElementById('modal-fonction') : null;
-        const nouvelleFonction = fonctionInput ? fonctionInput.value.trim() : undefined;
+        const newName = document.getElementById('modal-nom').value.trim();
+        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+        const date = document.getElementById('modal-date').value;
 
-        if (!nom) return alert('Nom requis');
+        if (!newName) return alert('Nom requis');
 
-        if (isAdmin && nouvelleFonction !== undefined) {
-          const oldFonction = item.fonction || '';
-          if (isSelf && nouvelleFonction !== oldFonction) {
-            return alert('Vous ne pouvez pas modifier votre propre fonction.');
-          }
-          if (!isSelf && nouvelleFonction !== oldFonction) {
-            if (!canAssignFunction(currentAdmin.fonction, nouvelleFonction)) {
-              return alert(`Vous ne pouvez pas attribuer la fonction "${nouvelleFonction}".`);
-            }
-          }
-        }
+        const objData = { q: qty };
+        if (date) objData.d = date;
 
         try {
-          const data = { I: nom };
-          if (isAdmin && nouvelleFonction !== undefined) data.F = nouvelleFonction;
-          await setDoc(doc(db, collectionName, item.nivol), data, { merge: true });
+          const updates = {};
+          // Si le nom change, supprimer l'ancien et créer le nouveau
+          if (newName !== objName) {
+            updates[`objets.${cat}.${objName}`] = firebase.firestore.FieldValue.delete();
+          }
+          updates[`objets.${cat}.${newName}`] = objData;
+
+          await updateDoc(doc(db, 'I', currentInventory), updates);
+          await addLog(`Modification de ${objName} → ${newName} (${cat})`);
+
+          if (newName !== objName) {
+            delete inventoryData.objets[cat][objName];
+          }
+          if (!inventoryData.objets[cat]) inventoryData.objets[cat] = {};
+          inventoryData.objets[cat][newName] = objData;
           closeModal();
-          await loadAllData();
-        } catch (e) {
+          renderInventory();
+        } catch(e) {
           alert('Erreur : ' + e.message);
         }
       });
     }
 
-    // Confirmation suppression
-    function confirmDelete(collectionName, item) {
-      if (item.nivol === currentAdmin.nivol) {
-        return alert('Vous ne pouvez pas vous supprimer vous-même.');
-      }
-
+    // Modal ajout catégorie
+    function openAddCategoryModal() {
       modalContent.innerHTML = `
-        <h3>Confirmer la suppression</h3>
-        <p>Supprimer définitivement <strong>${item.nom}</strong> (${item.nivol}) ?</p>
+        <h3>Nouvelle catégorie</h3>
+        <input type="text" id="modal-cat-name" placeholder="Nom de la catégorie">
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
-          <button class="btn btn-danger" id="modal-delete">Supprimer</button>
+          <button class="btn btn-save" id="modal-save">Créer</button>
         </div>
       `;
       modalOverlay.style.display = 'flex';
 
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
-      document.getElementById('modal-delete').addEventListener('click', async () => {
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const catName = document.getElementById('modal-cat-name').value.trim();
+        if (!catName) return alert('Nom requis');
+        if (inventoryData.objets && inventoryData.objets[catName]) {
+          return alert('Cette catégorie existe déjà.');
+        }
+
         try {
-          await deleteDoc(doc(db, collectionName, item.nivol));
+          await updateDoc(doc(db, 'I', currentInventory), {
+            [`objets.${catName}`]: {}
+          });
+          await addLog(`Création catégorie "${catName}"`);
+          if (!inventoryData.objets) inventoryData.objets = {};
+          inventoryData.objets[catName] = {};
           closeModal();
-          await loadAllData();
-        } catch (e) {
+          renderInventory();
+        } catch(e) {
           alert('Erreur : ' + e.message);
         }
       });
