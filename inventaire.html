@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thot – Inventaire</title>
+  <style>
+    :root {
+      --red: #e60000;
+      --red-hover: #b30000;
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #333;
+      --text-light: #666;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --warning: #f5a623;
+      --danger: #e60000;
+      --ok: #4caf50;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-back:hover { background: #eee; }
+
+    .btn-logout {
+      background: transparent;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-logout:hover { background: var(--red); color: #fff; }
+
+    /* Liste des inventaires */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .inventory-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .inventory-card:hover {
+      border-color: var(--red);
+      transform: translateY(-2px);
+    }
+
+    /* Sections catégories */
+    .section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 14px 18px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .obj-list { list-style: none; }
+
+    .obj-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .obj-item:last-child { border-bottom: none; }
+
+    .obj-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .obj-name { font-weight: 600; }
+
+    .obj-date {
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .date-ok { color: var(--ok); }
+    .date-warning { color: var(--warning); font-weight: 600; }
+    .date-danger { color: var(--danger); font-weight: 700; }
+
+    .obj-quantity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1.5px solid #ccc;
+      background: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+
+    .qty-btn:hover { background: #f0f0f0; }
+    .qty-num { font-weight: 600; font-size: 1.1rem; min-width: 30px; text-align: center; }
+
+    /* Boutons actions */
+    .btn-add-obj {
+      background: transparent;
+      border: 1.5px dashed #ccc;
+      color: var(--text-light);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-add-obj:hover { border-color: var(--red); color: var(--red); }
+
+    .btn-add-cat {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal h3 { font-size: 1.1rem; }
+    .modal input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .btn-cancel { background: #eee; color: #333; }
+    .btn-save { background: var(--red); color: #fff; }
+    .btn-danger { background: #c00; color: #fff; }
+
+    /* Logs */
+    .logs-section {
+      margin-top: 8px;
+    }
+
+    .logs-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      padding: 8px 0;
+    }
+
+    .log-item {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 4px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    @media (max-width: 480px) {
+      .obj-item { flex-direction: column; align-items: flex-start; }
+      .obj-quantity { align-self: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <span id="header-title" style="font-weight:600;">Thot – Inventaires</span>
+      </div>
+      <div>
+        <button class="btn-back" id="btn-admin" style="display:none;">← Administration</button>
+        <button class="btn-logout" id="btn-logout">Déconnexion</button>
+      </div>
+    </div>
+
+    <!-- Contenu dynamique -->
+    <div id="content"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none;">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
+      authDomain: "crf--thot.firebaseapp.com",
+      projectId: "crf--thot",
+      storageBucket: "crf--thot.firebasestorage.app",
+      messagingSenderId: "242106713414",
+      appId: "1:242106713414:web:76f4c6977264539ef85147",
+      measurementId: "G-NF6W8FS69P"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentNivol = null;
+    let currentInventory = null;
+    let inventoryData = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedInventory = urlParams.get('inv');
+
+    const contentEl = document.getElementById('content');
+    const headerTitle = document.getElementById('header-title');
+    const btnAdmin = document.getElementById('btn-admin');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+
+    // Vérification connexion
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        redirectToLogin();
+        return;
+      }
+      currentNivol = user.displayName;
+      if (!currentNivol) {
+        await deleteUser(user).catch(() => {});
+        redirectToLogin();
+        return;
+      }
+
+      // Vérifier si c'est un admin (pour le bouton retour)
+      try {
+        const adminSnap = await getDoc(doc(db, 'A', currentNivol));
+        if (adminSnap.exists()) {
+          btnAdmin.style.display = 'inline-block';
+          btnAdmin.addEventListener('click', () => { window.location.href = './admin.html'; });
+        }
+      } catch(e) {}
+
+      // Charger le contenu selon le paramètre
+      if (selectedInventory) {
+        await loadInventory(selectedInventory);
+      } else {
+        await showInventoryList();
+      }
+    });
+
+    function redirectToLogin() {
+      const currentUrl = encodeURIComponent(window.location.href);
+      window.location.href = `./login.html?redirect=${currentUrl}`;
+    }
+
+    // Déconnexion
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (user) {
+        await deleteUser(user).catch(() => {});
+        window.location.href = './login.html';
+      }
+    });
+
+    // Afficher la liste des inventaires
+    async function showInventoryList() {
+      headerTitle.textContent = 'Thot – Inventaires';
+      btnAdmin.style.display = 'none';
+
+      let html = '<div class="inventory-grid">';
+      try {
+        const snap = await getDocs(collection(db, 'I'));
+        if (snap.empty) {
+          html += '<p>Aucun inventaire trouvé.</p>';
+        } else {
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const nom = data.nom || docSnap.id;
+            html += `
+              <div class="inventory-card" data-inv="${docSnap.id}">
+                📋 ${nom}
+              </div>
+            `;
+          });
+        }
+      } catch(e) {
+        html += '<p>Erreur lors du chargement.</p>';
+      }
+      html += '</div>';
+      contentEl.innerHTML = html;
+
+      // Clic sur une carte
+      document.querySelectorAll('.inventory-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const invId = card.dataset.inv;
+          window.location.href = `./inventaire.html?inv=${encodeURIComponent(invId)}`;
+        });
+      });
+    }
+
+    // Charger un inventaire spécifique
+    async function loadInventory(invId) {
+      try {
+        const docSnap = await getDoc(doc(db, 'I', invId));
+        if (!docSnap.exists()) {
+          contentEl.innerHTML = '<p>Inventaire introuvable.</p>';
+          return;
+        }
+        inventoryData = docSnap.data();
+        currentInventory = invId;
+        renderInventory();
+      } catch(e) {
+        contentEl.innerHTML = '<p>Erreur lors du chargement.</p>';
+      }
+    }
+
+    // Déterminer le statut de la date
+    function getDateStatus(dateStr) {
+      if (!dateStr) return null;
+      const now = new Date();
+      const date = new Date(dateStr);
+      const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) return 'danger';   // Périmé
+      if (diffDays <= 7) return 'danger';   // Imminent (1 semaine)
+      if (diffDays <= 30) return 'warning'; // Proche (1 mois)
+      return 'ok';
+    }
+
+    function getDateLabel(dateStr) {
+      if (!dateStr) return '';
+      const status = getDateStatus(dateStr);
+      const formatted = new Date(dateStr).toLocaleDateString('fr-FR');
+      if (status === 'danger') return `⚠️ ${formatted} — PÉRIMÉ`;
+      if (status === 'danger') return `🔴 ${formatted} — Imminent`;
+      if (status === 'warning') return `🟠 ${formatted} — Proche`;
+      return `🟢 ${formatted}`;
+    }
+
+    function getDateClass(dateStr) {
+      const status = getDateStatus(dateStr);
+      if (status === 'danger') return 'date-danger';
+      if (status === 'warning') return 'date-warning';
+      return 'date-ok';
+    }
+
+    // Rendu de l'inventaire
+    function renderInventory() {
+      headerTitle.textContent = `📋 ${inventoryData.nom || currentInventory}`;
+      btnAdmin.style.display = 'inline-block';
+
+      const objets = inventoryData.objets || {};
+      const categories = Object.keys(objets);
+
+      let html = '';
+
+      if (categories.length === 0) {
+        html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
+      }
+
+      categories.forEach(cat => {
+        const items = objets[cat];
+        const itemKeys = Object.keys(items);
+        html += `
+          <div class="section">
+            <div class="section-header">
+              <span>📁 ${cat}</span>
+              <span style="font-size:0.85rem;color:var(--text-light);">${itemKeys.length} objet(s)</span>
+            </div>
+            <ul class="obj-list">
+        `;
+
+        itemKeys.forEach(objName => {
+          const obj = items[objName];
+          const q = obj.q || 0;
+          const d = obj.d || null;
+          html += `
+            <li class="obj-item" data-cat="${cat}" data-obj="${objName}">
+              <div class="obj-info">
+                <span class="obj-name">${objName}</span>
+                ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : ''}
+              </div>
+              <div class="obj-quantity">
+                <button class="qty-btn qty-minus" data-cat="${cat}" data-obj="${objName}">−</button>
+                <span class="qty-num">${q}</span>
+                <button class="qty-btn qty-plus" data-cat="${cat}" data-obj="${objName}">+</button>
+                <button class="btn-icon delete" data-cat="${cat}" data-obj="${objName}" style="margin-left:6px;" title="Supprimer">🗑️</button>
+              </div>
+            </li>
+          `;
+        });
+
+        html += `
+            </ul>
+            <button class="btn-add-obj" data-cat="${cat}">+ Ajouter un objet</button>
+          </div>
+        `;
+      });
+
+      // Bouton ajouter catégorie
+      html += `
+        <div style="text-align:center;margin-top:8px;">
+          <button class="btn-add-cat" id="btn-add-cat">+ Nouvelle catégorie</button>
+        </div>
+      `;
+
+      // Logs
+      const logs = inventoryData.logs || [];
+      if (logs.length > 0) {
+        html += `
+          <details class="logs-section">
+            <summary>Historique des modifications (${logs.length})</summary>
+            ${logs.slice().reverse().map(l => `
+              <div class="log-item">${new Date(l.t).toLocaleString('fr-FR')} — ${l.n} — ${l.a}</div>
+            `).join('')}
+          </details>
+        `;
+      }
+
+      contentEl.innerHTML = html;
+
+      // Événements
+      attachEvents();
+    }
+
+    function attachEvents() {
+      // Modifier quantité (+)
+      document.querySelectorAll('.qty-plus').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          await updateQuantity(cat, obj, 1);
+        });
+      });
+
+      // Modifier quantité (-)
+      document.querySelectorAll('.qty-minus').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          const currentQty = inventoryData.objets[cat][obj].q || 0;
+          if (currentQty <= 0) return;
+          await updateQuantity(cat, obj, -1);
+        });
+      });
+
+      // Supprimer objet
+      document.querySelectorAll('.btn-icon.delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const obj = btn.dataset.obj;
+          await deleteObject(cat, obj);
+        });
+      });
+
+      // Ajouter objet
+      document.querySelectorAll('.btn-add-obj').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cat = btn.dataset.cat;
+          openAddObjectModal(cat);
+        });
+      });
+
+      // Ajouter catégorie
+      const btnAddCat = document.getElementById('btn-add-cat');
+      if (btnAddCat) {
+        btnAddCat.addEventListener('click', openAddCategoryModal);
+      }
+
+      // Clic sur objet → éditer date/nom
+      document.querySelectorAll('.obj-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const cat = item.dataset.cat;
+          const obj = item.dataset.obj;
+          openEditObjectModal(cat, obj);
+        });
+      });
+    }
+
+    // Mise à jour quantité
+    async function updateQuantity(cat, objName, delta) {
+      const path = `objets.${cat}.${objName}.q`;
+      const currentQty = inventoryData.objets[cat][objName].q || 0;
+      const newQty = Math.max(0, currentQty + delta);
+
+      try {
+        await updateDoc(doc(db, 'I', currentInventory), {
+          [path]: newQty
+        });
+        await addLog(`Qté ${objName}: ${currentQty} → ${newQty}`);
+        inventoryData.objets[cat][objName].q = newQty;
+        renderInventory();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
+    }
+
+    // Supprimer objet
+    async function deleteObject(cat, objName) {
+      if (!confirm(`Supprimer "${objName}" ?`)) return;
+      try {
+        // Supprimer le champ
+        const path = `objets.${cat}.${objName}`;
+        await updateDoc(doc(db, 'I', currentInventory), {
+          [path]: firebase.firestore.FieldValue.delete()
+        });
+        await addLog(`Suppression de ${objName} (${cat})`);
+        delete inventoryData.objets[cat][objName];
+        if (Object.keys(inventoryData.objets[cat]).length === 0) {
+          delete inventoryData.objets[cat];
+        }
+        renderInventory();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
+    }
+
+    // Ajouter un log
+    async function addLog(action) {
+      const log = {
+        n: currentNivol,
+        t: new Date().toISOString(),
+        a: action
+      };
+      try {
+        const snap = await getDoc(doc(db, 'I', currentInventory));
+        const currentLogs = snap.data().logs || [];
+        currentLogs.push(log);
+        // Garder max 50 logs
+        const trimmed = currentLogs.slice(-50);
+        await updateDoc(doc(db, 'I', currentInventory), { logs: trimmed });
+        inventoryData.logs = trimmed;
+      } catch(e) {
+        console.error('Log error:', e);
+      }
+    }
+
+    // Modal ajout objet
+    function openAddObjectModal(cat) {
+      modalContent.innerHTML = `
+        <h3>Ajouter un objet dans "${cat}"</h3>
+        <input type="text" id="modal-nom" placeholder="Nom de l'objet">
+        <input type="number" id="modal-qty" placeholder="Quantité" value="1" min="0">
+        <input type="date" id="modal-date" placeholder="Date de péremption (optionnel)">
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Ajouter</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const nom = document.getElementById('modal-nom').value.trim();
+        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+        const date = document.getElementById('modal-date').value;
+
+        if (!nom) return alert('Nom requis');
+
+        const objData = { q: qty };
+        if (date) objData.d = date;
+
+        try {
+          await updateDoc(doc(db, 'I', currentInventory), {
+            [`objets.${cat}.${nom}`]: objData
+          });
+          await addLog(`Ajout de ${nom} (${cat})`);
+          if (!inventoryData.objets[cat]) inventoryData.objets[cat] = {};
+          inventoryData.objets[cat][nom] = objData;
+          closeModal();
+          renderInventory();
+        } catch(e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Modal édition objet
+    function openEditObjectModal(cat, objName) {
+      const obj = inventoryData.objets[cat][objName];
+      modalContent.innerHTML = `
+        <h3>Modifier "${objName}"</h3>
+        <label>Nom :</label>
+        <input type="text" id="modal-nom" value="${objName}">
+        <label>Quantité :</label>
+        <input type="number" id="modal-qty" value="${obj.q || 0}" min="0">
+        <label>Date de péremption :</label>
+        <input type="date" id="modal-date" value="${obj.d || ''}">
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const newName = document.getElementById('modal-nom').value.trim();
+        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+        const date = document.getElementById('modal-date').value;
+
+        if (!newName) return alert('Nom requis');
+
+        const objData = { q: qty };
+        if (date) objData.d = date;
+
+        try {
+          const updates = {};
+          // Si le nom change, supprimer l'ancien et créer le nouveau
+          if (newName !== objName) {
+            updates[`objets.${cat}.${objName}`] = firebase.firestore.FieldValue.delete();
+          }
+          updates[`objets.${cat}.${newName}`] = objData;
+
+          await updateDoc(doc(db, 'I', currentInventory), updates);
+          await addLog(`Modification de ${objName} → ${newName} (${cat})`);
+
+          if (newName !== objName) {
+            delete inventoryData.objets[cat][objName];
+          }
+          if (!inventoryData.objets[cat]) inventoryData.objets[cat] = {};
+          inventoryData.objets[cat][newName] = objData;
+          closeModal();
+          renderInventory();
+        } catch(e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Modal ajout catégorie
+    function openAddCategoryModal() {
+      modalContent.innerHTML = `
+        <h3>Nouvelle catégorie</h3>
+        <input type="text" id="modal-cat-name" placeholder="Nom de la catégorie">
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Créer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const catName = document.getElementById('modal-cat-name').value.trim();
+        if (!catName) return alert('Nom requis');
+        if (inventoryData.objets && inventoryData.objets[catName]) {
+          return alert('Cette catégorie existe déjà.');
+        }
+
+        try {
+          await updateDoc(doc(db, 'I', currentInventory), {
+            [`objets.${catName}`]: {}
+          });
+          await addLog(`Création catégorie "${catName}"`);
+          if (!inventoryData.objets) inventoryData.objets = {};
+          inventoryData.objets[catName] = {};
+          closeModal();
+          renderInventory();
+        } catch(e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    function closeModal() {
+      modalOverlay.style.display = 'none';
+      modalContent.innerHTML = '';
+    }
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+  </script>
+</body>
+</html>
