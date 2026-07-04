@@ -5,28 +5,389 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Administration</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; }
-    .loader { color: #666; }
-    button { padding: 10px 20px; background: #e60000; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #b30000; }
+    :root {
+      --red: #e60000;
+      --red-hover: #b30000;
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #333;
+      --text-light: #666;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header identité */
+    .identity-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .identity-info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    .identity-info .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .identity-text .name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .identity-text .details {
+      color: var(--text-light);
+      font-size: 0.85rem;
+    }
+
+    .btn-logout {
+      background: transparent;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-logout:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
+    /* Section listes */
+    .section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .badge {
+      background: var(--red);
+      color: #fff;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .section-header .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-sm {
+      background: transparent;
+      border: 1.5px solid #ccc;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-sm:hover {
+      background: #eee;
+      border-color: #aaa;
+    }
+
+    .btn-sm.add {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .btn-sm.add:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .list {
+      list-style: none;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .list-item:last-child { border-bottom: none; }
+
+    .list-item .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .list-item .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      color: #666;
+    }
+
+    .list-item .user-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .list-item .user-nivol {
+      color: var(--text-light);
+      font-size: 0.8rem;
+    }
+
+    .list-item .user-func {
+      font-size: 0.8rem;
+      background: #f0f0f0;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: #555;
+    }
+
+    .list-item .item-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-icon:hover { background: #f0f0f0; }
+    .btn-icon.delete:hover { color: var(--red); background: #fff0f0; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal h3 { font-size: 1.1rem; }
+
+    .modal input, .modal select {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .modal .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-cancel {
+      background: #eee;
+      color: #333;
+    }
+
+    .btn-save {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #c00;
+      color: #fff;
+    }
+
+    /* Loader */
+    .loader {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-light);
+    }
+
+    .error {
+      background: #fff0f0;
+      color: #c00;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .identity-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .list-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .list-item .item-actions {
+        align-self: flex-end;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Thot – Panneau d'administration</h1>
-  <div id="infos-compte" class="card" style="display:none;">
-    <p><strong>Nom :</strong> <span id="nom"></span></p>
-    <p><strong>NIVOL :</strong> <span id="nivol"></span></p>
-    <p><strong>Fonction :</strong> <span id="fonction"></span></p>
-    <button id="logout-btn">Se déconnecter (session supprimée)</button>
+  <div class="container">
+    <!-- Barre d'identité -->
+    <div class="identity-bar" id="identity-bar">
+      <div class="identity-info">
+        <div class="avatar" id="avatar-initial"></div>
+        <div class="identity-text">
+          <div class="name" id="identity-name"></div>
+          <div class="details" id="identity-details"></div>
+        </div>
+      </div>
+      <button class="btn-logout" id="logout-btn">Déconnexion</button>
+    </div>
+
+    <!-- Section Administrateurs -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>Administrateurs</h2>
+          <span class="badge" id="admin-count">0</span>
+        </div>
+        <div class="actions" id="admin-actions"></div>
+      </div>
+      <ul class="list" id="admin-list"></ul>
+    </div>
+
+    <!-- Section Utilisateurs -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>Utilisateurs</h2>
+          <span class="badge" id="user-count">0</span>
+        </div>
+        <div class="actions" id="user-actions"></div>
+      </div>
+      <ul class="list" id="user-list"></ul>
+    </div>
   </div>
-  <div id="loader" class="loader">Vérification de votre identité...</div>
-  <div id="error" class="error" style="display:none; color:red;"></div>
+
+  <!-- Modal caché -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none;">
+    <div class="modal" id="modal-content"></div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -42,80 +403,348 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const infosDiv = document.getElementById('infos-compte');
-    const loaderDiv = document.getElementById('loader');
-    const errorDiv = document.getElementById('error');
-    const nomSpan = document.getElementById('nom');
-    const nivolSpan = document.getElementById('nivol');
-    const fonctionSpan = document.getElementById('fonction');
-    const logoutBtn = document.getElementById('logout-btn');
+    // État global
+    let currentAdmin = null; // { nivol, nom, fonction }
+    let admins = [];
+    let users = [];
 
-    // Vérification de l'état de connexion
+    // Éléments DOM
+    const avatarInitial = document.getElementById('avatar-initial');
+    const identityName = document.getElementById('identity-name');
+    const identityDetails = document.getElementById('identity-details');
+    const adminCount = document.getElementById('admin-count');
+    const userCount = document.getElementById('user-count');
+    const adminList = document.getElementById('admin-list');
+    const userList = document.getElementById('user-list');
+    const adminActions = document.getElementById('admin-actions');
+    const userActions = document.getElementById('user-actions');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+
+    // Vérification connexion + chargement données
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        // Pas connecté → retour connexion
         window.location.href = './login.html';
         return;
       }
-
-      // Récupérer le NIVOL depuis le profil Auth
       const nivol = user.displayName;
       if (!nivol) {
-        // Pas de NIVOL stocké → anomalie
         await deleteUser(user).catch(() => {});
         window.location.href = './login.html';
         return;
       }
 
       try {
-        // Vérifier dans Firestore que c'est bien un admin
         const adminSnap = await getDoc(doc(db, 'A', nivol));
-        
         if (!adminSnap.exists()) {
-          // N'est pas admin → expulsion
           await deleteUser(user).catch(() => {});
           window.location.href = './login.html';
           return;
         }
 
-        // Récupérer les données depuis Firestore (source unique de vérité)
-        const data = adminSnap.data();
-        
-        // Afficher les informations
-        nomSpan.textContent = data.I || 'Inconnu';
-        nivolSpan.textContent = nivol;
-        fonctionSpan.textContent = data.F || 'Non définie';
+        currentAdmin = {
+          nivol,
+          nom: adminSnap.data().I || 'Inconnu',
+          fonction: adminSnap.data().F || ''
+        };
 
-        // Afficher la carte et cacher le loader
-        loaderDiv.style.display = 'none';
-        infosDiv.style.display = 'block';
+        // Affichage identité
+        const initial = (currentAdmin.nom.charAt(0) || '?').toUpperCase();
+        avatarInitial.textContent = initial;
+        identityName.textContent = currentAdmin.nom;
+        identityDetails.textContent = `NIVOL : ${currentAdmin.nivol}${currentAdmin.fonction ? ' · ' + currentAdmin.fonction : ''}`;
 
-      } catch (error) {
-        console.error('Erreur de vérification:', error);
-        loaderDiv.style.display = 'none';
-        errorDiv.style.display = 'block';
-        errorDiv.textContent = 'Erreur lors de la vérification de vos droits.';
-        
-        // Nettoyer la session en cas d'erreur
-        if (auth.currentUser) {
-          await deleteUser(auth.currentUser).catch(() => {});
-        }
-        setTimeout(() => { window.location.href = './login.html'; }, 2000);
+        // Charger les listes
+        await loadAllData();
+
+      } catch (err) {
+        console.error(err);
+        if (auth.currentUser) await deleteUser(auth.currentUser).catch(() => {});
+        window.location.href = './login.html';
       }
     });
 
-    // Déconnexion = suppression du compte anonyme
-    logoutBtn.addEventListener('click', async () => {
+    // Déconnexion
+    document.getElementById('logout-btn').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
-        try {
-          await deleteUser(user);  // Supprime définitivement le compte anonyme
-          window.location.href = './login.html';
-        } catch (error) {
-          console.error('Erreur déconnexion:', error);
-          alert('Erreur lors de la déconnexion.');
-        }
+        await deleteUser(user).catch(() => {});
+        window.location.href = './login.html';
       }
+    });
+
+    // Charger tous les admins et users
+    async function loadAllData() {
+      // Admins
+      const adminSnap = await getDocs(collection(db, 'A'));
+      admins = [];
+      adminSnap.forEach(docSnap => {
+        admins.push({
+          nivol: docSnap.id,
+          nom: docSnap.data().I || 'Inconnu',
+          fonction: docSnap.data().F || ''
+        });
+      });
+      renderAdminList();
+
+      // Users
+      const userSnap = await getDocs(collection(db, 'U'));
+      users = [];
+      userSnap.forEach(docSnap => {
+        users.push({
+          nivol: docSnap.id,
+          nom: docSnap.data().I || 'Inconnu'
+        });
+      });
+      renderUserList();
+    }
+
+    // Permissions
+    function canEditAdmins() {
+      if (!currentAdmin) return false;
+      return ['Dieu', 'PUL', 'MOT'].includes(currentAdmin.fonction);
+    }
+
+    function canEditUsers() {
+      if (!currentAdmin) return false;
+      return ['Dieu', 'PUL', 'MOT'].includes(currentAdmin.fonction);
+    }
+
+    function canDeleteTarget(targetFonction) {
+      if (currentAdmin.fonction === 'Dieu') return true;
+      if (currentAdmin.fonction === 'PUL' && targetFonction !== 'Dieu') return true;
+      if (currentAdmin.fonction === 'MOT' && targetFonction !== 'Dieu' && targetFonction !== 'PUL') return true;
+      return false;
+    }
+
+    function canEditTarget(targetFonction) {
+      if (currentAdmin.fonction === 'Dieu') return true;
+      if (currentAdmin.fonction === 'PUL' && targetFonction !== 'Dieu') return true;
+      if (currentAdmin.fonction === 'MOT' && targetFonction !== 'Dieu' && targetFonction !== 'PUL') return true;
+      return false;
+    }
+
+    // Liste admins
+    function renderAdminList() {
+      adminList.innerHTML = '';
+      adminCount.textContent = admins.length;
+      adminActions.innerHTML = '';
+
+      if (canEditAdmins()) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-sm add';
+        btn.textContent = '+ Ajouter';
+        btn.addEventListener('click', () => openAddModal('A'));
+        adminActions.appendChild(btn);
+      }
+
+      admins.forEach(a => {
+        const li = document.createElement('li');
+        li.className = 'list-item';
+        li.innerHTML = `
+          <div class="user-info">
+            <div class="user-avatar">${(a.nom.charAt(0)||'?').toUpperCase()}</div>
+            <div>
+              <div class="user-name">${a.nom}</div>
+              <div class="user-nivol">${a.nivol}</div>
+            </div>
+            <span class="user-func">${a.fonction || '—'}</span>
+          </div>
+          <div class="item-actions"></div>
+        `;
+        const actionsDiv = li.querySelector('.item-actions');
+
+        if (canEditAdmins() && canEditTarget(a.fonction)) {
+          const editBtn = document.createElement('button');
+          editBtn.className = 'btn-icon';
+          editBtn.textContent = '✏️';
+          editBtn.title = 'Modifier';
+          editBtn.addEventListener('click', () => openEditModal('A', a));
+          actionsDiv.appendChild(editBtn);
+
+          if (canDeleteTarget(a.fonction)) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-icon delete';
+            delBtn.textContent = '🗑️';
+            delBtn.title = 'Supprimer';
+            delBtn.addEventListener('click', () => confirmDelete('A', a));
+            actionsDiv.appendChild(delBtn);
+          }
+        }
+
+        adminList.appendChild(li);
+      });
+    }
+
+    // Liste users
+    function renderUserList() {
+      userList.innerHTML = '';
+      userCount.textContent = users.length;
+      userActions.innerHTML = '';
+
+      if (canEditUsers()) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-sm add';
+        btn.textContent = '+ Ajouter';
+        btn.addEventListener('click', () => openAddModal('U'));
+        userActions.appendChild(btn);
+      }
+
+      users.forEach(u => {
+        const li = document.createElement('li');
+        li.className = 'list-item';
+        li.innerHTML = `
+          <div class="user-info">
+            <div class="user-avatar">${(u.nom.charAt(0)||'?').toUpperCase()}</div>
+            <div>
+              <div class="user-name">${u.nom}</div>
+              <div class="user-nivol">${u.nivol}</div>
+            </div>
+          </div>
+          <div class="item-actions"></div>
+        `;
+        const actionsDiv = li.querySelector('.item-actions');
+
+        if (canEditUsers()) {
+          const editBtn = document.createElement('button');
+          editBtn.className = 'btn-icon';
+          editBtn.textContent = '✏️';
+          editBtn.title = 'Modifier';
+          editBtn.addEventListener('click', () => openEditModal('U', u));
+          actionsDiv.appendChild(editBtn);
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'btn-icon delete';
+          delBtn.textContent = '🗑️';
+          delBtn.title = 'Supprimer';
+          delBtn.addEventListener('click', () => confirmDelete('U', u));
+          actionsDiv.appendChild(delBtn);
+        }
+
+        userList.appendChild(li);
+      });
+    }
+
+    // Modal Ajouter
+    function openAddModal(collectionName) {
+      const isAdmin = collectionName === 'A';
+      modalContent.innerHTML = `
+        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'utilisateur'}</h3>
+        <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
+        <input type="text" id="modal-nom" placeholder="Prénom Nom">
+        ${isAdmin ? `
+          <select id="modal-fonction">
+            <option value="">— Aucune fonction —</option>
+            ${currentAdmin.fonction === 'Dieu' ? '<option value="PUL">PUL</option>' : ''}
+            <option value="MOT">MOT</option>
+          </select>
+        ` : ''}
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Ajouter</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const nivol = document.getElementById('modal-nivol').value.trim().toUpperCase();
+        const nom = document.getElementById('modal-nom').value.trim();
+        const fonction = isAdmin ? document.getElementById('modal-fonction').value : '';
+
+        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide');
+        if (!nom) return alert('Nom requis');
+
+        try {
+          const data = { I: nom };
+          if (isAdmin && fonction) data.F = fonction;
+          await setDoc(doc(db, collectionName, nivol), data);
+          closeModal();
+          await loadAllData();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Modal Modifier
+    function openEditModal(collectionName, item) {
+      const isAdmin = collectionName === 'A';
+      modalContent.innerHTML = `
+        <h3>Modifier ${item.nom}</h3>
+        <input type="text" id="modal-nom" value="${item.nom}" placeholder="Prénom Nom">
+        ${isAdmin ? `
+          <select id="modal-fonction">
+            <option value="">— Aucune fonction —</option>
+            ${currentAdmin.fonction === 'Dieu' ? '<option value="PUL"' + (item.fonction==='PUL'?' selected':'') + '>PUL</option>' : ''}
+            <option value="MOT" ${item.fonction==='MOT'?' selected':''}>MOT</option>
+          </select>
+        ` : ''}
+        <p style="font-size:0.85rem;color:#666;">NIVOL : ${item.nivol} (non modifiable)</p>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const nom = document.getElementById('modal-nom').value.trim();
+        const fonction = isAdmin ? document.getElementById('modal-fonction').value : undefined;
+
+        if (!nom) return alert('Nom requis');
+
+        // Vérification : ne pas modifier Dieu/PUL vers autre chose
+        if (isAdmin && (item.fonction === 'Dieu' || item.fonction === 'PUL')) {
+          if (fonction !== item.fonction && currentAdmin.fonction !== 'Dieu') {
+            return alert("Vous ne pouvez pas modifier cette fonction.");
+          }
+        }
+
+        try {
+          const data = { I: nom };
+          if (isAdmin && fonction !== undefined) data.F = fonction;
+          await setDoc(doc(db, collectionName, item.nivol), data, { merge: true });
+          closeModal();
+          await loadAllData();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Confirmation suppression
+    function confirmDelete(collectionName, item) {
+      modalContent.innerHTML = `
+        <h3>Confirmer la suppression</h3>
+        <p>Supprimer définitivement <strong>${item.nom}</strong> (${item.nivol}) ?</p>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-danger" id="modal-delete">Supprimer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-delete').addEventListener('click', async () => {
+        try {
+          await deleteDoc(doc(db, collectionName, item.nivol));
+          closeModal();
+          await loadAllData();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    function closeModal() {
+      modalOverlay.style.display = 'none';
+      modalContent.innerHTML = '';
+    }
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
     });
   </script>
 </body>
