@@ -23,7 +23,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import { getAuth, signInAnonymously, updateProfile, signOut, deleteUser, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { getAuth, signInAnonymously, updateProfile, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -33,7 +33,7 @@
       storageBucket: "crf--thot.firebasestorage.app",
       messagingSenderId: "242106713414",
       appId: "1:242106713414:web:76f4c6977264539ef85147",
-      measurementId: "G-NF6W8FS69P" // optionnel, non utilisé ici
+      measurementId: "G-NF6W8FS69P"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -55,47 +55,44 @@
       }
 
       try {
-        // 1. Connexion anonyme temporaire pour vérifier en base
-        await signInAnonymously(auth);
-        const user = auth.currentUser;
+        // 1. Connexion anonyme + récupération de l'utilisateur
+        const userCredential = await signInAnonymously(auth);
+        const user = userCredential.user;
 
-        // 2. Vérifier l'existence dans les collections "u" et "a"
+        // 2. Vérifier dans les collections "u" et "a"
         const [userSnap, adminSnap] = await Promise.all([
-          getDoc(doc(db, 'u', nivol)),
-          getDoc(doc(db, 'a', nivol))
+          getDoc(doc(db, 'U', nivol)),
+          getDoc(doc(db, 'A', nivol))
         ]);
 
-        // Si le NIVOL n'existe nulle part → suppression du compte anonyme
+        // NIVOL inconnu → suppression du compte anonyme
         if (!userSnap.exists() && !adminSnap.exists()) {
-          await deleteUser(user); // efface définitivement le compte anonyme
+          await deleteUser(user);
           messageEl.textContent = 'NIVOL non reconnu. Veuillez réessayer.';
           return;
         }
 
-        // 3. Le NIVOL existe → mise à jour du profil
+        // 3. Mise à jour du profil et redirection
         let redirectUrl = '';
         if (userSnap.exists()) {
-          // Utilisateur simple (collection "u")
           const data = userSnap.data();
-          await updateProfile(user, { displayName: data.I }); // champ "I" = nom
+          await updateProfile(user, { displayName: data.I });
           localStorage.setItem('userRole', 'user');
           redirectUrl = './user.html';
         } else if (adminSnap.exists()) {
-          // Administrateur (collection "a")
           const data = adminSnap.data();
-          await updateProfile(user, { displayName: data.I }); // nom
-          localStorage.setItem('userFunction', data.F || ''); // fonction (champ "F")
+          await updateProfile(user, { displayName: data.I });
+          localStorage.setItem('userFunction', data.F || '');
           localStorage.setItem('userRole', 'admin');
           redirectUrl = './admin.html';
         }
 
-        // 4. Redirection
         window.location.href = redirectUrl;
 
       } catch (error) {
         console.error('Erreur:', error);
         messageEl.textContent = 'Une erreur technique est survenue. Veuillez réessayer.';
-        // Si une session existe encore, on la supprime pour éviter les traces
+        // Nettoyage de la session si elle existe encore
         if (auth.currentUser) {
           try { await deleteUser(auth.currentUser); } catch (e) {}
         }
