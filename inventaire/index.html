@@ -570,11 +570,11 @@
 
     function redirectToLogin() {
       const currentUrl = encodeURIComponent(window.location.href);
-      window.location.href = `./login.html?redirect=${currentUrl}`;
+      window.location.href = `../login.html?redirect=${currentUrl}`;
     }
 
     function getHomeUrl() {
-      return userRole === 'admin' ? './admin.html' : './user.html';
+      return userRole === 'admin' ? '../admin.html' : '../user.html';
     }
 
     function updateBackButton() {
@@ -600,7 +600,7 @@
       const user = auth.currentUser;
       if (user) {
         await deleteUser(user).catch(() => {});
-        window.location.href = './login.html';
+        window.location.href = '../login.html';
       }
     });
 
