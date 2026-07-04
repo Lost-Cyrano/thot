@@ -437,7 +437,7 @@
       const nivol = user.displayName;
       if (!nivol) {
         await deleteUser(user).catch(() => {});
-        window.location.href = './login.html';
+        window.location.href = '../login.html';
         return;
       }
 
@@ -445,7 +445,7 @@
         const adminSnap = await getDoc(doc(db, 'A', nivol));
         if (!adminSnap.exists()) {
           await deleteUser(user).catch(() => {});
-          window.location.href = './login.html';
+          window.location.href = '../login.html';
           return;
         }
 
@@ -460,7 +460,7 @@
       } catch (err) {
         console.error(err);
         if (auth.currentUser) await deleteUser(auth.currentUser).catch(() => {});
-        window.location.href = './login.html';
+        window.location.href = '../login.html';
       }
     });
 
