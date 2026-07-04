@@ -59,54 +59,29 @@
         const userCredential = await signInAnonymously(auth);
         const user = userCredential.user;
 
-        // 2. Vérifier dans les collections "U" et "A"
+        // 2. Vérifier dans les collections A et U
         const [userSnap, adminSnap] = await Promise.all([
           getDoc(doc(db, 'U', nivol)),
           getDoc(doc(db, 'A', nivol))
         ]);
 
-        // NIVOL inconnu → suppression du compte anonyme
         if (!userSnap.exists() && !adminSnap.exists()) {
           await deleteUser(user);
           messageEl.textContent = 'NIVOL non reconnu. Veuillez réessayer.';
           return;
         }
 
-        // 3. Centraliser TOUTES les infos dans le profil Auth
-        let redirectUrl = '';
-        
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          
-          // Tout dans le profil Auth (utilisateur simple)
-          await updateProfile(user, {
-            displayName: data.I,           // Nom
-            photoURL: nivol                // NIVOL comme identifiant principal
-          });
-          
-          // Métadonnées de session dans localStorage
-          localStorage.setItem('userRole', 'user');
-          
-          redirectUrl = './user.html';
-          
-        } else if (adminSnap.exists()) {
-          const data = adminSnap.data();
-          
-          // Tout dans le profil Auth (administrateur)
-          await updateProfile(user, {
-            displayName: data.I,           // Nom
-            photoURL: nivol                // NIVOL
-            // Note: La fonction sera dans le localStorage, pas dans photoURL
-          });
-          
-          // Métadonnées dans localStorage
-          localStorage.setItem('userRole', 'admin');
-          localStorage.setItem('userFunction', data.F || '');
-          
-          redirectUrl = './admin.html';
-        }
+        // 3. Stocker le NIVOL dans le profil Auth (seule info persistante)
+        await updateProfile(user, {
+          displayName: nivol  // Le NIVOL devient l'identifiant de session
+        });
 
-        window.location.href = redirectUrl;
+        // 4. Redirection selon le rôle
+        if (adminSnap.exists()) {
+          window.location.href = './admin.html';
+        } else {
+          window.location.href = './user.html';
+        }
 
       } catch (error) {
         console.error('Erreur:', error);
