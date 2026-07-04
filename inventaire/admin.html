@@ -455,12 +455,6 @@
           fonction: adminSnap.data().F || ''
         };
 
-        if (!HIERARCHY.includes(currentAdmin.fonction)) {
-          alert('Vous n\'avez pas les droits pour gérer les inventaires.');
-          window.location.href = './admin.html';
-          return;
-        }
-
         await loadInventories();
 
       } catch (err) {
@@ -475,7 +469,7 @@
       const user = auth.currentUser;
       if (user) {
         await deleteUser(user).catch(() => {});
-        window.location.href = './login.html';
+        window.location.href = '../login.html';
       }
     });
 
