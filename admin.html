@@ -82,6 +82,12 @@
       font-size: 0.85rem;
     }
 
+    .header-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .btn-logout {
       background: transparent;
       color: var(--red);
@@ -98,6 +104,23 @@
     .btn-logout:hover {
       background: var(--red);
       color: #fff;
+    }
+
+    .btn-inventory {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-inventory:hover {
+      background: var(--red-hover);
     }
 
     /* Sections */
@@ -168,8 +191,6 @@
 
     .list {
       list-style: none;
-      max-height: 400px;
-      overflow-y: auto;
     }
 
     .list-item {
@@ -242,6 +263,22 @@
     .btn-icon:hover { background: #f0f0f0; }
     .btn-icon.delete:hover { color: var(--red); background: #fff0f0; }
 
+    /* Bouton Afficher plus */
+    .show-more {
+      padding: 10px 18px;
+      text-align: center;
+      color: var(--red);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-top: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+
+    .show-more:hover {
+      background: #fafafa;
+    }
+
     /* Modals */
     .modal-overlay {
       position: fixed;
@@ -299,6 +336,7 @@
     /* Responsive */
     @media (max-width: 480px) {
       .identity-bar { flex-direction: column; align-items: flex-start; }
+      .header-buttons { width: 100%; justify-content: flex-end; }
       .list-item { flex-direction: column; align-items: flex-start; }
       .item-actions { align-self: flex-end; }
     }
@@ -315,7 +353,10 @@
           <div class="details" id="identity-details"></div>
         </div>
       </div>
-      <button class="btn-logout" id="logout-btn">Déconnexion</button>
+      <div class="header-buttons">
+        <button class="btn-inventory" id="inventory-btn">Faire des vérifications</button>
+        <button class="btn-logout" id="logout-btn">Déconnexion</button>
+      </div>
     </div>
 
     <!-- Administrateurs -->
@@ -328,6 +369,7 @@
         <div class="actions" id="admin-actions"></div>
       </div>
       <ul class="list" id="admin-list"></ul>
+      <div class="show-more" id="admin-show-more" style="display:none;">Afficher plus</div>
     </div>
 
     <!-- Utilisateurs -->
@@ -340,6 +382,31 @@
         <div class="actions" id="user-actions"></div>
       </div>
       <ul class="list" id="user-list"></ul>
+      <div class="show-more" id="user-show-more" style="display:none;">Afficher plus</div>
+    </div>
+
+    <!-- Inventaires -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>Inventaires</h2>
+          <span class="badge" id="inventory-count">0</span>
+        </div>
+      </div>
+      <ul class="list" id="inventory-list"></ul>
+      <div class="show-more" id="inventory-show-more" style="display:none;">Afficher plus</div>
+    </div>
+
+    <!-- Périmés -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>Périmés</h2>
+          <span class="badge" id="expired-count">0</span>
+        </div>
+      </div>
+      <ul class="list" id="expired-list"></ul>
+      <div class="show-more" id="expired-show-more" style="display:none;">Afficher plus</div>
     </div>
   </div>
 
@@ -367,35 +434,26 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Ordre hiérarchique (index 0 = plus haut)
     const HIERARCHY = ['Dieu', 'PUL', 'MOT'];
+    const ITEMS_PER_PAGE = 2;
 
     function getHierarchyLevel(fonction) {
       const idx = HIERARCHY.indexOf(fonction);
-      return idx === -1 ? HIERARCHY.length : idx; // "Autre" = niveau le plus bas
+      return idx === -1 ? HIERARCHY.length : idx;
     }
 
-    // Mon niveau est-il strictement supérieur à celui de la cible ?
     function isStrictlyAbove(myFonc, targetFonc) {
       return getHierarchyLevel(myFonc) < getHierarchyLevel(targetFonc);
     }
 
-    // Mon niveau est-il supérieur ou égal à celui de la cible ?
     function isAboveOrEqual(myFonc, targetFonc) {
       return getHierarchyLevel(myFonc) <= getHierarchyLevel(targetFonc);
     }
 
-    // Puis-je attribuer cette fonction ?
     function canAssignFunction(myFonc, functionToAssign) {
       if (myFonc === 'Dieu') return true;
-      // Ne peut pas attribuer Dieu
       if (functionToAssign === 'Dieu') return false;
-      if (myFonc === 'PUL') {
-        // PUL ne peut pas s'auto-attribuer ni attribuer PUL (sauf Dieu)
-        return functionToAssign !== 'PUL';
-      }
-      // MOT et autres : ne peuvent attribuer que des fonctions de niveau inférieur ou égal au leur
-      // mais jamais Dieu ni PUL
+      if (myFonc === 'PUL') return functionToAssign !== 'PUL';
       if (functionToAssign === 'PUL') return false;
       return isAboveOrEqual(myFonc, functionToAssign);
     }
@@ -403,6 +461,14 @@
     let currentAdmin = null;
     let admins = [];
     let users = [];
+    let inventories = [];
+    let expireds = [];
+
+    // États d'affichage
+    let adminShowAll = false;
+    let userShowAll = false;
+    let inventoryShowAll = false;
+    let expiredShowAll = false;
 
     // DOM
     const avatarInitial = document.getElementById('avatar-initial');
@@ -410,10 +476,18 @@
     const identityDetails = document.getElementById('identity-details');
     const adminCount = document.getElementById('admin-count');
     const userCount = document.getElementById('user-count');
+    const inventoryCount = document.getElementById('inventory-count');
+    const expiredCount = document.getElementById('expired-count');
     const adminList = document.getElementById('admin-list');
     const userList = document.getElementById('user-list');
+    const inventoryList = document.getElementById('inventory-list');
+    const expiredList = document.getElementById('expired-list');
     const adminActions = document.getElementById('admin-actions');
     const userActions = document.getElementById('user-actions');
+    const adminShowMore = document.getElementById('admin-show-more');
+    const userShowMore = document.getElementById('user-show-more');
+    const inventoryShowMore = document.getElementById('inventory-show-more');
+    const expiredShowMore = document.getElementById('expired-show-more');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
@@ -441,7 +515,6 @@
           fonction: adminSnap.data().F || ''
         };
 
-        // Affichage identité
         const initial = (currentAdmin.nom.charAt(0) || '?').toUpperCase();
         avatarInitial.textContent = initial;
         identityName.textContent = currentAdmin.nom;
@@ -465,16 +538,39 @@
       }
     });
 
+    // Vérifications
+    document.getElementById('inventory-btn').addEventListener('click', () => {
+      window.location.href = './inventaire';
+    });
+
     async function loadAllData() {
+      // Admins
       const adminSnap = await getDocs(collection(db, 'A'));
       admins = [];
       adminSnap.forEach(d => admins.push({ nivol: d.id, nom: d.data().I || 'Inconnu', fonction: d.data().F || '' }));
       renderAdminList();
 
+      // Users
       const userSnap = await getDocs(collection(db, 'U'));
       users = [];
       userSnap.forEach(d => users.push({ nivol: d.id, nom: d.data().I || 'Inconnu' }));
       renderUserList();
+
+      // Inventaires (à adapter selon ta structure Firestore)
+      try {
+        const invSnap = await getDocs(collection(db, 'inventaires'));
+        inventories = [];
+        invSnap.forEach(d => inventories.push({ id: d.id, ...d.data() }));
+      } catch(e) { inventories = []; }
+      renderInventoryList();
+
+      // Périmés (à adapter)
+      try {
+        const expSnap = await getDocs(collection(db, 'perimes'));
+        expireds = [];
+        expSnap.forEach(d => expireds.push({ id: d.id, ...d.data() }));
+      } catch(e) { expireds = []; }
+      renderExpiredList();
     }
 
     function canEditAnything() {
@@ -482,12 +578,26 @@
       return HIERARCHY.includes(currentAdmin.fonction);
     }
 
+    // Rendu liste générique avec show more
+    function renderListWithShowMore(items, listEl, showMoreEl, countEl, showAll, toggleFn, renderItemFn) {
+      listEl.innerHTML = '';
+      countEl.textContent = items.length;
+
+      const visibleItems = showAll ? items : items.slice(0, ITEMS_PER_PAGE);
+      visibleItems.forEach(item => renderItemFn(item, listEl));
+
+      if (items.length > ITEMS_PER_PAGE) {
+        showMoreEl.style.display = 'block';
+        showMoreEl.textContent = showAll ? 'Afficher moins' : `Afficher plus (${items.length - ITEMS_PER_PAGE} restants)`;
+        showMoreEl.onclick = toggleFn;
+      } else {
+        showMoreEl.style.display = 'none';
+      }
+    }
+
     // Rendu liste admins
     function renderAdminList() {
-      adminList.innerHTML = '';
-      adminCount.textContent = admins.length;
       adminActions.innerHTML = '';
-
       if (canEditAnything()) {
         const btn = document.createElement('button');
         btn.className = 'btn-sm add';
@@ -496,54 +606,49 @@
         adminActions.appendChild(btn);
       }
 
-      admins.forEach(a => {
-        const li = document.createElement('li');
-        li.className = 'list-item';
-        li.innerHTML = `
-          <div class="user-info">
-            <div class="user-avatar">${(a.nom.charAt(0)||'?').toUpperCase()}</div>
-            <div>
-              <div class="user-name">${a.nom}</div>
-              <div class="user-nivol">${a.nivol}</div>
+      renderListWithShowMore(admins, adminList, adminShowMore, adminCount, adminShowAll,
+        () => { adminShowAll = !adminShowAll; renderAdminList(); },
+        (a, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar">${(a.nom.charAt(0)||'?').toUpperCase()}</div>
+              <div>
+                <div class="user-name">${a.nom}</div>
+                <div class="user-nivol">${a.nivol}</div>
+              </div>
+              <span class="user-func">${a.fonction || '—'}</span>
             </div>
-            <span class="user-func">${a.fonction || '—'}</span>
-          </div>
-          <div class="item-actions"></div>
-        `;
-        const actionsDiv = li.querySelector('.item-actions');
+            <div class="item-actions"></div>
+          `;
+          const actionsDiv = li.querySelector('.item-actions');
+          const canModify = canEditAnything() && (isStrictlyAbove(currentAdmin.fonction, a.fonction) || a.nivol === currentAdmin.nivol);
+          const canDelete = canEditAnything() && isStrictlyAbove(currentAdmin.fonction, a.fonction);
 
-        // Peut modifier si strictement supérieur OU si c'est soi-même
-        const canModify = canEditAnything() && (isStrictlyAbove(currentAdmin.fonction, a.fonction) || a.nivol === currentAdmin.nivol);
-        const canDelete = canEditAnything() && isStrictlyAbove(currentAdmin.fonction, a.fonction);
-
-        if (canModify) {
-          const editBtn = document.createElement('button');
-          editBtn.className = 'btn-icon';
-          editBtn.textContent = '✏️';
-          editBtn.title = 'Modifier';
-          editBtn.addEventListener('click', () => openEditModal('A', a));
-          actionsDiv.appendChild(editBtn);
-        }
-
-        if (canDelete) {
-          const delBtn = document.createElement('button');
-          delBtn.className = 'btn-icon delete';
-          delBtn.textContent = '🗑️';
-          delBtn.title = 'Supprimer';
-          delBtn.addEventListener('click', () => confirmDelete('A', a));
-          actionsDiv.appendChild(delBtn);
-        }
-
-        adminList.appendChild(li);
-      });
+          if (canModify) {
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn-icon';
+            editBtn.textContent = '✏️';
+            editBtn.title = 'Modifier';
+            editBtn.addEventListener('click', () => openEditModal('A', a));
+            actionsDiv.appendChild(editBtn);
+          }
+          if (canDelete) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-icon delete';
+            delBtn.textContent = '🗑️';
+            delBtn.title = 'Supprimer';
+            delBtn.addEventListener('click', () => confirmDelete('A', a));
+            actionsDiv.appendChild(delBtn);
+          }
+          listEl.appendChild(li);
+        });
     }
 
     // Rendu liste users
     function renderUserList() {
-      userList.innerHTML = '';
-      userCount.textContent = users.length;
       userActions.innerHTML = '';
-
       if (canEditAnything()) {
         const btn = document.createElement('button');
         btn.className = 'btn-sm add';
@@ -552,39 +657,79 @@
         userActions.appendChild(btn);
       }
 
-      users.forEach(u => {
-        const li = document.createElement('li');
-        li.className = 'list-item';
-        li.innerHTML = `
-          <div class="user-info">
-            <div class="user-avatar">${(u.nom.charAt(0)||'?').toUpperCase()}</div>
-            <div>
-              <div class="user-name">${u.nom}</div>
-              <div class="user-nivol">${u.nivol}</div>
+      renderListWithShowMore(users, userList, userShowMore, userCount, userShowAll,
+        () => { userShowAll = !userShowAll; renderUserList(); },
+        (u, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar">${(u.nom.charAt(0)||'?').toUpperCase()}</div>
+              <div>
+                <div class="user-name">${u.nom}</div>
+                <div class="user-nivol">${u.nivol}</div>
+              </div>
             </div>
-          </div>
-          <div class="item-actions"></div>
-        `;
-        const actionsDiv = li.querySelector('.item-actions');
+            <div class="item-actions"></div>
+          `;
+          const actionsDiv = li.querySelector('.item-actions');
+          if (canEditAnything()) {
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn-icon';
+            editBtn.textContent = '✏️';
+            editBtn.title = 'Modifier';
+            editBtn.addEventListener('click', () => openEditModal('U', u));
+            actionsDiv.appendChild(editBtn);
 
-        if (canEditAnything()) {
-          const editBtn = document.createElement('button');
-          editBtn.className = 'btn-icon';
-          editBtn.textContent = '✏️';
-          editBtn.title = 'Modifier';
-          editBtn.addEventListener('click', () => openEditModal('U', u));
-          actionsDiv.appendChild(editBtn);
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-icon delete';
+            delBtn.textContent = '🗑️';
+            delBtn.title = 'Supprimer';
+            delBtn.addEventListener('click', () => confirmDelete('U', u));
+            actionsDiv.appendChild(delBtn);
+          }
+          listEl.appendChild(li);
+        });
+    }
 
-          const delBtn = document.createElement('button');
-          delBtn.className = 'btn-icon delete';
-          delBtn.textContent = '🗑️';
-          delBtn.title = 'Supprimer';
-          delBtn.addEventListener('click', () => confirmDelete('U', u));
-          actionsDiv.appendChild(delBtn);
-        }
+    // Rendu liste inventaires
+    function renderInventoryList() {
+      renderListWithShowMore(inventories, inventoryList, inventoryShowMore, inventoryCount, inventoryShowAll,
+        () => { inventoryShowAll = !inventoryShowAll; renderInventoryList(); },
+        (inv, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar">📦</div>
+              <div>
+                <div class="user-name">${inv.nom || inv.id || 'Sans nom'}</div>
+                <div class="user-nivol">${inv.date || ''}</div>
+              </div>
+            </div>
+          `;
+          listEl.appendChild(li);
+        });
+    }
 
-        userList.appendChild(li);
-      });
+    // Rendu liste périmés
+    function renderExpiredList() {
+      renderListWithShowMore(expireds, expiredList, expiredShowMore, expiredCount, expiredShowAll,
+        () => { expiredShowAll = !expiredShowAll; renderExpiredList(); },
+        (exp, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar">⚠️</div>
+              <div>
+                <div class="user-name">${exp.nom || exp.id || 'Sans nom'}</div>
+                <div class="user-nivol">${exp.date || ''}</div>
+              </div>
+            </div>
+          `;
+          listEl.appendChild(li);
+        });
     }
 
     // Modal Ajouter
@@ -594,7 +739,7 @@
         <h3>Ajouter un ${isAdmin ? 'administrateur' : 'utilisateur'}</h3>
         <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
         <input type="text" id="modal-nom" placeholder="Prénom Nom">
-        ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction (laisser vide = Autre)">' : ''}
+        ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction">' : ''}
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-save" id="modal-save">Ajouter</button>
@@ -611,12 +756,10 @@
         if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide (12 caractères alphanumériques)');
         if (!nom) return alert('Nom requis');
 
-        // Vérifier permissions sur la fonction attribuée
         if (isAdmin && fonction && !canAssignFunction(currentAdmin.fonction, fonction)) {
           return alert(`Vous ne pouvez pas attribuer la fonction "${fonction}".`);
         }
 
-        // Vérifier que le NIVOL n'existe pas déjà
         const [existsInA, existsInU] = await Promise.all([
           getDoc(doc(db, 'A', nivol)),
           getDoc(doc(db, 'U', nivol))
@@ -662,16 +805,11 @@
 
         if (!nom) return alert('Nom requis');
 
-        // Si admin, vérifier permissions sur la fonction
         if (isAdmin && nouvelleFonction !== undefined) {
           const oldFonction = item.fonction || '';
-
-          // Si on modifie sa propre fonction
           if (isSelf && nouvelleFonction !== oldFonction) {
             return alert('Vous ne pouvez pas modifier votre propre fonction.');
           }
-
-          // Si on essaie de changer la fonction de quelqu'un d'autre
           if (!isSelf && nouvelleFonction !== oldFonction) {
             if (!canAssignFunction(currentAdmin.fonction, nouvelleFonction)) {
               return alert(`Vous ne pouvez pas attribuer la fonction "${nouvelleFonction}".`);
@@ -681,9 +819,7 @@
 
         try {
           const data = { I: nom };
-          if (isAdmin && nouvelleFonction !== undefined) {
-            data.F = nouvelleFonction;
-          }
+          if (isAdmin && nouvelleFonction !== undefined) data.F = nouvelleFonction;
           await setDoc(doc(db, collectionName, item.nivol), data, { merge: true });
           closeModal();
           await loadAllData();
