@@ -5,132 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Administration</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: system-ui, sans-serif; 
-      max-width: 800px; 
-      margin: 40px auto; 
-      padding: 0 20px; 
-      background: #f5f5f5;
-    }
-    
-    .header {
-      background: white;
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .header h1 {
-      color: #e60000;
-      margin-bottom: 20px;
-    }
-    
-    .info-grid {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 12px;
-      align-items: center;
-    }
-    
-    .info-label {
-      font-weight: 600;
-      color: #555;
-    }
-    
-    .info-value {
-      padding: 8px 12px;
-      background: #f8f8f8;
-      border-radius: 5px;
-      font-family: monospace;
-    }
-    
-    .actions {
-      margin-top: 20px;
-      display: flex;
-      gap: 10px;
-    }
-    
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.3s;
-    }
-    
-    .btn-danger {
-      background: #e60000;
-      color: white;
-    }
-    
-    .btn-danger:hover {
-      background: #b30000;
-    }
-    
-    .btn-primary {
-      background: #0066cc;
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      background: #0052a3;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #888;
-    }
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; }
+    .loader { color: #666; }
+    button { padding: 10px 20px; background: #e60000; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #b30000; }
   </style>
 </head>
 <body>
-  <div id="loading" class="loading">Vérification de votre identité...</div>
-  
-  <div id="content" style="display: none;">
-    <div class="header">
-      <h1>🛡️ Panneau d'administration</h1>
-      
-      <div class="info-grid">
-        <span class="info-label">👤 Nom :</span>
-        <span class="info-value" id="nom">-</span>
-        
-        <span class="info-label">🆔 NIVOL :</span>
-        <span class="info-value" id="nivol">-</span>
-        
-        <span class="info-label">💼 Fonction :</span>
-        <span class="info-value" id="fonction">-</span>
-        
-        <span class="info-label">📧 Email :</span>
-        <span class="info-value" id="uid">-</span>
-      </div>
-      
-      <div class="actions">
-        <button class="btn-primary" onclick="window.location.href='./gestion-inventaire.html'">
-          📦 Gérer l'inventaire
-        </button>
-        <button class="btn-primary" onclick="window.location.href='./documents.html'">
-          📄 Gérer les documents
-        </button>
-        <button class="btn-danger" id="logout-btn">
-          🚪 Déconnexion
-        </button>
-      </div>
-    </div>
-    
-    <!-- Zone pour tes futurs outils -->
-    <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <h2>Tableau de bord</h2>
-      <p>Bienvenue, <strong id="bienvenue-nom"></strong> !</p>
-      <p>Ici, vous pourrez bientôt gérer les inventaires et les documents de l'unité locale d'Embrun.</p>
-    </div>
+  <h1>Thot – Panneau d'administration</h1>
+  <div id="infos-compte" class="card" style="display:none;">
+    <p><strong>Nom :</strong> <span id="nom"></span></p>
+    <p><strong>NIVOL :</strong> <span id="nivol"></span></p>
+    <p><strong>Fonction :</strong> <span id="fonction"></span></p>
+    <button id="logout-btn">Se déconnecter (session supprimée)</button>
   </div>
+  <div id="loader" class="loader">Vérification de votre identité...</div>
+  <div id="error" class="error" style="display:none; color:red;"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -144,70 +40,80 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Éléments UI
-    const loadingEl = document.getElementById('loading');
-    const contentEl = document.getElementById('content');
-    const nomEl = document.getElementById('nom');
-    const nivolEl = document.getElementById('nivol');
-    const fonctionEl = document.getElementById('fonction');
-    const uidEl = document.getElementById('uid');
-    const bienvenueNom = document.getElementById('bienvenue-nom');
+    const infosDiv = document.getElementById('infos-compte');
+    const loaderDiv = document.getElementById('loader');
+    const errorDiv = document.getElementById('error');
+    const nomSpan = document.getElementById('nom');
+    const nivolSpan = document.getElementById('nivol');
+    const fonctionSpan = document.getElementById('fonction');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Vérification de l'authentification
+    // Vérification de l'état de connexion
     onAuthStateChanged(auth, async (user) => {
-      // Pas connecté
       if (!user) {
+        // Pas connecté → retour connexion
         window.location.href = './login.html';
         return;
       }
 
-      // Récupérer le rôle depuis localStorage
-      const role = localStorage.getItem('userRole');
-      
-      // Mauvais rôle ou rôle absent
-      if (role !== 'admin') {
+      // Récupérer le NIVOL depuis le profil Auth
+      const nivol = user.displayName;
+      if (!nivol) {
+        // Pas de NIVOL stocké → anomalie
         await deleteUser(user).catch(() => {});
-        localStorage.clear();
         window.location.href = './login.html';
         return;
       }
 
-      // ✅ Utilisateur connecté et autorisé
-      // Récupération UNIFIÉE de toutes les infos
-      const nom = user.displayName || 'Inconnu';
-      const nivol = user.photoURL || 'Non disponible';  // NIVOL stocké comme identifiant principal
-      const uid = user.uid;  // ID Firebase (optionnel)
-      const fonction = localStorage.getItem('userFunction') || 'Non définie';
+      try {
+        // Vérifier dans Firestore que c'est bien un admin
+        const adminSnap = await getDoc(doc(db, 'A', nivol));
+        
+        if (!adminSnap.exists()) {
+          // N'est pas admin → expulsion
+          await deleteUser(user).catch(() => {});
+          window.location.href = './login.html';
+          return;
+        }
 
-      // Affichage
-      nomEl.textContent = nom;
-      nivolEl.textContent = nivol;
-      uidEl.textContent = uid;
-      fonctionEl.textContent = fonction;
-      bienvenueNom.textContent = nom;
+        // Récupérer les données depuis Firestore (source unique de vérité)
+        const data = adminSnap.data();
+        
+        // Afficher les informations
+        nomSpan.textContent = data.I || 'Inconnu';
+        nivolSpan.textContent = nivol;
+        fonctionSpan.textContent = data.F || 'Non définie';
 
-      // Afficher le contenu, masquer le loading
-      loadingEl.style.display = 'none';
-      contentEl.style.display = 'block';
+        // Afficher la carte et cacher le loader
+        loaderDiv.style.display = 'none';
+        infosDiv.style.display = 'block';
+
+      } catch (error) {
+        console.error('Erreur de vérification:', error);
+        loaderDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Erreur lors de la vérification de vos droits.';
+        
+        // Nettoyer la session en cas d'erreur
+        if (auth.currentUser) {
+          await deleteUser(auth.currentUser).catch(() => {});
+        }
+        setTimeout(() => { window.location.href = './login.html'; }, 2000);
+      }
     });
 
-    // Déconnexion avec suppression du compte anonyme
+    // Déconnexion = suppression du compte anonyme
     logoutBtn.addEventListener('click', async () => {
-      if (!confirm('Voulez-vous vraiment vous déconnecter ? Votre session sera supprimée.')) {
-        return;
-      }
-      
       const user = auth.currentUser;
       if (user) {
         try {
-          await deleteUser(user);           // Supprime définitivement le compte anonyme
-          localStorage.clear();             // Nettoie tout le localStorage
-          window.location.href = './login.html';  // Retour à la connexion
+          await deleteUser(user);  // Supprime définitivement le compte anonyme
+          window.location.href = './login.html';
         } catch (error) {
-          console.error('Erreur lors de la déconnexion :', error);
-          alert('Erreur lors de la déconnexion. Veuillez réessayer.');
+          console.error('Erreur déconnexion:', error);
+          alert('Erreur lors de la déconnexion.');
         }
       }
     });
