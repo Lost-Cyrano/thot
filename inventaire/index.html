@@ -227,6 +227,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex: 1;
+      min-width: 0;
     }
 
     .check-circle {
@@ -252,6 +254,7 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0;
     }
 
     .obj-name {
@@ -268,11 +271,35 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      flex-wrap: wrap;
     }
 
     .date-ok { color: var(--ok); }
     .date-warning { color: var(--warning); font-weight: 600; }
     .date-danger { color: var(--danger); font-weight: 700; }
+
+    .btn-update-date {
+      font-size: 0.7rem;
+      background: transparent;
+      border: 1px solid #ccc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-update-date:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+
+    .obj-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
 
     .obj-quantity {
       font-weight: 600;
@@ -381,16 +408,18 @@
     }
 
     .modal h3 { font-size: 1.1rem; }
+    .modal input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
     .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     .btn-cancel { background: #eee; color: #333; }
     .btn-confirm { background: var(--ok); color: #fff; }
+    .btn-save { background: var(--red); color: #fff; }
     .btn-danger { background: #c00; color: #fff; }
 
     @media (max-width: 480px) {
       .obj-item { flex-direction: column; align-items: flex-start; }
-      .obj-quantity { align-self: flex-end; }
+      .obj-right { align-self: flex-end; }
     }
   </style>
 </head>
@@ -438,7 +467,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, collection, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -457,11 +486,8 @@
     let currentNivol = null;
     let currentInventory = null;
     let inventoryData = null;
-    let checkedItems = {}; // { "cat|objName": true }
-    let userRole = null; // 'admin' ou 'user'
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedInventory = urlParams.get('inv');
+    let checkedItems = {};
+    let userRole = null;
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -469,6 +495,26 @@
     const progressContainer = document.getElementById('progress-container');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
+
+    // Initialiser les paramètres d'URL
+    function getUrlParams() {
+      return new URLSearchParams(window.location.search);
+    }
+
+    function updateUrlParam(key, value) {
+      const params = getUrlParams();
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    function getInvFromUrl() {
+      return getUrlParams().get('inv');
+    }
 
     // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
@@ -483,7 +529,7 @@
         return;
       }
 
-      // Déterminer le rôle (admin ou user)
+      // Déterminer le rôle
       try {
         const adminSnap = await getDoc(doc(db, 'A', currentNivol));
         if (adminSnap.exists()) {
@@ -499,15 +545,18 @@
       }
 
       // Configurer le bouton retour
-      if (userRole === 'admin') {
-        btnBack.addEventListener('click', () => { window.location.href = './admin.html'; });
-      } else {
-        btnBack.addEventListener('click', () => { window.location.href = './user.html'; });
-      }
+      btnBack.onclick = () => {
+        if (userRole === 'admin') {
+          window.location.href = './admin.html';
+        } else {
+          window.location.href = './user.html';
+        }
+      };
 
       // Charger le contenu
-      if (selectedInventory) {
-        await loadInventory(selectedInventory);
+      const invParam = getInvFromUrl();
+      if (invParam) {
+        await loadInventory(invParam);
       } else {
         await showInventoryList();
       }
@@ -541,7 +590,6 @@
           snap.forEach(docSnap => {
             const data = docSnap.data();
             const nom = data.nom || docSnap.id;
-            // Calculer le statut
             const totalObjets = countObjets(data.objets || {});
             const statusText = data.finalise ? '✅ Finalisé' : `${totalObjets} objet(s)`;
             html += `
@@ -561,7 +609,8 @@
       document.querySelectorAll('.inventory-card').forEach(card => {
         card.addEventListener('click', () => {
           const invId = card.dataset.inv;
-          window.location.href = `./inventaire.html?inv=${encodeURIComponent(invId)}`;
+          updateUrlParam('inv', invId);
+          loadInventory(invId);
         });
       });
     }
@@ -596,7 +645,6 @@
         inventoryData = docSnap.data();
         currentInventory = invId;
 
-        // Initialiser les checks depuis les données (si l'inventaire a déjà été commencé)
         checkedItems = {};
         if (inventoryData.checks) {
           inventoryData.checks.forEach(key => {
@@ -639,7 +687,6 @@
       return 'date-ok';
     }
 
-    // Vérifier si une catégorie est entièrement cochée
     function isCategoryFullyChecked(cat, items) {
       return Object.keys(items).every(objName => checkedItems[`${cat}|${objName}`]);
     }
@@ -655,16 +702,16 @@
       const totalObjets = allObjets.length;
       const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
 
-      // Mise à jour de la barre de progression
+      // Barre de progression
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
       document.getElementById('progress-text').textContent = `Progression : ${checkedCount} / ${totalObjets}`;
       document.getElementById('progress-percent').textContent = `${percent}%`;
       document.getElementById('progress-bar').style.width = `${percent}%`;
 
-      // Mise à jour du bouton "Chercher"
+      // Bouton Chercher
       const btnFindMissing = document.getElementById('btn-find-missing');
       const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
-      
+
       if (missingObjets.length === 0) {
         btnFindMissing.classList.add('disabled');
         btnFindMissing.textContent = '✅ Aucun objet manquant';
@@ -675,226 +722,10 @@
         btnFindMissing.disabled = false;
       }
 
-      // Affichage si déjà finalisé
+      // Affichage si finalisé
       if (inventoryData.finalise) {
         contentEl.innerHTML = `
           <div class="finalize-message">
             ✅ Cet inventaire a été finalisé le ${new Date(inventoryData.finaliseDate || '').toLocaleString('fr-FR')}
             ${inventoryData.finalisePar ? `<br>Par : ${inventoryData.finalisePar}` : ''}
-            ${inventoryData.manquants && inventoryData.manquants.length > 0 
-              ? `<br><br>⚠️ Objets manquants lors de la finalisation :<br>${inventoryData.manquants.join('<br>')}` 
-              : '<br><br>🎉 Aucun objet manquant !'}
-          </div>
-        `;
-        // Cacher les boutons d'action si finalisé
-        document.getElementById('btn-finalize').style.display = 'none';
-        document.getElementById('btn-find-missing').style.display = 'none';
-        return;
-      } else {
-        document.getElementById('btn-finalize').style.display = '';
-        document.getElementById('btn-find-missing').style.display = '';
-      }
-
-      let html = '';
-
-      if (categories.length === 0) {
-        html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
-      }
-
-      categories.forEach(cat => {
-        const items = objets[cat];
-        const itemKeys = Object.keys(items);
-        const catFullyChecked = isCategoryFullyChecked(cat, items);
-        const catCheckedCount = itemKeys.filter(objName => checkedItems[`${cat}|${objName}`]).length;
-
-        html += `
-          <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/\s+/g, '-')}">
-            <div class="section-header">
-              <span>
-                <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
-                ${cat}
-              </span>
-              <span style="font-size:0.85rem;color:var(--text-light);">
-                ${catCheckedCount}/${itemKeys.length}
-              </span>
-            </div>
-            <ul class="obj-list">
-        `;
-
-        itemKeys.forEach(objName => {
-          const obj = items[objName];
-          const q = obj.q || 0;
-          const d = obj.d || null;
-          const checkKey = `${cat}|${objName}`;
-          const isChecked = checkedItems[checkKey];
-
-          html += `
-            <li class="obj-item ${isChecked ? 'checked' : ''}" 
-                data-cat="${cat}" data-obj="${objName}" 
-                id="obj-${cat.replace(/\s+/g, '-')}-${objName.replace(/\s+/g, '-')}">
-              <div class="obj-left">
-                <div class="check-circle">${isChecked ? '✓' : ''}</div>
-                <div class="obj-info">
-                  <span class="obj-name">${objName}</span>
-                  ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : ''}
-                </div>
-              </div>
-              <span class="obj-quantity">×${q}</span>
-            </li>
-          `;
-        });
-
-        html += `
-            </ul>
-          </div>
-        `;
-      });
-
-      contentEl.innerHTML = html;
-
-      // Événements de clic sur les objets
-      document.querySelectorAll('.obj-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const cat = item.dataset.cat;
-          const objName = item.dataset.obj;
-          toggleCheck(cat, objName);
-        });
-      });
-    }
-
-    // Toggle check d'un objet
-    async function toggleCheck(cat, objName) {
-      // Ne pas permettre de modifier si finalisé
-      if (inventoryData.finalise) return;
-
-      const checkKey = `${cat}|${objName}`;
-      
-      if (checkedItems[checkKey]) {
-        // Décocher
-        delete checkedItems[checkKey];
-      } else {
-        // Cocher
-        checkedItems[checkKey] = true;
-      }
-
-      // Sauvegarder dans Firestore
-      try {
-        const allChecks = Object.keys(checkedItems);
-        await updateDoc(doc(db, 'I', currentInventory), {
-          checks: allChecks
-        });
-        // Mise à jour locale
-        inventoryData.checks = allChecks;
-        renderInventory();
-      } catch(e) {
-        // Rollback local
-        if (checkedItems[checkKey]) {
-          delete checkedItems[checkKey];
-        } else {
-          checkedItems[checkKey] = true;
-        }
-        alert('Erreur lors de la sauvegarde : ' + e.message);
-      }
-    }
-
-    // Finaliser l'inventaire
-    document.getElementById('btn-finalize').addEventListener('click', () => {
-      if (inventoryData.finalise) return;
-
-      const allObjets = getAllObjets(inventoryData.objets || {});
-      const manquants = allObjets
-        .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
-        .map(o => `${o.objName} (${o.cat})`);
-
-      const message = manquants.length > 0
-        ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :\n\n${manquants.join('\n')}\n\nConfirmer la finalisation ?`
-        : '🎉 Tous les objets ont été vérifiés !\n\nConfirmer la finalisation de l\'inventaire ?';
-
-      modalContent.innerHTML = `
-        <h3>Finaliser l'inventaire</h3>
-        <p style="white-space:pre-line;">${message}</p>
-        <div class="modal-actions">
-          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
-          <button class="btn btn-confirm" id="modal-confirm">Finaliser</button>
-        </div>
-      `;
-      modalOverlay.style.display = 'flex';
-
-      document.getElementById('modal-cancel').addEventListener('click', closeModal);
-      document.getElementById('modal-confirm').addEventListener('click', async () => {
-        try {
-          await updateDoc(doc(db, 'I', currentInventory), {
-            finalise: true,
-            finaliseDate: new Date().toISOString(),
-            finalisePar: currentNivol,
-            manquants: manquants,
-            checks: Object.keys(checkedItems)
-          });
-          await addLog(`Finalisation de l'inventaire (${manquants.length} manquants)`);
-          inventoryData.finalise = true;
-          inventoryData.finaliseDate = new Date().toISOString();
-          inventoryData.finalisePar = currentNivol;
-          inventoryData.manquants = manquants;
-          closeModal();
-          renderInventory();
-        } catch(e) {
-          alert('Erreur : ' + e.message);
-        }
-      });
-    });
-
-    // Chercher objet manquant
-    document.getElementById('btn-find-missing').addEventListener('click', () => {
-      if (inventoryData.finalise) return;
-
-      const allObjets = getAllObjets(inventoryData.objets || {});
-      const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
-
-      if (missing.length === 0) return;
-
-      const firstMissing = missing[0];
-      const elementId = `obj-${firstMissing.cat.replace(/\s+/g, '-')}-${firstMissing.objName.replace(/\s+/g, '-')}`;
-      const element = document.getElementById(elementId);
-
-      if (element) {
-        // Retirer l'animation précédente
-        document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
-        
-        // Scroller vers l'élément
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Ajouter l'animation de surbrillance
-        element.classList.add('missing-highlight');
-        setTimeout(() => element.classList.remove('missing-highlight'), 3000);
-      }
-    });
-
-    // Ajouter un log
-    async function addLog(action) {
-      const log = {
-        n: currentNivol,
-        t: new Date().toISOString(),
-        a: action
-      };
-      try {
-        const snap = await getDoc(doc(db, 'I', currentInventory));
-        const currentLogs = snap.data().logs || [];
-        currentLogs.push(log);
-        const trimmed = currentLogs.slice(-50);
-        await updateDoc(doc(db, 'I', currentInventory), { logs: trimmed });
-      } catch(e) {
-        console.error('Log error:', e);
-      }
-    }
-
-    function closeModal() {
-      modalOverlay.style.display = 'none';
-      modalContent.innerHTML = '';
-    }
-
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeModal();
-    });
-  </script>
-</body>
-</html>
+            ${inventoryData.manqua
