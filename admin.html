@@ -5,19 +5,127 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Administration</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; }
-    button { padding: 10px 20px; background: #e60000; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #b30000; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, sans-serif; 
+      max-width: 800px; 
+      margin: 40px auto; 
+      padding: 0 20px; 
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      color: #e60000;
+      margin-bottom: 20px;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .info-value {
+      padding: 8px 12px;
+      background: #f8f8f8;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+    
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    
+    .btn-danger {
+      background: #e60000;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #b30000;
+    }
+    
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
   </style>
 </head>
 <body>
-  <h1>Thot – Panneau d'administration</h1>
-  <div class="card" id="infos-compte">
-    <p><strong>Nom :</strong> <span id="nom"></span></p>
-    <p><strong>NIVOL :</strong> <span id="nivol"></span></p>
-    <p><strong>Fonction :</strong> <span id="fonction"></span></p>
-    <button id="logout-btn">Se déconnecter (supprimer le compte)</button>
+  <div id="loading" class="loading">Vérification de votre identité...</div>
+  
+  <div id="content" style="display: none;">
+    <div class="header">
+      <h1>🛡️ Panneau d'administration</h1>
+      
+      <div class="info-grid">
+        <span class="info-label">👤 Nom :</span>
+        <span class="info-value" id="nom">-</span>
+        
+        <span class="info-label">🆔 NIVOL :</span>
+        <span class="info-value" id="nivol">-</span>
+        
+        <span class="info-label">💼 Fonction :</span>
+        <span class="info-value" id="fonction">-</span>
+        
+        <span class="info-label">📧 Email :</span>
+        <span class="info-value" id="uid">-</span>
+      </div>
+      
+      <div class="actions">
+        <button class="btn-primary" onclick="window.location.href='./gestion-inventaire.html'">
+          📦 Gérer l'inventaire
+        </button>
+        <button class="btn-primary" onclick="window.location.href='./documents.html'">
+          📄 Gérer les documents
+        </button>
+        <button class="btn-danger" id="logout-btn">
+          🚪 Déconnexion
+        </button>
+      </div>
+    </div>
+    
+    <!-- Zone pour tes futurs outils -->
+    <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h2>Tableau de bord</h2>
+      <p>Bienvenue, <strong id="bienvenue-nom"></strong> !</p>
+      <p>Ici, vous pourrez bientôt gérer les inventaires et les documents de l'unité locale d'Embrun.</p>
+    </div>
   </div>
 
   <script type="module">
@@ -37,51 +145,69 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Éléments de la page
-    const nomSpan = document.getElementById('nom');
-    const nivolSpan = document.getElementById('nivol');
-    const fonctionSpan = document.getElementById('fonction');
+    // Éléments UI
+    const loadingEl = document.getElementById('loading');
+    const contentEl = document.getElementById('content');
+    const nomEl = document.getElementById('nom');
+    const nivolEl = document.getElementById('nivol');
+    const fonctionEl = document.getElementById('fonction');
+    const uidEl = document.getElementById('uid');
+    const bienvenueNom = document.getElementById('bienvenue-nom');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Vérification de l'état de connexion
-    onAuthStateChanged(auth, (user) => {
+    // Vérification de l'authentification
+    onAuthStateChanged(auth, async (user) => {
+      // Pas connecté
       if (!user) {
-        // Pas connecté → retour à la connexion
         window.location.href = './login.html';
         return;
       }
 
-      // Vérifier le rôle stocké dans le localStorage
+      // Récupérer le rôle depuis localStorage
       const role = localStorage.getItem('userRole');
+      
+      // Mauvais rôle ou rôle absent
       if (role !== 'admin') {
-        // N'est pas administrateur → on nettoie et redirige
-        deleteUser(user).catch(() => {});
+        await deleteUser(user).catch(() => {});
         localStorage.clear();
         window.location.href = './login.html';
         return;
       }
 
-      // L'utilisateur est connecté et a le rôle admin → affichage des infos
+      // ✅ Utilisateur connecté et autorisé
+      // Récupération UNIFIÉE de toutes les infos
       const nom = user.displayName || 'Inconnu';
-      const nivol = localStorage.getItem('nivol') || 'Non disponible';
+      const nivol = user.photoURL || 'Non disponible';  // NIVOL stocké comme identifiant principal
+      const uid = user.uid;  // ID Firebase (optionnel)
       const fonction = localStorage.getItem('userFunction') || 'Non définie';
 
-      nomSpan.textContent = nom;
-      nivolSpan.textContent = nivol;
-      fonctionSpan.textContent = fonction;
+      // Affichage
+      nomEl.textContent = nom;
+      nivolEl.textContent = nivol;
+      uidEl.textContent = uid;
+      fonctionEl.textContent = fonction;
+      bienvenueNom.textContent = nom;
+
+      // Afficher le contenu, masquer le loading
+      loadingEl.style.display = 'none';
+      contentEl.style.display = 'block';
     });
 
     // Déconnexion avec suppression du compte anonyme
     logoutBtn.addEventListener('click', async () => {
+      if (!confirm('Voulez-vous vraiment vous déconnecter ? Votre session sera supprimée.')) {
+        return;
+      }
+      
       const user = auth.currentUser;
       if (user) {
         try {
-          await deleteUser(user);           // supprime définitivement le compte anonyme
-          localStorage.clear();             // nettoie les données locales
-          window.location.href = './login.html';  // retour à la connexion
+          await deleteUser(user);           // Supprime définitivement le compte anonyme
+          localStorage.clear();             // Nettoie tout le localStorage
+          window.location.href = './login.html';  // Retour à la connexion
         } catch (error) {
-          console.error('Erreur lors de la suppression du compte :', error);
-          alert('Impossible de supprimer le compte. Veuillez réessayer.');
+          console.error('Erreur lors de la déconnexion :', error);
+          alert('Erreur lors de la déconnexion. Veuillez réessayer.');
         }
       }
     });
