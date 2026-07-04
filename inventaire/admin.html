@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thot – Gestion des inventaires</title>
+  <style>
+    :root {
+      --red: #e60000;
+      --red-hover: #b30000;
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #333;
+      --text-light: #666;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .header h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover { background: #eee; }
+
+    /* Actions */
+    .actions-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn-primary {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--red-hover); }
+
+    /* Grille inventaires */
+    .inv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .inv-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .inv-card:hover { border-color: var(--red); }
+
+    .inv-card-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      word-break: break-word;
+    }
+
+    .inv-card-id {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    .inv-card-stats {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .inv-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: 1.5px solid #ccc;
+      background: #fff;
+      transition: all 0.2s;
+      flex: 1;
+      text-align: center;
+    }
+
+    .btn-sm:hover { background: #f5f5f5; }
+    .btn-sm.edit { border-color: #f5a623; color: #f5a623; }
+    .btn-sm.edit:hover { background: #fff8f0; }
+    .btn-sm.delete { border-color: var(--red); color: var(--red); }
+    .btn-sm.delete:hover { background: #fff0f0; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border);
+    }
+
+    .empty-state p { margin-bottom: 12px; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal h3 { font-size: 1.1rem; }
+
+    .modal label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+
+    .modal input, .modal textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+
+    .modal textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .modal .hint {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    .modal .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-cancel { background: #eee; color: #333; }
+    .btn-save { background: var(--red); color: #fff; }
+    .btn-danger { background: #c00; color: #fff; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .header { flex-direction: column; align-items: flex-start; }
+      .inv-card-actions { flex-direction: column; }
+      .btn-sm { flex: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>📋 Gestion des inventaires</h1>
+      <button class="btn-back" onclick="window.location.href='./admin.html'">← Administration</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar">
+      <button class="btn-primary" id="btn-create">+ Créer un inventaire</button>
+    </div>
+
+    <!-- Liste des inventaires -->
+    <div id="inventory-grid"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none;">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
+      authDomain: "crf--thot.firebaseapp.com",
+      projectId: "crf--thot",
+      storageBucket: "crf--thot.firebasestorage.app",
+      messagingSenderId: "242106713414",
+      appId: "1:242106713414:web:76f4c6977264539ef85147",
+      measurementId: "G-NF6W8FS69P"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const inventoryGrid = document.getElementById('inventory-grid');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+
+    let inventories = [];
+
+    // Charger les inventaires au démarrage
+    async function loadInventories() {
+      try {
+        const snap = await getDocs(collection(db, 'I'));
+        inventories = [];
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const objets = data.objets || {};
+          let totalObjets = 0;
+          let categories = 0;
+          for (const cat of Object.keys(objets)) {
+            categories++;
+            totalObjets += Object.keys(objets[cat]).length;
+          }
+          inventories.push({
+            id: docSnap.id,
+            nom: data.nom || docSnap.id,
+            objets: objets,
+            logs: data.logs || [],
+            stats: { categories, totalObjets }
+          });
+        });
+        renderInventories();
+      } catch (e) {
+        console.error(e);
+        inventoryGrid.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement.</p></div>';
+      }
+    }
+
+    function renderInventories() {
+      if (inventories.length === 0) {
+        inventoryGrid.innerHTML = `
+          <div class="empty-state">
+            <p>Aucun inventaire pour le moment.</p>
+            <button class="btn-primary" onclick="document.getElementById('btn-create').click()">+ Créer le premier inventaire</button>
+          </div>
+        `;
+        return;
+      }
+
+      inventoryGrid.innerHTML = '<div class="inv-grid">' + inventories.map(inv => `
+        <div class="inv-card">
+          <div class="inv-card-name">📋 ${escapeHtml(inv.nom)}</div>
+          <div class="inv-card-id">ID : ${escapeHtml(inv.id)}</div>
+          <div class="inv-card-stats">
+            <span>📁 ${inv.stats.categories} catégorie(s)</span>
+            <span>📦 ${inv.stats.totalObjets} objet(s)</span>
+            <span>📝 ${inv.logs.length} log(s)</span>
+          </div>
+          <div class="inv-card-actions">
+            <button class="btn-sm edit" data-action="edit" data-id="${escapeHtml(inv.id)}">✏️ Modifier</button>
+            <button class="btn-sm delete" data-action="delete" data-id="${escapeHtml(inv.id)}">🗑️ Supprimer</button>
+          </div>
+        </div>
+      `).join('') + '</div>';
+
+      // Attacher les événements
+      document.querySelectorAll('.btn-sm.edit').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+      });
+      document.querySelectorAll('.btn-sm.delete').forEach(btn => {
+        btn.addEventListener('click', () => openDeleteModal(btn.dataset.id));
+      });
+    }
+
+    // Modal Création
+    document.getElementById('btn-create').addEventListener('click', openCreateModal);
+
+    function openCreateModal() {
+      modalContent.innerHTML = `
+        <h3>Créer un inventaire</h3>
+        <div>
+          <label for="modal-id">Identifiant unique</label>
+          <input type="text" id="modal-id" placeholder="ex: lot-a, vpsp, armoire-1">
+          <span class="hint">Pas d'espaces ni de caractères spéciaux. Exemple : "lot-a", "vpsp"</span>
+        </div>
+        <div>
+          <label for="modal-nom">Nom affiché</label>
+          <input type="text" id="modal-nom" placeholder="ex: Lot A, Véhicule VPSP">
+          <span class="hint">Le nom visible dans l'application</span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Créer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const id = document.getElementById('modal-id').value.trim().toLowerCase().replace(/\s+/g, '-');
+        const nom = document.getElementById('modal-nom').value.trim();
+
+        if (!id) return alert("L'identifiant est requis.");
+        if (!/^[a-z0-9_-]+$/.test(id)) return alert("L'identifiant ne doit contenir que des lettres minuscules, chiffres, tirets et underscores.");
+        if (!nom) return alert("Le nom est requis.");
+
+        // Vérifier si l'ID existe déjà
+        const exists = await getDoc(doc(db, 'I', id));
+        if (exists.exists()) return alert("Un inventaire avec cet identifiant existe déjà.");
+
+        try {
+          await setDoc(doc(db, 'I', id), {
+            nom: nom,
+            objets: {},
+            logs: [{
+              n: 'system',
+              t: new Date().toISOString(),
+              a: 'Création de l\'inventaire'
+            }]
+          });
+          closeModal();
+          await loadInventories();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Modal Édition
+    function openEditModal(invId) {
+      const inv = inventories.find(i => i.id === invId);
+      if (!inv) return;
+
+      modalContent.innerHTML = `
+        <h3>Modifier l'inventaire</h3>
+        <div>
+          <label>Identifiant</label>
+          <input type="text" value="${escapeHtml(inv.id)}" disabled style="background:#f5f5f5;color:#999;">
+          <span class="hint">L'identifiant ne peut pas être modifié.</span>
+        </div>
+        <div>
+          <label for="modal-nom">Nom affiché</label>
+          <input type="text" id="modal-nom" value="${escapeHtml(inv.nom)}">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const nom = document.getElementById('modal-nom').value.trim();
+        if (!nom) return alert("Le nom est requis.");
+
+        try {
+          await setDoc(doc(db, 'I', invId), { nom: nom }, { merge: true });
+          // Ajouter un log
+          const snap = await getDoc(doc(db, 'I', invId));
+          const currentLogs = snap.data().logs || [];
+          currentLogs.push({
+            n: 'system',
+            t: new Date().toISOString(),
+            a: `Renommage : "${inv.nom}" → "${nom}"`
+          });
+          await setDoc(doc(db, 'I', invId), { logs: currentLogs.slice(-50) }, { merge: true });
+
+          closeModal();
+          await loadInventories();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    // Modal Suppression
+    function openDeleteModal(invId) {
+      const inv = inventories.find(i => i.id === invId);
+      if (!inv) return;
+
+      const totalObjets = inv.stats.totalObjets;
+
+      modalContent.innerHTML = `
+        <h3>Supprimer l'inventaire</h3>
+        <p>Êtes-vous sûr de vouloir supprimer définitivement <strong>${escapeHtml(inv.nom)}</strong> ?</p>
+        ${totalObjets > 0 ? `<p style="color:var(--red);">⚠️ Cet inventaire contient <strong>${totalObjets} objet(s)</strong> répartis dans <strong>${inv.stats.categories} catégorie(s)</strong>. Tout sera perdu.</p>` : ''}
+        <div>
+          <label for="modal-confirm">Tapez <strong>${escapeHtml(inv.id)}</strong> pour confirmer :</label>
+          <input type="text" id="modal-confirm" placeholder="${escapeHtml(inv.id)}">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-danger" id="modal-delete" disabled>Supprimer</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+
+      const confirmInput = document.getElementById('modal-confirm');
+      const deleteBtn = document.getElementById('modal-delete');
+
+      confirmInput.addEventListener('input', () => {
+        deleteBtn.disabled = confirmInput.value.trim() !== invId;
+      });
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      deleteBtn.addEventListener('click', async () => {
+        if (confirmInput.value.trim() !== invId) return;
+
+        try {
+          await deleteDoc(doc(db, 'I', invId));
+          closeModal();
+          await loadInventories();
+        } catch (e) {
+          alert('Erreur : ' + e.message);
+        }
+      });
+    }
+
+    function closeModal() {
+      modalOverlay.style.display = 'none';
+      modalContent.innerHTML = '';
+    }
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Chargement initial
+    loadInventories();
+  </script>
+</body>
+</html>
