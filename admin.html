@@ -39,7 +39,6 @@
       gap: 16px;
     }
 
-    /* Header identité */
     .identity-bar {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -75,20 +74,10 @@
       flex-shrink: 0;
     }
 
-    .identity-text .name {
-      font-weight: 600;
-    }
+    .identity-text .name { font-weight: 600; }
+    .identity-text .details { color: var(--text-light); font-size: 0.85rem; }
 
-    .identity-text .details {
-      color: var(--text-light);
-      font-size: 0.85rem;
-    }
-
-    .header-buttons {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .header-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn-logout {
       background: transparent;
@@ -102,11 +91,7 @@
       transition: all 0.2s;
       white-space: nowrap;
     }
-
-    .btn-logout:hover {
-      background: var(--red);
-      color: #fff;
-    }
+    .btn-logout:hover { background: var(--red); color: #fff; }
 
     .btn-inventory {
       background: var(--red);
@@ -120,12 +105,8 @@
       transition: all 0.2s;
       white-space: nowrap;
     }
+    .btn-inventory:hover { background: var(--red-hover); }
 
-    .btn-inventory:hover {
-      background: var(--red-hover);
-    }
-
-    /* Sections */
     .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -145,10 +126,7 @@
       gap: 10px;
     }
 
-    .section-header h2 {
-      font-size: 1rem;
-      font-weight: 600;
-    }
+    .section-header h2 { font-size: 1rem; font-weight: 600; }
 
     .badge {
       background: var(--red);
@@ -158,20 +136,10 @@
       font-size: 0.8rem;
       font-weight: 600;
     }
+    .badge.warning { background: var(--warning); }
+    .badge.danger { background: var(--danger); }
 
-    .badge.warning {
-      background: var(--warning);
-    }
-
-    .badge.danger {
-      background: var(--danger);
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn-sm {
       background: transparent;
@@ -183,25 +151,11 @@
       transition: all 0.2s;
       white-space: nowrap;
     }
+    .btn-sm:hover { background: #eee; border-color: #aaa; }
+    .btn-sm.add { border-color: var(--red); color: var(--red); }
+    .btn-sm.add:hover { background: var(--red); color: #fff; }
 
-    .btn-sm:hover {
-      background: #eee;
-      border-color: #aaa;
-    }
-
-    .btn-sm.add {
-      border-color: var(--red);
-      color: var(--red);
-    }
-
-    .btn-sm.add:hover {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .list {
-      list-style: none;
-    }
+    .list { list-style: none; }
 
     .list-item {
       display: flex;
@@ -214,11 +168,7 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-
-    .list-item:hover {
-      background: #fafafa;
-    }
-
+    .list-item:hover { background: #fafafa; }
     .list-item:last-child { border-bottom: none; }
 
     .user-info {
@@ -242,26 +192,11 @@
       flex-shrink: 0;
       color: #666;
     }
+    .user-avatar.danger { background: #fff0f0; color: var(--danger); }
+    .user-avatar.warning { background: #fff8f0; color: var(--warning); }
 
-    .user-avatar.danger {
-      background: #fff0f0;
-      color: var(--danger);
-    }
-
-    .user-avatar.warning {
-      background: #fff8f0;
-      color: var(--warning);
-    }
-
-    .user-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .user-nivol {
-      color: var(--text-light);
-      font-size: 0.8rem;
-    }
+    .user-name { font-weight: 600; font-size: 0.95rem; }
+    .user-nivol { color: var(--text-light); font-size: 0.8rem; }
 
     .user-func {
       font-size: 0.8rem;
@@ -271,22 +206,10 @@
       color: #555;
       white-space: nowrap;
     }
+    .user-func.danger { background: #fff0f0; color: var(--danger); }
+    .user-func.warning { background: #fff8f0; color: var(--warning); }
 
-    .user-func.danger {
-      background: #fff0f0;
-      color: var(--danger);
-    }
-
-    .user-func.warning {
-      background: #fff8f0;
-      color: var(--warning);
-    }
-
-    .item-actions {
-      display: flex;
-      gap: 6px;
-      flex-shrink: 0;
-    }
+    .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
     .btn-icon {
       background: none;
@@ -297,11 +220,9 @@
       border-radius: 6px;
       transition: background 0.2s;
     }
-
     .btn-icon:hover { background: #f0f0f0; }
     .btn-icon.delete:hover { color: var(--red); background: #fff0f0; }
 
-    /* Bouton Afficher plus */
     .show-more {
       padding: 10px 18px;
       text-align: center;
@@ -312,12 +233,8 @@
       border-top: 1px solid #f0f0f0;
       transition: background 0.2s;
     }
+    .show-more:hover { background: #fafafa; }
 
-    .show-more:hover {
-      background: #fafafa;
-    }
-
-    /* Modals */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -340,9 +257,7 @@
       flex-direction: column;
       gap: 14px;
     }
-
     .modal h3 { font-size: 1.1rem; }
-
     .modal input {
       width: 100%;
       padding: 10px;
@@ -350,28 +265,13 @@
       border-radius: 8px;
       font-size: 0.95rem;
     }
+    .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
-    .modal .modal-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     .btn-cancel { background: #eee; color: #333; }
     .btn-save { background: var(--red); color: #fff; }
     .btn-danger { background: #c00; color: #fff; }
 
-    /* Responsive */
     @media (max-width: 480px) {
       .identity-bar { flex-direction: column; align-items: flex-start; }
       .header-buttons { width: 100%; justify-content: flex-end; }
@@ -536,6 +436,16 @@
       return lastLog.t || null;
     }
 
+    // Parser une entrée de la liste des manquants
+    // Format: "NomObjet (NomCategorie)"
+    function parseMissingEntry(entry) {
+      const match = entry.match(/^(.+?)\s*\((.+?)\)\s*$/);
+      if (match) {
+        return { nom: match[1].trim(), categorie: match[2].trim() };
+      }
+      return { nom: entry.trim(), categorie: 'Inconnue' };
+    }
+
     let currentAdmin = null;
     let admins = [];
     let users = [];
@@ -572,6 +482,7 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
+    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = './login.html'; return; }
       const nivol = user.displayName;
@@ -643,7 +554,7 @@
           lastVerification: lastVerif
         });
 
-        // Vérifier les objets périmés dans objets
+        // Parcourir les objets pour les périmés
         const objets = data.objets || {};
         Object.keys(objets).forEach(cat => {
           const items = objets[cat];
@@ -670,28 +581,29 @@
           });
         });
 
-        // Charger les manquants depuis la sous-collection "manquants"
+        // Charger la sous-collection "manquants"
         try {
           const manquantsSnap = await getDocs(collection(db, 'I', invId, 'manquants'));
           manquantsSnap.forEach(manqDoc => {
             const manqData = manqDoc.data();
-            const nomComplet = manqDoc.id; // ex: "Compresse Stéril (Tirroire Blanc)"
-            // Extraire le nom et la catégorie du format "Nom (Catégorie)"
-            const match = nomComplet.match(/^(.+?)\s*\((.+?)\)\s*$/);
-            const objName = match ? match[1].trim() : nomComplet;
-            const categorie = match ? match[2].trim() : 'Inconnue';
-
-            missingItems.push({
-              id: manqDoc.id,
-              nom: objName,
-              categorie: categorie,
-              inventaireId: invId,
-              inventaireNom: invName,
-              fullName: nomComplet
-            });
+            // Le document peut contenir un champ "liste" (array) ou directement être une liste
+            const liste = manqData.liste || manqData.items || [];
+            if (Array.isArray(liste)) {
+              liste.forEach(entry => {
+                const parsed = parseMissingEntry(entry);
+                missingItems.push({
+                  nom: parsed.nom,
+                  categorie: parsed.categorie,
+                  inventaireId: invId,
+                  inventaireNom: invName,
+                  manquantDocId: manqDoc.id,
+                  entryOriginal: entry
+                });
+              });
+            }
           });
         } catch(e) {
-          console.log(`Pas de sous-collection manquants pour ${invId}`);
+          console.log(`Pas de sous-collection manquants pour ${invId}`, e);
         }
       }
 
@@ -774,7 +686,7 @@
               <span class="user-func warning">Manquant</span>
             </div>
             <div class="item-actions">
-              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-manq-id="${item.id}">✅</button>
+              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-manqdoc="${item.manquantDocId}" data-entry="${item.entryOriginal}">✅</button>
             </div>
           `;
 
@@ -785,27 +697,56 @@
 
           li.querySelector('[data-action="found"]').addEventListener('click', async (e) => {
             e.stopPropagation();
-            await markAsFound(item.inventaireId, item.id);
+            await markAsFound(item.inventaireId, item.manquantDocId, item.entryOriginal);
           });
 
           listEl.appendChild(li);
         });
     }
 
-    async function markAsFound(invId, manqDocId) {
+    async function markAsFound(invId, manqDocId, entryToRemove) {
       try {
-        // Supprimer le document de la sous-collection manquants
-        await deleteDoc(doc(db, 'I', invId, 'manquants', manqDocId));
+        const manqRef = doc(db, 'I', invId, 'manquants', manqDocId);
+        const manqSnap = await getDoc(manqRef);
+
+        if (!manqSnap.exists()) {
+          alert('Document manquant introuvable.');
+          return;
+        }
+
+        const data = manqSnap.data();
+        // Trouver le champ qui contient l'array
+        let listeField = 'liste';
+        let liste = data.liste;
+        if (!liste) { listeField = 'items'; liste = data.items; }
+        if (!liste) { listeField = 'manquants'; liste = data.manquants; }
+
+        if (!Array.isArray(liste)) {
+          alert('Format de document manquant inattendu.');
+          return;
+        }
+
+        // Filtrer pour enlever l'entrée
+        const newListe = liste.filter(entry => entry !== entryToRemove);
+
+        if (newListe.length === 0) {
+          // Supprimer le document s'il est vide
+          await deleteDoc(manqRef);
+        } else {
+          // Mettre à jour avec la liste filtrée
+          await updateDoc(manqRef, { [listeField]: newListe });
+        }
 
         // Ajouter un log dans l'inventaire
         const invRef = doc(db, 'I', invId);
         const invSnap = await getDoc(invRef);
         if (invSnap.exists()) {
-          const currentLogs = invSnap.data().logs || [];
+          const invData = invSnap.data();
+          const currentLogs = invData.logs || [];
           currentLogs.push({
             n: currentAdmin.nivol,
             t: new Date().toISOString(),
-            a: `Objet retrouve : ${manqDocId}`
+            a: `Objet retrouve : ${entryToRemove}`
           });
           await updateDoc(invRef, { logs: currentLogs.slice(-50) });
         }
