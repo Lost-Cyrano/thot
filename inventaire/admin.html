@@ -598,7 +598,7 @@
       if (!currentInventoryData) return;
 
       const objets = currentInventoryData.objets || {};
-      const categories = Object.keys(objets);
+      const categories = Object.keys(objets).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base' }));;
 
       let html = '';
 
@@ -608,7 +608,7 @@
 
       categories.forEach(cat => {
         const items = objets[cat];
-        const itemKeys = Object.keys(items);
+        const itemKeys = Object.keys(items).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base' }));;
 
         html += `
           <div class="section">
