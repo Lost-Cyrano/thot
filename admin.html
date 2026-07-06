@@ -529,11 +529,9 @@
       return Math.ceil((date - now) / (1000 * 60 * 60 * 24));
     }
 
-    // Trouver la dernière date de vérification à partir des logs
     function getLastVerificationDate(data) {
       const logs = data.logs || [];
       if (logs.length === 0) return null;
-      // Prendre le dernier log
       const lastLog = logs[logs.length - 1];
       return lastLog.t || null;
     }
@@ -574,7 +572,6 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = './login.html'; return; }
       const nivol = user.displayName;
@@ -634,7 +631,7 @@
       expiredItems = [];
       missingItems = [];
 
-      invSnap.forEach(docSnap => {
+      for (const docSnap of invSnap.docs) {
         const data = docSnap.data();
         const invId = docSnap.id;
         const invName = data.nom || invId;
@@ -646,9 +643,8 @@
           lastVerification: lastVerif
         });
 
+        // Vérifier les objets périmés dans objets
         const objets = data.objets || {};
-        console.log(`Inventaire ${invId} - objets:`, objets);
-
         Object.keys(objets).forEach(cat => {
           const items = objets[cat];
           if (typeof items !== 'object' || items === null) return;
@@ -657,20 +653,6 @@
             const obj = items[objName];
             if (typeof obj !== 'object' || obj === null) return;
 
-            console.log(`  ${cat} > ${objName}:`, obj);
-
-            // Vérifier si manquant - accepter m: true ou m: "true" ou présence du champ m
-            if (obj.m === true || obj.m === 'true' || obj.m === 1 || obj.m === '1') {
-              console.log(`    => MANQUANT`);
-              missingItems.push({
-                nom: objName,
-                inventaireId: invId,
-                inventaireNom: invName,
-                categorie: cat
-              });
-            }
-
-            // Vérifier la date de péremption
             if (obj.d) {
               const status = getDateStatus(obj.d);
               if (status === 'danger' || status === 'warning') {
@@ -687,10 +669,31 @@
             }
           });
         });
-      });
 
-      console.log('Missing items found:', missingItems.length, missingItems);
-      console.log('Expired items found:', expiredItems.length, expiredItems);
+        // Charger les manquants depuis la sous-collection "manquants"
+        try {
+          const manquantsSnap = await getDocs(collection(db, 'I', invId, 'manquants'));
+          manquantsSnap.forEach(manqDoc => {
+            const manqData = manqDoc.data();
+            const nomComplet = manqDoc.id; // ex: "Compresse Stéril (Tirroire Blanc)"
+            // Extraire le nom et la catégorie du format "Nom (Catégorie)"
+            const match = nomComplet.match(/^(.+?)\s*\((.+?)\)\s*$/);
+            const objName = match ? match[1].trim() : nomComplet;
+            const categorie = match ? match[2].trim() : 'Inconnue';
+
+            missingItems.push({
+              id: manqDoc.id,
+              nom: objName,
+              categorie: categorie,
+              inventaireId: invId,
+              inventaireNom: invName,
+              fullName: nomComplet
+            });
+          });
+        } catch(e) {
+          console.log(`Pas de sous-collection manquants pour ${invId}`);
+        }
+      }
 
       expiredItems.sort((a, b) => a.jours - b.jours);
 
@@ -771,7 +774,7 @@
               <span class="user-func warning">Manquant</span>
             </div>
             <div class="item-actions">
-              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-cat="${item.categorie}" data-obj="${item.nom}">Retrouve</button>
+              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-manq-id="${item.id}">✅</button>
             </div>
           `;
 
@@ -782,42 +785,30 @@
 
           li.querySelector('[data-action="found"]').addEventListener('click', async (e) => {
             e.stopPropagation();
-            await markAsFound(item.inventaireId, item.categorie, item.nom);
+            await markAsFound(item.inventaireId, item.id);
           });
 
           listEl.appendChild(li);
         });
     }
 
-    async function markAsFound(invId, cat, objName) {
+    async function markAsFound(invId, manqDocId) {
       try {
+        // Supprimer le document de la sous-collection manquants
+        await deleteDoc(doc(db, 'I', invId, 'manquants', manqDocId));
+
+        // Ajouter un log dans l'inventaire
         const invRef = doc(db, 'I', invId);
         const invSnap = await getDoc(invRef);
-        if (!invSnap.exists()) return;
-
-        const data = invSnap.data();
-        const objets = data.objets || {};
-
-        // Supprimer le champ 'm' de l'objet
-        if (objets[cat] && objets[cat][objName]) {
-          const updatedObj = { ...objets[cat][objName] };
-          delete updatedObj.m;
-
-          // Reconstruire le chemin
-          const updatePath = `objets.${cat}.${objName}`;
-          await updateDoc(invRef, {
-            [updatePath]: updatedObj
+        if (invSnap.exists()) {
+          const currentLogs = invSnap.data().logs || [];
+          currentLogs.push({
+            n: currentAdmin.nivol,
+            t: new Date().toISOString(),
+            a: `Objet retrouve : ${manqDocId}`
           });
+          await updateDoc(invRef, { logs: currentLogs.slice(-50) });
         }
-
-        // Ajouter un log
-        const currentLogs = data.logs || [];
-        currentLogs.push({
-          n: currentAdmin.nivol,
-          t: new Date().toISOString(),
-          a: `Objet retrouve : ${objName} (${cat})`
-        });
-        await updateDoc(invRef, { logs: currentLogs.slice(-50) });
 
         await loadAllData();
       } catch(e) {
@@ -884,7 +875,7 @@
           if (canModify) {
             const editBtn = document.createElement('button');
             editBtn.className = 'btn-icon';
-            editBtn.textContent = 'Modifier';
+            editBtn.textContent = '✏️';
             editBtn.title = 'Modifier';
             editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('A', a); });
             actionsDiv.appendChild(editBtn);
@@ -892,7 +883,7 @@
           if (canDelete) {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-icon delete';
-            delBtn.textContent = 'Supprimer';
+            delBtn.textContent = '🗑️';
             delBtn.title = 'Supprimer';
             delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('A', a); });
             actionsDiv.appendChild(delBtn);
@@ -930,14 +921,14 @@
           if (canEditAnything()) {
             const editBtn = document.createElement('button');
             editBtn.className = 'btn-icon';
-            editBtn.textContent = 'Modifier';
+            editBtn.textContent = '✏️';
             editBtn.title = 'Modifier';
             editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('U', u); });
             actionsDiv.appendChild(editBtn);
 
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-icon delete';
-            delBtn.textContent = 'Supprimer';
+            delBtn.textContent = '🗑️';
             delBtn.title = 'Supprimer';
             delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('U', u); });
             actionsDiv.appendChild(delBtn);
