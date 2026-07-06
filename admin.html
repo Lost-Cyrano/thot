@@ -282,7 +282,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Barre d'identité -->
     <div class="identity-bar">
       <div class="identity-info">
         <div class="avatar" id="avatar-initial"></div>
@@ -297,7 +296,6 @@
       </div>
     </div>
 
-    <!-- Périmés -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -309,7 +307,6 @@
       <div class="show-more" id="expired-show-more" style="display:none;">Afficher plus</div>
     </div>
 
-    <!-- Manquants -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -321,7 +318,6 @@
       <div class="show-more" id="missing-show-more" style="display:none;">Afficher plus</div>
     </div>
 
-    <!-- Inventaires -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -336,7 +332,6 @@
       <div class="show-more" id="inventory-show-more" style="display:none;">Afficher plus</div>
     </div>
 
-    <!-- Administrateurs -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -349,7 +344,6 @@
       <div class="show-more" id="admin-show-more" style="display:none;">Afficher plus</div>
     </div>
 
-    <!-- Bénévoles -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -363,7 +357,6 @@
     </div>
   </div>
 
-  <!-- Modal -->
   <div class="modal-overlay" id="modal-overlay" style="display:none;">
     <div class="modal" id="modal-content"></div>
   </div>
@@ -436,9 +429,8 @@
       return lastLog.t || null;
     }
 
-    // Parser une entrée de la liste des manquants
-    // Format: "NomObjet (NomCategorie)"
     function parseMissingEntry(entry) {
+      if (typeof entry !== 'string') return { nom: String(entry), categorie: 'Inconnue' };
       const match = entry.match(/^(.+?)\s*\((.+?)\)\s*$/);
       if (match) {
         return { nom: match[1].trim(), categorie: match[2].trim() };
@@ -482,7 +474,6 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = './login.html'; return; }
       const nivol = user.displayName;
@@ -542,7 +533,7 @@
       expiredItems = [];
       missingItems = [];
 
-      for (const docSnap of invSnap.docs) {
+      invSnap.forEach(docSnap => {
         const data = docSnap.data();
         const invId = docSnap.id;
         const invName = data.nom || invId;
@@ -554,7 +545,6 @@
           lastVerification: lastVerif
         });
 
-        // Parcourir les objets pour les périmés
         const objets = data.objets || {};
         Object.keys(objets).forEach(cat => {
           const items = objets[cat];
@@ -581,31 +571,22 @@
           });
         });
 
-        // Charger la sous-collection "manquants"
-        try {
-          const manquantsSnap = await getDocs(collection(db, 'I', invId, 'manquants'));
-          manquantsSnap.forEach(manqDoc => {
-            const manqData = manqDoc.data();
-            // Le document peut contenir un champ "liste" (array) ou directement être une liste
-            const liste = manqData.liste || manqData.items || [];
-            if (Array.isArray(liste)) {
-              liste.forEach(entry => {
-                const parsed = parseMissingEntry(entry);
-                missingItems.push({
-                  nom: parsed.nom,
-                  categorie: parsed.categorie,
-                  inventaireId: invId,
-                  inventaireNom: invName,
-                  manquantDocId: manqDoc.id,
-                  entryOriginal: entry
-                });
+        const manquantsArray = data.manquants || [];
+        if (Array.isArray(manquantsArray)) {
+          manquantsArray.forEach(entry => {
+            if (typeof entry === 'string') {
+              const parsed = parseMissingEntry(entry);
+              missingItems.push({
+                nom: parsed.nom,
+                categorie: parsed.categorie,
+                inventaireId: invId,
+                inventaireNom: invName,
+                entryOriginal: entry
               });
             }
           });
-        } catch(e) {
-          console.log(`Pas de sous-collection manquants pour ${invId}`, e);
         }
-      }
+      });
 
       expiredItems.sort((a, b) => a.jours - b.jours);
 
@@ -686,7 +667,7 @@
               <span class="user-func warning">Manquant</span>
             </div>
             <div class="item-actions">
-              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-manqdoc="${item.manquantDocId}" data-entry="${item.entryOriginal}">✅</button>
+              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-entry="${item.entryOriginal.replace(/"/g, '&quot;')}">✅</button>
             </div>
           `;
 
@@ -695,61 +676,47 @@
             window.location.href = `./inventaire/?inv=${encodeURIComponent(item.inventaireId)}`;
           });
 
-          li.querySelector('[data-action="found"]').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await markAsFound(item.inventaireId, item.manquantDocId, item.entryOriginal);
-          });
+          const foundBtn = li.querySelector('[data-action="found"]');
+          if (foundBtn) {
+            foundBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              await markAsFound(item.inventaireId, item.entryOriginal);
+            });
+          }
 
           listEl.appendChild(li);
         });
     }
 
-    async function markAsFound(invId, manqDocId, entryToRemove) {
+    async function markAsFound(invId, entryToRemove) {
       try {
-        const manqRef = doc(db, 'I', invId, 'manquants', manqDocId);
-        const manqSnap = await getDoc(manqRef);
-
-        if (!manqSnap.exists()) {
-          alert('Document manquant introuvable.');
-          return;
-        }
-
-        const data = manqSnap.data();
-        // Trouver le champ qui contient l'array
-        let listeField = 'liste';
-        let liste = data.liste;
-        if (!liste) { listeField = 'items'; liste = data.items; }
-        if (!liste) { listeField = 'manquants'; liste = data.manquants; }
-
-        if (!Array.isArray(liste)) {
-          alert('Format de document manquant inattendu.');
-          return;
-        }
-
-        // Filtrer pour enlever l'entrée
-        const newListe = liste.filter(entry => entry !== entryToRemove);
-
-        if (newListe.length === 0) {
-          // Supprimer le document s'il est vide
-          await deleteDoc(manqRef);
-        } else {
-          // Mettre à jour avec la liste filtrée
-          await updateDoc(manqRef, { [listeField]: newListe });
-        }
-
-        // Ajouter un log dans l'inventaire
         const invRef = doc(db, 'I', invId);
         const invSnap = await getDoc(invRef);
-        if (invSnap.exists()) {
-          const invData = invSnap.data();
-          const currentLogs = invData.logs || [];
-          currentLogs.push({
-            n: currentAdmin.nivol,
-            t: new Date().toISOString(),
-            a: `Objet retrouve : ${entryToRemove}`
-          });
-          await updateDoc(invRef, { logs: currentLogs.slice(-50) });
+
+        if (!invSnap.exists()) {
+          alert('Inventaire introuvable.');
+          return;
         }
+
+        const data = invSnap.data();
+        const manquants = data.manquants || [];
+
+        if (!Array.isArray(manquants)) {
+          alert('Format de manquants inattendu.');
+          return;
+        }
+
+        const newManquants = manquants.filter(entry => entry !== entryToRemove);
+
+        await updateDoc(invRef, { manquants: newManquants });
+
+        const currentLogs = data.logs || [];
+        currentLogs.push({
+          n: currentAdmin.nivol,
+          t: new Date().toISOString(),
+          a: `Objet retrouve : ${entryToRemove}`
+        });
+        await updateDoc(invRef, { logs: currentLogs.slice(-50) });
 
         await loadAllData();
       } catch(e) {
