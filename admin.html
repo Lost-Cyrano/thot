@@ -638,7 +638,7 @@
               <div class="user-avatar ${item.status}">${item.status === 'danger' ? '!' : '~'}</div>
               <div>
                 <div class="user-name">${item.nom}</div>
-                <div class="user-nivol">${item.inventaireNom} / ${item.categorie} / ${new Date(item.date).toLocaleDateString('fr-FR')}</div>
+                <div class="user-nivol">${item.inventaireNom} => ${item.categorie} | ${new Date(item.date).toLocaleDateString('fr-FR')}</div>
               </div>
               <span class="user-func ${item.status}">${label} (${item.jours <= 0 ? 'depuis ' + Math.abs(item.jours) + 'j' : 'dans ' + item.jours + 'j'})</span>
             </div>
