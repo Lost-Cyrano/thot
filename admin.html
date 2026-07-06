@@ -269,6 +269,7 @@
       padding: 2px 8px;
       border-radius: 10px;
       color: #555;
+      white-space: nowrap;
     }
 
     .user-func.danger {
@@ -400,7 +401,7 @@
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>⚠️ Périmés / Bientôt périmés</h2>
+          <h2>Périmés</h2>
           <span class="badge danger" id="expired-count">0</span>
         </div>
       </div>
@@ -412,7 +413,7 @@
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>❌ Manquants</h2>
+          <h2>Manquants</h2>
           <span class="badge warning" id="missing-count">0</span>
         </div>
       </div>
@@ -424,7 +425,7 @@
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>📋 Inventaires</h2>
+          <h2>Inventaires</h2>
           <span class="badge" id="inventory-count">0</span>
         </div>
         <div class="actions" id="inventory-actions">
@@ -510,7 +511,6 @@
       return isAboveOrEqual(myFonc, functionToAssign);
     }
 
-    // Déterminer le statut de la date
     function getDateStatus(dateStr) {
       if (!dateStr) return null;
       const now = new Date();
@@ -529,6 +529,15 @@
       return Math.ceil((date - now) / (1000 * 60 * 60 * 24));
     }
 
+    // Trouver la dernière date de vérification à partir des logs
+    function getLastVerificationDate(data) {
+      const logs = data.logs || [];
+      if (logs.length === 0) return null;
+      // Prendre le dernier log
+      const lastLog = logs[logs.length - 1];
+      return lastLog.t || null;
+    }
+
     let currentAdmin = null;
     let admins = [];
     let users = [];
@@ -536,14 +545,12 @@
     let expiredItems = [];
     let missingItems = [];
 
-    // États d'affichage
     let adminShowAll = false;
     let userShowAll = false;
     let inventoryShowAll = false;
     let expiredShowAll = false;
     let missingShowAll = false;
 
-    // DOM
     const avatarInitial = document.getElementById('avatar-initial');
     const identityName = document.getElementById('identity-name');
     const identityDetails = document.getElementById('identity-details');
@@ -594,7 +601,7 @@
         const initial = (currentAdmin.nom.charAt(0) || '?').toUpperCase();
         avatarInitial.textContent = initial;
         identityName.textContent = currentAdmin.nom;
-        identityDetails.textContent = `NIVOL : ${currentAdmin.nivol}${currentAdmin.fonction ? ' · ' + currentAdmin.fonction : ''}`;
+        identityDetails.textContent = `NIVOL : ${currentAdmin.nivol}${currentAdmin.fonction ? ' - ' + currentAdmin.fonction : ''}`;
 
         await loadAllData();
 
@@ -605,7 +612,6 @@
       }
     });
 
-    // Déconnexion
     document.getElementById('logout-btn').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
@@ -614,18 +620,15 @@
       }
     });
 
-    // Vérifications
     document.getElementById('inventory-btn').addEventListener('click', () => {
       window.location.href = './inventaire';
     });
 
-    // Modifier les inventaires
     document.getElementById('btn-manage-inventory').addEventListener('click', () => {
       window.location.href = './inventaire/admin.html';
     });
 
     async function loadAllData() {
-      // Charger tous les inventaires depuis la collection I
       const invSnap = await getDocs(collection(db, 'I'));
       inventories = [];
       expiredItems = [];
@@ -635,17 +638,30 @@
         const data = docSnap.data();
         const invId = docSnap.id;
         const invName = data.nom || invId;
-        inventories.push({ id: invId, nom: invName });
+        const lastVerif = getLastVerificationDate(data);
 
-        // Parcourir les objets pour trouver périmés et manquants
+        inventories.push({
+          id: invId,
+          nom: invName,
+          lastVerification: lastVerif
+        });
+
         const objets = data.objets || {};
+        console.log(`Inventaire ${invId} - objets:`, objets);
+
         Object.keys(objets).forEach(cat => {
           const items = objets[cat];
+          if (typeof items !== 'object' || items === null) return;
+
           Object.keys(items).forEach(objName => {
             const obj = items[objName];
+            if (typeof obj !== 'object' || obj === null) return;
 
-            // Vérifier si manquant
-            if (obj.m === true) {
+            console.log(`  ${cat} > ${objName}:`, obj);
+
+            // Vérifier si manquant - accepter m: true ou m: "true" ou présence du champ m
+            if (obj.m === true || obj.m === 'true' || obj.m === 1 || obj.m === '1') {
+              console.log(`    => MANQUANT`);
               missingItems.push({
                 nom: objName,
                 inventaireId: invId,
@@ -673,10 +689,11 @@
         });
       });
 
-      // Trier les périmés par date (plus proche en premier)
+      console.log('Missing items found:', missingItems.length, missingItems);
+      console.log('Expired items found:', expiredItems.length, expiredItems);
+
       expiredItems.sort((a, b) => a.jours - b.jours);
 
-      // Charger admins et users
       const adminSnap = await getDocs(collection(db, 'A'));
       admins = [];
       adminSnap.forEach(d => admins.push({ nivol: d.id, nom: d.data().I || 'Inconnu', fonction: d.data().F || '' }));
@@ -685,7 +702,6 @@
       users = [];
       userSnap.forEach(d => users.push({ nivol: d.id, nom: d.data().I || 'Inconnu' }));
 
-      // Rendre toutes les listes
       renderExpiredList();
       renderMissingList();
       renderInventoryList();
@@ -698,7 +714,6 @@
       return HIERARCHY.includes(currentAdmin.fonction);
     }
 
-    // Rendu liste générique avec show more
     function renderListWithShowMore(items, listEl, showMoreEl, countEl, showAll, toggleFn, renderItemFn) {
       listEl.innerHTML = '';
       countEl.textContent = items.length;
@@ -715,21 +730,19 @@
       }
     }
 
-    // Rendu liste périmés
     function renderExpiredList() {
       renderListWithShowMore(expiredItems, expiredList, expiredShowMore, expiredCount, expiredShowAll,
         () => { expiredShowAll = !expiredShowAll; renderExpiredList(); },
         (item, listEl) => {
           const li = document.createElement('li');
           li.className = 'list-item';
-          const icon = item.status === 'danger' ? '🔴' : '🟠';
-          const label = item.status === 'danger' ? 'PÉRIMÉ' : 'Proche';
+          const label = item.status === 'danger' ? 'PERIME' : 'Proche';
           li.innerHTML = `
             <div class="user-info">
-              <div class="user-avatar ${item.status}">${icon}</div>
+              <div class="user-avatar ${item.status}">${item.status === 'danger' ? '!' : '~'}</div>
               <div>
                 <div class="user-name">${item.nom}</div>
-                <div class="user-nivol">📋 ${item.inventaireNom} · 📁 ${item.categorie} · ${new Date(item.date).toLocaleDateString('fr-FR')}</div>
+                <div class="user-nivol">${item.inventaireNom} / ${item.categorie} / ${new Date(item.date).toLocaleDateString('fr-FR')}</div>
               </div>
               <span class="user-func ${item.status}">${label} (${item.jours <= 0 ? 'depuis ' + Math.abs(item.jours) + 'j' : 'dans ' + item.jours + 'j'})</span>
             </div>
@@ -742,7 +755,6 @@
         });
     }
 
-    // Rendu liste manquants
     function renderMissingList() {
       renderListWithShowMore(missingItems, missingList, missingShowMore, missingCount, missingShowAll,
         () => { missingShowAll = !missingShowAll; renderMissingList(); },
@@ -751,25 +763,23 @@
           li.className = 'list-item';
           li.innerHTML = `
             <div class="user-info">
-              <div class="user-avatar warning">❌</div>
+              <div class="user-avatar warning">!</div>
               <div>
                 <div class="user-name">${item.nom}</div>
-                <div class="user-nivol">📋 ${item.inventaireNom} · 📁 ${item.categorie}</div>
+                <div class="user-nivol">${item.inventaireNom} / ${item.categorie}</div>
               </div>
               <span class="user-func warning">Manquant</span>
             </div>
             <div class="item-actions">
-              <button class="btn-icon" title="Marquer comme retrouvé" data-action="found" data-inv="${item.inventaireId}" data-cat="${item.categorie}" data-obj="${item.nom}">✅</button>
+              <button class="btn-icon" title="Marquer comme retrouve" data-action="found" data-inv="${item.inventaireId}" data-cat="${item.categorie}" data-obj="${item.nom}">Retrouve</button>
             </div>
           `;
 
-          // Empêcher la redirection si on clique sur le bouton
           li.addEventListener('click', (e) => {
             if (e.target.closest('.item-actions') || e.target.closest('button')) return;
             window.location.href = `./inventaire/?inv=${encodeURIComponent(item.inventaireId)}`;
           });
 
-          // Bouton "retrouvé"
           li.querySelector('[data-action="found"]').addEventListener('click', async (e) => {
             e.stopPropagation();
             await markAsFound(item.inventaireId, item.categorie, item.nom);
@@ -779,41 +789,58 @@
         });
     }
 
-    // Marquer un objet comme retrouvé (enlever le flag manquant)
     async function markAsFound(invId, cat, objName) {
       try {
-        const path = `objets.${cat}.${objName}.m`;
-        await updateDoc(doc(db, 'I', invId), {
-          [path]: firebase.firestore.FieldValue.delete()
-        });
+        const invRef = doc(db, 'I', invId);
+        const invSnap = await getDoc(invRef);
+        if (!invSnap.exists()) return;
+
+        const data = invSnap.data();
+        const objets = data.objets || {};
+
+        // Supprimer le champ 'm' de l'objet
+        if (objets[cat] && objets[cat][objName]) {
+          const updatedObj = { ...objets[cat][objName] };
+          delete updatedObj.m;
+
+          // Reconstruire le chemin
+          const updatePath = `objets.${cat}.${objName}`;
+          await updateDoc(invRef, {
+            [updatePath]: updatedObj
+          });
+        }
+
         // Ajouter un log
-        const snap = await getDoc(doc(db, 'I', invId));
-        const currentLogs = snap.data().logs || [];
+        const currentLogs = data.logs || [];
         currentLogs.push({
           n: currentAdmin.nivol,
           t: new Date().toISOString(),
-          a: `Objet retrouvé : ${objName} (${cat})`
+          a: `Objet retrouve : ${objName} (${cat})`
         });
-        await updateDoc(doc(db, 'I', invId), { logs: currentLogs.slice(-50) });
+        await updateDoc(invRef, { logs: currentLogs.slice(-50) });
+
         await loadAllData();
       } catch(e) {
+        console.error('Erreur markAsFound:', e);
         alert('Erreur : ' + e.message);
       }
     }
 
-    // Rendu liste inventaires
     function renderInventoryList() {
       renderListWithShowMore(inventories, inventoryList, inventoryShowMore, inventoryCount, inventoryShowAll,
         () => { inventoryShowAll = !inventoryShowAll; renderInventoryList(); },
         (inv, listEl) => {
           const li = document.createElement('li');
           li.className = 'list-item';
+          const lastVerifText = inv.lastVerification
+            ? 'Derniere verification : ' + new Date(inv.lastVerification).toLocaleDateString('fr-FR')
+            : 'Aucune verification';
           li.innerHTML = `
             <div class="user-info">
-              <div class="user-avatar">📦</div>
+              <div class="user-avatar">${(inv.nom.charAt(0)||'?').toUpperCase()}</div>
               <div>
                 <div class="user-name">${inv.nom || inv.id || 'Sans nom'}</div>
-                <div class="user-nivol">ID: ${inv.id}</div>
+                <div class="user-nivol">${lastVerifText}</div>
               </div>
             </div>
           `;
@@ -824,7 +851,6 @@
         });
     }
 
-    // Rendu liste admins
     function renderAdminList() {
       adminActions.innerHTML = '';
       if (canEditAnything()) {
@@ -847,7 +873,7 @@
                 <div class="user-name">${a.nom}</div>
                 <div class="user-nivol">${a.nivol}</div>
               </div>
-              <span class="user-func">${a.fonction || '—'}</span>
+              <span class="user-func">${a.fonction || '-'}</span>
             </div>
             <div class="item-actions"></div>
           `;
@@ -858,7 +884,7 @@
           if (canModify) {
             const editBtn = document.createElement('button');
             editBtn.className = 'btn-icon';
-            editBtn.textContent = '✏️';
+            editBtn.textContent = 'Modifier';
             editBtn.title = 'Modifier';
             editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('A', a); });
             actionsDiv.appendChild(editBtn);
@@ -866,7 +892,7 @@
           if (canDelete) {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-icon delete';
-            delBtn.textContent = '🗑️';
+            delBtn.textContent = 'Supprimer';
             delBtn.title = 'Supprimer';
             delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('A', a); });
             actionsDiv.appendChild(delBtn);
@@ -875,7 +901,6 @@
         });
     }
 
-    // Rendu liste bénévoles
     function renderUserList() {
       userActions.innerHTML = '';
       if (canEditAnything()) {
@@ -905,14 +930,14 @@
           if (canEditAnything()) {
             const editBtn = document.createElement('button');
             editBtn.className = 'btn-icon';
-            editBtn.textContent = '✏️';
+            editBtn.textContent = 'Modifier';
             editBtn.title = 'Modifier';
             editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('U', u); });
             actionsDiv.appendChild(editBtn);
 
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-icon delete';
-            delBtn.textContent = '🗑️';
+            delBtn.textContent = 'Supprimer';
             delBtn.title = 'Supprimer';
             delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('U', u); });
             actionsDiv.appendChild(delBtn);
@@ -921,13 +946,12 @@
         });
     }
 
-    // Modal Ajouter
     function openAddModal(collectionName) {
       const isAdmin = collectionName === 'A';
       modalContent.innerHTML = `
-        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'bénévole'}</h3>
+        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'benevole'}</h3>
         <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
-        <input type="text" id="modal-nom" placeholder="Prénom Nom">
+        <input type="text" id="modal-nom" placeholder="Prenom Nom">
         ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction">' : ''}
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
@@ -942,7 +966,7 @@
         const nom = document.getElementById('modal-nom').value.trim();
         const fonction = isAdmin ? document.getElementById('modal-fonction').value.trim() : '';
 
-        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide (12 caractères alphanumériques)');
+        if (!/^[0-9A-Z]{12}$/.test(nivol)) return alert('NIVOL invalide (12 caracteres alphanumeriques)');
         if (!nom) return alert('Nom requis');
 
         if (isAdmin && fonction && !canAssignFunction(currentAdmin.fonction, fonction)) {
@@ -954,7 +978,7 @@
           getDoc(doc(db, 'U', nivol))
         ]);
         if (existsInA.exists() || existsInU.exists()) {
-          return alert('Ce NIVOL existe déjà.');
+          return alert('Ce NIVOL existe deja.');
         }
 
         try {
@@ -969,14 +993,13 @@
       });
     }
 
-    // Modal Modifier
     function openEditModal(collectionName, item) {
       const isAdmin = collectionName === 'A';
       const isSelf = item.nivol === currentAdmin.nivol;
 
       modalContent.innerHTML = `
         <h3>Modifier ${item.nom}</h3>
-        <input type="text" id="modal-nom" value="${item.nom}" placeholder="Prénom Nom">
+        <input type="text" id="modal-nom" value="${item.nom}" placeholder="Prenom Nom">
         ${isAdmin ? `<input type="text" id="modal-fonction" value="${item.fonction || ''}" placeholder="Fonction">` : ''}
         <p style="font-size:0.85rem;color:#666;">NIVOL : ${item.nivol} (non modifiable)</p>
         <div class="modal-actions">
@@ -1018,15 +1041,14 @@
       });
     }
 
-    // Confirmation suppression
     function confirmDelete(collectionName, item) {
       if (item.nivol === currentAdmin.nivol) {
-        return alert('Vous ne pouvez pas vous supprimer vous-même.');
+        return alert('Vous ne pouvez pas vous supprimer vous-meme.');
       }
 
       modalContent.innerHTML = `
         <h3>Confirmer la suppression</h3>
-        <p>Supprimer définitivement <strong>${item.nom}</strong> (${item.nivol}) ?</p>
+        <p>Supprimer definitivement <strong>${item.nom}</strong> (${item.nivol}) ?</p>
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-danger" id="modal-delete">Supprimer</button>
