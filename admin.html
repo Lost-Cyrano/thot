@@ -15,6 +15,8 @@
       --text-light: #666;
       --radius: 12px;
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --warning: #f5a623;
+      --danger: #e60000;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -157,6 +159,14 @@
       font-weight: 600;
     }
 
+    .badge.warning {
+      background: var(--warning);
+    }
+
+    .badge.danger {
+      background: var(--danger);
+    }
+
     .actions {
       display: flex;
       gap: 8px;
@@ -201,6 +211,12 @@
       border-bottom: 1px solid #f0f0f0;
       flex-wrap: wrap;
       gap: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .list-item:hover {
+      background: #fafafa;
     }
 
     .list-item:last-child { border-bottom: none; }
@@ -210,6 +226,7 @@
       align-items: center;
       gap: 10px;
       min-width: 0;
+      flex: 1;
     }
 
     .user-avatar {
@@ -224,6 +241,16 @@
       font-size: 0.9rem;
       flex-shrink: 0;
       color: #666;
+    }
+
+    .user-avatar.danger {
+      background: #fff0f0;
+      color: var(--danger);
+    }
+
+    .user-avatar.warning {
+      background: #fff8f0;
+      color: var(--warning);
     }
 
     .user-name {
@@ -242,6 +269,16 @@
       padding: 2px 8px;
       border-radius: 10px;
       color: #555;
+    }
+
+    .user-func.danger {
+      background: #fff0f0;
+      color: var(--danger);
+    }
+
+    .user-func.warning {
+      background: #fff8f0;
+      color: var(--warning);
     }
 
     .item-actions {
@@ -359,6 +396,45 @@
       </div>
     </div>
 
+    <!-- Périmés -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>⚠️ Périmés / Bientôt périmés</h2>
+          <span class="badge danger" id="expired-count">0</span>
+        </div>
+      </div>
+      <ul class="list" id="expired-list"></ul>
+      <div class="show-more" id="expired-show-more" style="display:none;">Afficher plus</div>
+    </div>
+
+    <!-- Manquants -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>❌ Manquants</h2>
+          <span class="badge warning" id="missing-count">0</span>
+        </div>
+      </div>
+      <ul class="list" id="missing-list"></ul>
+      <div class="show-more" id="missing-show-more" style="display:none;">Afficher plus</div>
+    </div>
+
+    <!-- Inventaires -->
+    <div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h2>📋 Inventaires</h2>
+          <span class="badge" id="inventory-count">0</span>
+        </div>
+        <div class="actions" id="inventory-actions">
+          <button class="btn-sm" id="btn-manage-inventory">Modifier les inventaires</button>
+        </div>
+      </div>
+      <ul class="list" id="inventory-list"></ul>
+      <div class="show-more" id="inventory-show-more" style="display:none;">Afficher plus</div>
+    </div>
+
     <!-- Administrateurs -->
     <div class="section">
       <div class="section-header">
@@ -372,41 +448,17 @@
       <div class="show-more" id="admin-show-more" style="display:none;">Afficher plus</div>
     </div>
 
-    <!-- Utilisateurs -->
+    <!-- Bénévoles -->
     <div class="section">
       <div class="section-header">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Utilisateurs</h2>
+          <h2>Bénévoles</h2>
           <span class="badge" id="user-count">0</span>
         </div>
         <div class="actions" id="user-actions"></div>
       </div>
       <ul class="list" id="user-list"></ul>
       <div class="show-more" id="user-show-more" style="display:none;">Afficher plus</div>
-    </div>
-
-    <!-- Inventaires -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Inventaires</h2>
-          <span class="badge" id="inventory-count">0</span>
-        </div>
-      </div>
-      <ul class="list" id="inventory-list"></ul>
-      <div class="show-more" id="inventory-show-more" style="display:none;">Afficher plus</div>
-    </div>
-
-    <!-- Périmés -->
-    <div class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <h2>Périmés</h2>
-          <span class="badge" id="expired-count">0</span>
-        </div>
-      </div>
-      <ul class="list" id="expired-list"></ul>
-      <div class="show-more" id="expired-show-more" style="display:none;">Afficher plus</div>
     </div>
   </div>
 
@@ -418,7 +470,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -458,17 +510,38 @@
       return isAboveOrEqual(myFonc, functionToAssign);
     }
 
+    // Déterminer le statut de la date
+    function getDateStatus(dateStr) {
+      if (!dateStr) return null;
+      const now = new Date();
+      const date = new Date(dateStr);
+      const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) return 'danger';
+      if (diffDays <= 7) return 'danger';
+      if (diffDays <= 30) return 'warning';
+      return 'ok';
+    }
+
+    function getDaysUntil(dateStr) {
+      if (!dateStr) return Infinity;
+      const now = new Date();
+      const date = new Date(dateStr);
+      return Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+    }
+
     let currentAdmin = null;
     let admins = [];
     let users = [];
     let inventories = [];
-    let expireds = [];
+    let expiredItems = [];
+    let missingItems = [];
 
     // États d'affichage
     let adminShowAll = false;
     let userShowAll = false;
     let inventoryShowAll = false;
     let expiredShowAll = false;
+    let missingShowAll = false;
 
     // DOM
     const avatarInitial = document.getElementById('avatar-initial');
@@ -478,16 +551,19 @@
     const userCount = document.getElementById('user-count');
     const inventoryCount = document.getElementById('inventory-count');
     const expiredCount = document.getElementById('expired-count');
+    const missingCount = document.getElementById('missing-count');
     const adminList = document.getElementById('admin-list');
     const userList = document.getElementById('user-list');
     const inventoryList = document.getElementById('inventory-list');
     const expiredList = document.getElementById('expired-list');
+    const missingList = document.getElementById('missing-list');
     const adminActions = document.getElementById('admin-actions');
     const userActions = document.getElementById('user-actions');
     const adminShowMore = document.getElementById('admin-show-more');
     const userShowMore = document.getElementById('user-show-more');
     const inventoryShowMore = document.getElementById('inventory-show-more');
     const expiredShowMore = document.getElementById('expired-show-more');
+    const missingShowMore = document.getElementById('missing-show-more');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
@@ -543,34 +619,78 @@
       window.location.href = './inventaire';
     });
 
+    // Modifier les inventaires
+    document.getElementById('btn-manage-inventory').addEventListener('click', () => {
+      window.location.href = './inventaire/admin.html';
+    });
+
     async function loadAllData() {
-      // Admins
+      // Charger tous les inventaires depuis la collection I
+      const invSnap = await getDocs(collection(db, 'I'));
+      inventories = [];
+      expiredItems = [];
+      missingItems = [];
+
+      invSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        const invId = docSnap.id;
+        const invName = data.nom || invId;
+        inventories.push({ id: invId, nom: invName });
+
+        // Parcourir les objets pour trouver périmés et manquants
+        const objets = data.objets || {};
+        Object.keys(objets).forEach(cat => {
+          const items = objets[cat];
+          Object.keys(items).forEach(objName => {
+            const obj = items[objName];
+
+            // Vérifier si manquant
+            if (obj.m === true) {
+              missingItems.push({
+                nom: objName,
+                inventaireId: invId,
+                inventaireNom: invName,
+                categorie: cat
+              });
+            }
+
+            // Vérifier la date de péremption
+            if (obj.d) {
+              const status = getDateStatus(obj.d);
+              if (status === 'danger' || status === 'warning') {
+                expiredItems.push({
+                  nom: objName,
+                  date: obj.d,
+                  status: status,
+                  jours: getDaysUntil(obj.d),
+                  inventaireId: invId,
+                  inventaireNom: invName,
+                  categorie: cat
+                });
+              }
+            }
+          });
+        });
+      });
+
+      // Trier les périmés par date (plus proche en premier)
+      expiredItems.sort((a, b) => a.jours - b.jours);
+
+      // Charger admins et users
       const adminSnap = await getDocs(collection(db, 'A'));
       admins = [];
       adminSnap.forEach(d => admins.push({ nivol: d.id, nom: d.data().I || 'Inconnu', fonction: d.data().F || '' }));
-      renderAdminList();
 
-      // Users
       const userSnap = await getDocs(collection(db, 'U'));
       users = [];
       userSnap.forEach(d => users.push({ nivol: d.id, nom: d.data().I || 'Inconnu' }));
-      renderUserList();
 
-      // Inventaires (à adapter selon ta structure Firestore)
-      try {
-        const invSnap = await getDocs(collection(db, 'inventaires'));
-        inventories = [];
-        invSnap.forEach(d => inventories.push({ id: d.id, ...d.data() }));
-      } catch(e) { inventories = []; }
-      renderInventoryList();
-
-      // Périmés (à adapter)
-      try {
-        const expSnap = await getDocs(collection(db, 'perimes'));
-        expireds = [];
-        expSnap.forEach(d => expireds.push({ id: d.id, ...d.data() }));
-      } catch(e) { expireds = []; }
+      // Rendre toutes les listes
       renderExpiredList();
+      renderMissingList();
+      renderInventoryList();
+      renderAdminList();
+      renderUserList();
     }
 
     function canEditAnything() {
@@ -593,6 +713,115 @@
       } else {
         showMoreEl.style.display = 'none';
       }
+    }
+
+    // Rendu liste périmés
+    function renderExpiredList() {
+      renderListWithShowMore(expiredItems, expiredList, expiredShowMore, expiredCount, expiredShowAll,
+        () => { expiredShowAll = !expiredShowAll; renderExpiredList(); },
+        (item, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          const icon = item.status === 'danger' ? '🔴' : '🟠';
+          const label = item.status === 'danger' ? 'PÉRIMÉ' : 'Proche';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar ${item.status}">${icon}</div>
+              <div>
+                <div class="user-name">${item.nom}</div>
+                <div class="user-nivol">📋 ${item.inventaireNom} · 📁 ${item.categorie} · ${new Date(item.date).toLocaleDateString('fr-FR')}</div>
+              </div>
+              <span class="user-func ${item.status}">${label} (${item.jours <= 0 ? 'depuis ' + Math.abs(item.jours) + 'j' : 'dans ' + item.jours + 'j'})</span>
+            </div>
+          `;
+          li.addEventListener('click', (e) => {
+            if (e.target.closest('.item-actions')) return;
+            window.location.href = `./inventaire/?inv=${encodeURIComponent(item.inventaireId)}`;
+          });
+          listEl.appendChild(li);
+        });
+    }
+
+    // Rendu liste manquants
+    function renderMissingList() {
+      renderListWithShowMore(missingItems, missingList, missingShowMore, missingCount, missingShowAll,
+        () => { missingShowAll = !missingShowAll; renderMissingList(); },
+        (item, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar warning">❌</div>
+              <div>
+                <div class="user-name">${item.nom}</div>
+                <div class="user-nivol">📋 ${item.inventaireNom} · 📁 ${item.categorie}</div>
+              </div>
+              <span class="user-func warning">Manquant</span>
+            </div>
+            <div class="item-actions">
+              <button class="btn-icon" title="Marquer comme retrouvé" data-action="found" data-inv="${item.inventaireId}" data-cat="${item.categorie}" data-obj="${item.nom}">✅</button>
+            </div>
+          `;
+
+          // Empêcher la redirection si on clique sur le bouton
+          li.addEventListener('click', (e) => {
+            if (e.target.closest('.item-actions') || e.target.closest('button')) return;
+            window.location.href = `./inventaire/?inv=${encodeURIComponent(item.inventaireId)}`;
+          });
+
+          // Bouton "retrouvé"
+          li.querySelector('[data-action="found"]').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await markAsFound(item.inventaireId, item.categorie, item.nom);
+          });
+
+          listEl.appendChild(li);
+        });
+    }
+
+    // Marquer un objet comme retrouvé (enlever le flag manquant)
+    async function markAsFound(invId, cat, objName) {
+      try {
+        const path = `objets.${cat}.${objName}.m`;
+        await updateDoc(doc(db, 'I', invId), {
+          [path]: firebase.firestore.FieldValue.delete()
+        });
+        // Ajouter un log
+        const snap = await getDoc(doc(db, 'I', invId));
+        const currentLogs = snap.data().logs || [];
+        currentLogs.push({
+          n: currentAdmin.nivol,
+          t: new Date().toISOString(),
+          a: `Objet retrouvé : ${objName} (${cat})`
+        });
+        await updateDoc(doc(db, 'I', invId), { logs: currentLogs.slice(-50) });
+        await loadAllData();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
+    }
+
+    // Rendu liste inventaires
+    function renderInventoryList() {
+      renderListWithShowMore(inventories, inventoryList, inventoryShowMore, inventoryCount, inventoryShowAll,
+        () => { inventoryShowAll = !inventoryShowAll; renderInventoryList(); },
+        (inv, listEl) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.innerHTML = `
+            <div class="user-info">
+              <div class="user-avatar">📦</div>
+              <div>
+                <div class="user-name">${inv.nom || inv.id || 'Sans nom'}</div>
+                <div class="user-nivol">ID: ${inv.id}</div>
+              </div>
+            </div>
+          `;
+          li.addEventListener('click', () => {
+            window.location.href = `./inventaire/?inv=${encodeURIComponent(inv.id)}`;
+          });
+          listEl.appendChild(li);
+        });
     }
 
     // Rendu liste admins
@@ -631,7 +860,7 @@
             editBtn.className = 'btn-icon';
             editBtn.textContent = '✏️';
             editBtn.title = 'Modifier';
-            editBtn.addEventListener('click', () => openEditModal('A', a));
+            editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('A', a); });
             actionsDiv.appendChild(editBtn);
           }
           if (canDelete) {
@@ -639,14 +868,14 @@
             delBtn.className = 'btn-icon delete';
             delBtn.textContent = '🗑️';
             delBtn.title = 'Supprimer';
-            delBtn.addEventListener('click', () => confirmDelete('A', a));
+            delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('A', a); });
             actionsDiv.appendChild(delBtn);
           }
           listEl.appendChild(li);
         });
     }
 
-    // Rendu liste users
+    // Rendu liste bénévoles
     function renderUserList() {
       userActions.innerHTML = '';
       if (canEditAnything()) {
@@ -678,56 +907,16 @@
             editBtn.className = 'btn-icon';
             editBtn.textContent = '✏️';
             editBtn.title = 'Modifier';
-            editBtn.addEventListener('click', () => openEditModal('U', u));
+            editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal('U', u); });
             actionsDiv.appendChild(editBtn);
 
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-icon delete';
             delBtn.textContent = '🗑️';
             delBtn.title = 'Supprimer';
-            delBtn.addEventListener('click', () => confirmDelete('U', u));
+            delBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete('U', u); });
             actionsDiv.appendChild(delBtn);
           }
-          listEl.appendChild(li);
-        });
-    }
-
-    // Rendu liste inventaires
-    function renderInventoryList() {
-      renderListWithShowMore(inventories, inventoryList, inventoryShowMore, inventoryCount, inventoryShowAll,
-        () => { inventoryShowAll = !inventoryShowAll; renderInventoryList(); },
-        (inv, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">📦</div>
-              <div>
-                <div class="user-name">${inv.nom || inv.id || 'Sans nom'}</div>
-                <div class="user-nivol">${inv.date || ''}</div>
-              </div>
-            </div>
-          `;
-          listEl.appendChild(li);
-        });
-    }
-
-    // Rendu liste périmés
-    function renderExpiredList() {
-      renderListWithShowMore(expireds, expiredList, expiredShowMore, expiredCount, expiredShowAll,
-        () => { expiredShowAll = !expiredShowAll; renderExpiredList(); },
-        (exp, listEl) => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.innerHTML = `
-            <div class="user-info">
-              <div class="user-avatar">⚠️</div>
-              <div>
-                <div class="user-name">${exp.nom || exp.id || 'Sans nom'}</div>
-                <div class="user-nivol">${exp.date || ''}</div>
-              </div>
-            </div>
-          `;
           listEl.appendChild(li);
         });
     }
@@ -736,7 +925,7 @@
     function openAddModal(collectionName) {
       const isAdmin = collectionName === 'A';
       modalContent.innerHTML = `
-        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'utilisateur'}</h3>
+        <h3>Ajouter un ${isAdmin ? 'administrateur' : 'bénévole'}</h3>
         <input type="text" id="modal-nivol" placeholder="NIVOL (12 car.)" pattern="[0-9A-Za-z]{12}" maxlength="12">
         <input type="text" id="modal-nom" placeholder="Prénom Nom">
         ${isAdmin ? '<input type="text" id="modal-fonction" placeholder="Fonction">' : ''}
