@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
   <title>Thot – Connexion</title>
   <style>
     body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; max-width: 400px; margin: 50px auto; padding: 0 20px; }
@@ -40,6 +42,12 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+   if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js")
+        .then(reg => console.log("Service Worker registered:", reg.scope))
+        .catch(err => console.error("Service Worker registration failed:", err));
+  } 
+    
     // Récupérer le paramètre de redirection
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get('redirect');
