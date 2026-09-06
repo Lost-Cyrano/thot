@@ -18,6 +18,7 @@
       --warning: #f5a623;
       --danger: #e60000;
       --ok: #4caf50;
+      --sub-cat-bg: #faf8f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -131,7 +132,10 @@
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
+      margin-bottom: 16px;
     }
+
+    .section:last-child { margin-bottom: 0; }
 
     .section-header {
       padding: 14px 18px;
@@ -143,6 +147,33 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .section-header:hover { background: #f0f0f0; }
+
+    .section-header .collapse-icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    .section-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .section-body {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 100000px;
+      opacity: 1;
+    }
+
+    .section-body.collapsed {
+      max-height: 0;
+      opacity: 0;
     }
 
     .list { list-style: none; }
@@ -161,6 +192,58 @@
 
     .list-item:last-child { border-bottom: none; }
     .list-item:hover { background: #fafafa; }
+
+    /* Sous-catégorie */
+    .sub-cat-section {
+      margin-left: 16px;
+      border-left: 3px solid #e8e0d8;
+      background: var(--sub-cat-bg);
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .sub-cat-section:last-child { margin-bottom: 0; }
+
+    .sub-cat-header {
+      padding: 10px 14px;
+      background: #f5f0eb;
+      border-bottom: 1px solid #e8e0d8;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .sub-cat-header:hover { background: #ede8e2; }
+
+    .sub-cat-header .collapse-icon {
+      font-size: 1.1rem;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    .sub-cat-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .sub-cat-body {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 100000px;
+      opacity: 1;
+    }
+
+    .sub-cat-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
 
     .obj-info {
       display: flex;
@@ -242,6 +325,7 @@
       font-size: 0.9rem;
       width: 100%;
       margin-top: 4px;
+      transition: all 0.2s;
     }
 
     .btn-add-obj:hover { border-color: var(--red); color: var(--red); }
@@ -252,6 +336,7 @@
       padding: 3px 8px;
       border-radius: 10px;
       color: var(--text-light);
+      white-space: nowrap;
     }
 
     .empty-state {
@@ -302,6 +387,8 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal h3 { font-size: 1.1rem; }
@@ -350,11 +437,62 @@
     .btn-danger { background: #c00; color: #fff; }
     .btn-danger:hover { background: #a00; }
 
+    /* Case à cocher style switch */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .switch-container input[type="checkbox"] {
+      display: none;
+    }
+
+    .switch {
+      width: 44px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .switch-container input:checked + .switch {
+      background: var(--red);
+    }
+
+    .switch-container input:checked + .switch::after {
+      left: 22px;
+    }
+
+    .switch-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
     /* Responsive */
     @media (max-width: 480px) {
       .list-item { flex-direction: column; align-items: flex-start; }
       .obj-quantity { align-self: flex-end; }
       .header { flex-direction: column; align-items: flex-start; }
+      .sub-cat-section { margin-left: 8px; }
     }
   </style>
 </head>
@@ -423,7 +561,6 @@
     let currentInventoryId = null;
     let currentInventoryData = null;
 
-    // DOM
     const inventorySelect = document.getElementById('inventory-select');
     const inventoryContent = document.getElementById('inventory-content');
     const modalOverlay = document.getElementById('modal-overlay');
@@ -431,9 +568,8 @@
     const btnRenameInv = document.getElementById('btn-rename-inv');
     const btnDeleteInv = document.getElementById('btn-delete-inv');
 
-    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { window.location.href = './login.html'; return; }
+      if (!user) { window.location.href = '../login.html'; return; }
       const nivol = user.displayName;
       if (!nivol) {
         await deleteUser(user).catch(() => {});
@@ -464,7 +600,6 @@
       }
     });
 
-    // Déconnexion
     document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
@@ -473,15 +608,12 @@
       }
     });
 
-    // Retour admin
     document.getElementById('btn-admin').addEventListener('click', () => {
       window.location.href = '../admin.html';
     });
 
-    // Créer
     document.getElementById('btn-create').addEventListener('click', () => openCreateModal());
 
-    // Sélection inventaire
     inventorySelect.addEventListener('change', () => {
       const invId = inventorySelect.value;
       if (invId) {
@@ -500,18 +632,12 @@
       }
     });
 
-    // Renommer
     btnRenameInv.addEventListener('click', () => {
-      if (currentInventoryId && currentInventoryData) {
-        openRenameModal();
-      }
+      if (currentInventoryId && currentInventoryData) openRenameModal();
     });
 
-    // Supprimer
     btnDeleteInv.addEventListener('click', () => {
-      if (currentInventoryId && currentInventoryData) {
-        openDeleteModal();
-      }
+      if (currentInventoryId && currentInventoryData) openDeleteModal();
     });
 
     // ========== FONCTIONS ==========
@@ -530,7 +656,6 @@
           });
         });
 
-        // Mettre à jour le select
         const currentVal = inventorySelect.value;
         inventorySelect.innerHTML = '<option value="">— Choisir un inventaire —</option>';
         inventories.forEach(inv => {
@@ -538,7 +663,6 @@
           inventorySelect.innerHTML += `<option value="${inv.id}"${selected}>${inv.nom}</option>`;
         });
 
-        // Si un inventaire était sélectionné, rafraîchir
         if (currentInventoryId) {
           const stillExists = inventories.find(i => i.id === currentInventoryId);
           if (stillExists) {
@@ -593,11 +717,30 @@
       return 'date-ok';
     }
 
+    // Vérifier si un élément est une sous-catégorie
+    function isSubCategory(item) {
+      return item && item._sub === true;
+    }
+
+    // Compter tous les objets dans une catégorie (y compris sous-catégories récursives)
+    function countAllObjects(objets) {
+      let count = 0;
+      Object.keys(objets).forEach(key => {
+        const item = objets[key];
+        if (isSubCategory(item)) {
+          count += countAllObjects(item);
+        } else {
+          count++;
+        }
+      });
+      return count;
+    }
+
     function renderInventoryContent() {
       if (!currentInventoryData) return;
 
       const objets = currentInventoryData.objets || {};
-      const categories = Object.keys(objets).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base' }));;
+      const categories = Object.keys(objets).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
 
       let html = '';
 
@@ -607,61 +750,77 @@
 
       categories.forEach(cat => {
         const items = objets[cat];
-        const itemKeys = Object.keys(items).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base' }));;
+        const isSub = isSubCategory(items);
+        const itemKeys = isSub ? [] : Object.keys(items).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+        const totalCount = countAllObjects(items);
 
         html += `
-          <div class="section">
-            <div class="section-header">
+          <div class="section" data-cat="${cat}">
+            <div class="section-header" data-cat="${cat}">
               <span>📁 ${cat}</span>
               <div style="display:flex;gap:6px;align-items:center;">
-                <span class="badge">${itemKeys.length} objet(s)</span>
+                <span class="badge">${totalCount} objet(s)</span>
+                <span class="collapse-icon">▼</span>
                 <button class="btn-icon delete delete-cat" data-cat="${cat}" title="Supprimer la catégorie">🗑️</button>
               </div>
             </div>
-            <ul class="list">
+            <div class="section-body" data-cat="${cat}">
         `;
 
-        itemKeys.forEach(objName => {
-          const obj = items[objName];
-          const q = obj.q || 0;
-          const d = obj.d || null;
+        if (isSub) {
+          // C'est une sous-catégorie directe (ne devrait pas arriver au niveau racine, mais sécurité)
+          html += renderSubCategory(cat, items, cat);
+        } else {
+          // Catégorie normale avec objets et sous-catégories
+          html += '<ul class="list">';
 
-          html += `
-            <li class="list-item" data-cat="${cat}" data-obj="${objName}">
-              <div class="obj-info">
-                <span class="obj-name">${objName}</span>
-                ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <div class="obj-quantity">
-                  <button class="qty-btn qty-minus" data-cat="${cat}" data-obj="${objName}">−</button>
-                  <span class="qty-num">${q}</span>
-                  <button class="qty-btn qty-plus" data-cat="${cat}" data-obj="${objName}">+</button>
-                </div>
-                <div class="item-actions">
-                  <button class="btn-icon edit-obj" data-cat="${cat}" data-obj="${objName}" title="Modifier">✏️</button>
-                  <button class="btn-icon delete delete-obj" data-cat="${cat}" data-obj="${objName}" title="Supprimer">🗑️</button>
-                </div>
-              </div>
-            </li>
-          `;
-        });
+          itemKeys.forEach(objName => {
+            const obj = items[objName];
+            if (isSubCategory(obj)) {
+              // C'est une sous-catégorie
+              html += renderSubCategory(objName, obj, cat);
+            } else {
+              // C'est un objet normal
+              const q = obj.q || 0;
+              const d = obj.d || null;
+              html += `
+                <li class="list-item" data-cat="${cat}" data-obj="${objName}">
+                  <div class="obj-info">
+                    <span class="obj-name">${objName}</span>
+                    ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <div class="obj-quantity">
+                      <button class="qty-btn qty-minus" data-cat="${cat}" data-obj="${objName}">−</button>
+                      <span class="qty-num">${q}</span>
+                      <button class="qty-btn qty-plus" data-cat="${cat}" data-obj="${objName}">+</button>
+                    </div>
+                    <div class="item-actions">
+                      <button class="btn-icon edit-obj" data-cat="${cat}" data-obj="${objName}" title="Modifier">✏️</button>
+                      <button class="btn-icon delete delete-obj" data-cat="${cat}" data-obj="${objName}" title="Supprimer">🗑️</button>
+                    </div>
+                  </div>
+                </li>
+              `;
+            }
+          });
+
+          html += '</ul>';
+        }
 
         html += `
-            </ul>
-            <button class="btn-add-obj add-obj" data-cat="${cat}">+ Ajouter un objet</button>
+            <button class="btn-add-obj add-obj" data-cat="${cat}">+ Ajouter un objet ou sous-catégorie</button>
+            </div>
           </div>
         `;
       });
 
-      // Bouton ajouter catégorie
       html += `
         <div style="text-align:center;margin-top:8px;">
           <button class="btn-add" id="btn-add-cat">+ Nouvelle catégorie</button>
         </div>
       `;
 
-      // Logs
       const logs = currentInventoryData.logs || [];
       if (logs.length > 0) {
         html += `
@@ -675,12 +834,127 @@
       }
 
       inventoryContent.innerHTML = html;
-
-      // Attacher les événements
       attachContentEvents();
     }
 
+    function renderSubCategory(name, data, parentPath) {
+      const isSub = isSubCategory(data);
+      const subKeys = isSub ? [] : Object.keys(data).filter(k => k !== '_sub').sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+      const totalCount = countAllObjects(data);
+
+      let html = `
+        <div class="sub-cat-section" data-subcat="${name}" data-parent="${parentPath}">
+          <div class="sub-cat-header" data-subcat="${name}" data-parent="${parentPath}">
+            <span>📂 ${name}</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span class="badge">${totalCount} objet(s)</span>
+              <span class="collapse-icon">▼</span>
+              <button class="btn-icon delete delete-subcat" data-subcat="${name}" data-parent="${parentPath}" title="Supprimer">🗑️</button>
+            </div>
+          </div>
+          <div class="sub-cat-body" data-subcat="${name}" data-parent="${parentPath}">
+      `;
+
+      if (isSub) {
+        // C'est une sous-catégorie de sous-catégorie
+        html += '<ul class="list">';
+        subKeys.forEach(key => {
+          const item = data[key];
+          if (isSubCategory(item)) {
+            html += renderSubCategory(key, item, `${parentPath}.${name}`);
+          } else {
+            const q = item.q || 0;
+            const d = item.d || null;
+            const fullPath = `${parentPath}.${name}`;
+            html += `
+              <li class="list-item" data-cat="${fullPath}" data-obj="${key}">
+                <div class="obj-info">
+                  <span class="obj-name">${key}</span>
+                  ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <div class="obj-quantity">
+                    <button class="qty-btn qty-minus" data-cat="${fullPath}" data-obj="${key}">−</button>
+                    <span class="qty-num">${q}</span>
+                    <button class="qty-btn qty-plus" data-cat="${fullPath}" data-obj="${key}">+</button>
+                  </div>
+                  <div class="item-actions">
+                    <button class="btn-icon edit-obj" data-cat="${fullPath}" data-obj="${key}" title="Modifier">✏️</button>
+                    <button class="btn-icon delete delete-obj" data-cat="${fullPath}" data-obj="${key}" title="Supprimer">🗑️</button>
+                  </div>
+                </div>
+              </li>
+            `;
+          }
+        });
+        html += '</ul>';
+      } else {
+        html += '<ul class="list">';
+        subKeys.forEach(key => {
+          const obj = data[key];
+          const q = obj.q || 0;
+          const d = obj.d || null;
+          const fullPath = `${parentPath}.${name}`;
+          html += `
+            <li class="list-item" data-cat="${fullPath}" data-obj="${key}">
+              <div class="obj-info">
+                <span class="obj-name">${key}</span>
+                ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="obj-quantity">
+                  <button class="qty-btn qty-minus" data-cat="${fullPath}" data-obj="${key}">−</button>
+                  <span class="qty-num">${q}</span>
+                  <button class="qty-btn qty-plus" data-cat="${fullPath}" data-obj="${key}">+</button>
+                </div>
+                <div class="item-actions">
+                  <button class="btn-icon edit-obj" data-cat="${fullPath}" data-obj="${key}" title="Modifier">✏️</button>
+                  <button class="btn-icon delete delete-obj" data-cat="${fullPath}" data-obj="${key}" title="Supprimer">🗑️</button>
+                </div>
+              </div>
+            </li>
+          `;
+        });
+        html += '</ul>';
+      }
+
+      html += `
+        <button class="btn-add-obj add-obj" data-cat="${parentPath}.${name}">+ Ajouter un objet ou sous-catégorie</button>
+        </div>
+        </div>
+      `;
+
+      return html;
+    }
+
     function attachContentEvents() {
+      // Collapse/expand sections
+      document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          const cat = header.dataset.cat;
+          const body = document.querySelector(`.section-body[data-cat="${cat}"]`);
+          if (body) {
+            body.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+          }
+        });
+      });
+
+      // Collapse/expand sous-catégories
+      document.querySelectorAll('.sub-cat-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          const subcat = header.dataset.subcat;
+          const parent = header.dataset.parent;
+          const body = document.querySelector(`.sub-cat-body[data-subcat="${subcat}"][data-parent="${parent}"]`);
+          if (body) {
+            body.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+          }
+        });
+      });
+
       // Quantité +
       document.querySelectorAll('.qty-plus').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -713,7 +987,15 @@
         });
       });
 
-      // Ajouter objet
+      // Supprimer sous-catégorie
+      document.querySelectorAll('.delete-subcat').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteSubCategory(btn.dataset.parent, btn.dataset.subcat);
+        });
+      });
+
+      // Ajouter objet ou sous-catégorie
       document.querySelectorAll('.add-obj').forEach(btn => {
         btn.addEventListener('click', () => {
           openAddObjectModal(btn.dataset.cat);
@@ -735,19 +1017,19 @@
       }
     }
 
-    // ========== ACTIONS SUR LES OBJETS ==========
+    // ========== ACTIONS ==========
 
-    async function updateQuantity(cat, objName, delta) {
-      const obj = currentInventoryData.objets[cat][objName];
+    async function updateQuantity(catPath, objName, delta) {
+      const obj = getObjectAtPath(catPath, objName);
+      if (!obj) return;
       const currentQty = obj.q || 0;
       const newQty = Math.max(0, currentQty + delta);
 
       try {
         await updateDoc(doc(db, 'I', currentInventoryId), {
-          [`objets.${cat}.${objName}.q`]: newQty
+          [`objets.${catPath}.${objName}.q`]: newQty
         });
-        await addLog(`Qté ${objName} (${cat}): ${currentQty} → ${newQty}`);
-        currentInventoryData.objets[cat][objName].q = newQty;
+        await addLog(`Qté ${objName} (${catPath}): ${currentQty} → ${newQty}`);
         await loadInventories();
         renderInventoryContent();
       } catch(e) {
@@ -755,18 +1037,40 @@
       }
     }
 
-    async function deleteObject(cat, objName) {
-      if (!confirm(`Supprimer "${objName}" de la catégorie "${cat}" ?`)) return;
+    function getObjectAtPath(catPath, objName) {
+      let current = currentInventoryData.objets || {};
+      const parts = catPath.split('.');
+      for (const part of parts) {
+        if (current[part] === undefined) return null;
+        current = current[part];
+      }
+      return current[objName] || null;
+    }
+
+    async function deleteObject(catPath, objName) {
+      if (!confirm(`Supprimer "${objName}" ?`)) return;
 
       try {
         await updateDoc(doc(db, 'I', currentInventoryId), {
-          [`objets.${cat}.${objName}`]: deleteField()
+          [`objets.${catPath}.${objName}`]: deleteField()
         });
-        await addLog(`Suppression de "${objName}" (${cat})`);
-        delete currentInventoryData.objets[cat][objName];
-        if (Object.keys(currentInventoryData.objets[cat]).length === 0) {
-          delete currentInventoryData.objets[cat];
-        }
+        await addLog(`Suppression de "${objName}" (${catPath})`);
+        await loadInventories();
+        renderInventoryContent();
+      } catch(e) {
+        alert('Erreur : ' + e.message);
+      }
+    }
+
+    async function deleteSubCategory(parentPath, subCatName) {
+      const count = countAllObjects(getObjectAtPath(parentPath, subCatName) || {});
+      if (!confirm(`Supprimer la sous-catégorie "${subCatName}" et ses ${count} objet(s) ?`)) return;
+
+      try {
+        await updateDoc(doc(db, 'I', currentInventoryId), {
+          [`objets.${parentPath}.${subCatName}`]: deleteField()
+        });
+        await addLog(`Suppression de la sous-catégorie "${subCatName}" (${parentPath})`);
         await loadInventories();
         renderInventoryContent();
       } catch(e) {
@@ -775,7 +1079,7 @@
     }
 
     async function deleteCategory(cat) {
-      const count = Object.keys(currentInventoryData.objets[cat] || {}).length;
+      const count = countAllObjects(currentInventoryData.objets[cat] || {});
       if (!confirm(`Supprimer la catégorie "${cat}" et ses ${count} objet(s) ?`)) return;
 
       try {
@@ -783,7 +1087,6 @@
           [`objets.${cat}`]: deleteField()
         });
         await addLog(`Suppression de la catégorie "${cat}" (${count} objets)`);
-        delete currentInventoryData.objets[cat];
         await loadInventories();
         renderInventoryContent();
       } catch(e) {
@@ -836,7 +1139,7 @@
         const id = document.getElementById('modal-id').value.trim().toLowerCase().replace(/\s+/g, '-');
         const nom = document.getElementById('modal-nom').value.trim();
 
-        if (!id || !/^[a-z0-9-]+$/.test(id)) return alert('ID invalide (lettres minuscules, chiffres, tirets).');
+        if (!id || !/^[a-z0-9-]+$/.test(id)) return alert('ID invalide.');
         if (!nom) return alert('Nom requis.');
 
         const exists = await getDoc(doc(db, 'I', id));
@@ -896,7 +1199,7 @@
     function openDeleteModal() {
       const catCount = Object.keys(currentInventoryData.objets || {}).length;
       let objCount = 0;
-      Object.values(currentInventoryData.objets || {}).forEach(cat => { objCount += Object.keys(cat).length; });
+      Object.values(currentInventoryData.objets || {}).forEach(cat => { objCount += countAllObjects(cat); });
 
       modalContent.innerHTML = `
         <h3>Supprimer l'inventaire</h3>
@@ -928,12 +1231,19 @@
       });
     }
 
-    function openAddObjectModal(cat) {
+    function openAddObjectModal(catPath) {
       modalContent.innerHTML = `
-        <h3>Ajouter un objet dans "${cat}"</h3>
-        <div><label>Nom</label><input type="text" id="modal-nom" placeholder="Nom de l'objet"></div>
-        <div><label>Quantité</label><input type="number" id="modal-qty" value="1" min="0"></div>
-        <div><label>Date de péremption</label><input type="date" id="modal-date"><p class="hint">Optionnel</p></div>
+        <h3>Ajouter dans "${catPath}"</h3>
+        <div><label>Nom</label><input type="text" id="modal-nom" placeholder="Nom de l'objet ou de la sous-catégorie"></div>
+        <div class="switch-container" style="margin-top:8px;">
+          <input type="checkbox" id="modal-is-subcat">
+          <label class="switch" for="modal-is-subcat"></label>
+          <span class="switch-label">Créer une sous-catégorie</span>
+        </div>
+        <div id="obj-fields">
+          <div><label>Quantité</label><input type="number" id="modal-qty" value="1" min="0"></div>
+          <div><label>Date de péremption</label><input type="date" id="modal-date"><p class="hint">Optionnel</p></div>
+        </div>
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-save" id="modal-save">Ajouter</button>
@@ -941,22 +1251,48 @@
       `;
       modalOverlay.style.display = 'flex';
 
+      const isSubcatCheckbox = document.getElementById('modal-is-subcat');
+      const objFields = document.getElementById('obj-fields');
+      const qtyInput = document.getElementById('modal-qty');
+      const dateInput = document.getElementById('modal-date');
+
+      isSubcatCheckbox.addEventListener('change', () => {
+        if (isSubcatCheckbox.checked) {
+          objFields.style.display = 'none';
+          qtyInput.disabled = true;
+          dateInput.disabled = true;
+        } else {
+          objFields.style.display = 'block';
+          qtyInput.disabled = false;
+          dateInput.disabled = false;
+        }
+      });
+
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', async () => {
         const nom = document.getElementById('modal-nom').value.trim();
-        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
-        const date = document.getElementById('modal-date').value;
+        const isSubcat = isSubcatCheckbox.checked;
 
         if (!nom) return alert('Nom requis.');
 
-        const objData = { q: qty };
-        if (date) objData.d = date;
-
         try {
-          await updateDoc(doc(db, 'I', currentInventoryId), {
-            [`objets.${cat}.${nom}`]: objData
-          });
-          await addLog(`Ajout de "${nom}" (${cat}, qté:${qty}${date ? ', date:'+date : ''})`);
+          if (isSubcat) {
+            // Créer une sous-catégorie
+            await updateDoc(doc(db, 'I', currentInventoryId), {
+              [`objets.${catPath}.${nom}`]: { _sub: true }
+            });
+            await addLog(`Création sous-catégorie "${nom}" (${catPath})`);
+          } else {
+            const qty = parseInt(qtyInput.value) || 0;
+            const date = dateInput.value;
+            const objData = { q: qty };
+            if (date) objData.d = date;
+
+            await updateDoc(doc(db, 'I', currentInventoryId), {
+              [`objets.${catPath}.${nom}`]: objData
+            });
+            await addLog(`Ajout de "${nom}" (${catPath}, qté:${qty}${date ? ', date:'+date : ''})`);
+          }
           closeModal();
           await loadInventories();
           renderInventoryContent();
@@ -966,8 +1302,44 @@
       });
     }
 
-    function openEditObjectModal(cat, objName) {
-      const obj = currentInventoryData.objets[cat][objName];
+    function openEditObjectModal(catPath, objName) {
+      const obj = getObjectAtPath(catPath, objName);
+      if (!obj) return;
+
+      if (isSubCategory(obj)) {
+        // C'est une sous-catégorie, on la renomme
+        modalContent.innerHTML = `
+          <h3>Renommer la sous-catégorie "${objName}"</h3>
+          <div><label>Nom</label><input type="text" id="modal-nom" value="${objName}"></div>
+          <div class="modal-actions">
+            <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+            <button class="btn btn-save" id="modal-save">Enregistrer</button>
+          </div>
+        `;
+        modalOverlay.style.display = 'flex';
+
+        document.getElementById('modal-cancel').addEventListener('click', closeModal);
+        document.getElementById('modal-save').addEventListener('click', async () => {
+          const newName = document.getElementById('modal-nom').value.trim();
+          if (!newName) return alert('Nom requis.');
+
+          try {
+            const updates = {};
+            updates[`objets.${catPath}.${objName}`] = deleteField();
+            updates[`objets.${catPath}.${newName}`] = obj;
+            await updateDoc(doc(db, 'I', currentInventoryId), updates);
+            await addLog(`Renommage sous-catégorie "${objName}" → "${newName}" (${catPath})`);
+            closeModal();
+            await loadInventories();
+            renderInventoryContent();
+          } catch(e) {
+            alert('Erreur : ' + e.message);
+          }
+        });
+        return;
+      }
+
+      // Objet normal
       modalContent.innerHTML = `
         <h3>Modifier "${objName}"</h3>
         <div><label>Nom</label><input type="text" id="modal-nom" value="${objName}"></div>
@@ -984,7 +1356,6 @@
       `;
       modalOverlay.style.display = 'flex';
 
-      // Supprimer la date
       const removeDateBtn = document.getElementById('remove-date');
       if (removeDateBtn) {
         removeDateBtn.addEventListener('click', () => {
@@ -1006,14 +1377,13 @@
 
         try {
           const updates = {};
-          // Si le nom change, supprimer l'ancien
           if (newName !== objName) {
-            updates[`objets.${cat}.${objName}`] = deleteField();
+            updates[`objets.${catPath}.${objName}`] = deleteField();
           }
-          updates[`objets.${cat}.${newName}`] = objData;
+          updates[`objets.${catPath}.${newName}`] = objData;
 
           await updateDoc(doc(db, 'I', currentInventoryId), updates);
-          await addLog(`Modification de "${objName}" → "${newName}" (${cat}, qté:${qty}${date ? ', date:'+date : ''})`);
+          await addLog(`Modification de "${objName}" → "${newName}" (${catPath}, qté:${qty}${date ? ', date:'+date : ''})`);
           closeModal();
           await loadInventories();
           renderInventoryContent();
