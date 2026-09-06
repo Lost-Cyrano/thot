@@ -19,7 +19,6 @@
       --warning: #f5a623;
       --danger: #e60000;
       --checked: #e8f5e9;
-      --sub-cat-bg: #faf8f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,12 +35,13 @@
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 800px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
+    /* Header */
     .header {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -91,6 +91,7 @@
 
     .btn-logout:hover { background: var(--red); color: #fff; }
 
+    /* Barre de progression */
     .progress-bar-container {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -121,6 +122,7 @@
       transition: width 0.4s ease;
     }
 
+    /* Message info inventaire précédent */
     .info-banner {
       background: #e3f2fd;
       border: 1px solid #90caf9;
@@ -131,6 +133,7 @@
       text-align: center;
     }
 
+    /* Liste des inventaires */
     .inventory-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -161,13 +164,13 @@
       margin-top: 6px;
     }
 
+    /* Sections catégories */
     .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
-      margin-bottom: 16px;
       transition: all 0.3s;
     }
 
@@ -186,37 +189,16 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
-      cursor: pointer;
-      user-select: none;
+      cursor: default;
     }
 
     .section.checked-all .section-header {
       background: #dcedc8;
     }
 
-    .collapse-icon {
-      font-size: 1.2rem;
-      transition: transform 0.3s;
-      display: inline-block;
+    .cat-check-icon {
+      font-size: 1.3rem;
     }
-
-    .section-header.collapsed .collapse-icon {
-      transform: rotate(-90deg);
-    }
-
-    .section-body {
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      overflow: hidden;
-      max-height: 100000px;
-      opacity: 1;
-    }
-
-    .section-body.collapsed {
-      max-height: 0;
-      opacity: 0;
-    }
-
-    .cat-check-icon { font-size: 1.3rem; }
 
     .obj-list { list-style: none; }
 
@@ -286,7 +268,9 @@
       min-width: 0;
     }
 
-    .obj-name { font-weight: 600; }
+    .obj-name {
+      font-weight: 600;
+    }
 
     .obj-item.checked .obj-name {
       text-decoration: line-through;
@@ -316,7 +300,10 @@
       white-space: nowrap;
     }
 
-    .btn-update-date:hover { background: #f0f0f0; border-color: #999; }
+    .btn-update-date:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
 
     .obj-right {
       display: flex;
@@ -338,59 +325,7 @@
       color: #2e7d32;
     }
 
-    .sub-cat-section {
-      border-left: 3px solid #e0d5cc;
-      background: var(--sub-cat-bg);
-      border-radius: 0 8px 8px 0;
-      margin: 8px 0 8px 16px;
-      overflow: hidden;
-      border: 1px solid #e8e0d8;
-      border-left: 3px solid #d0c5bc;
-    }
-
-    .sub-cat-section.checked-all {
-      border-left-color: var(--ok);
-      background: var(--checked);
-    }
-
-    .sub-cat-header {
-      padding: 10px 14px;
-      background: #f5f0eb;
-      border-bottom: 1px solid #e8e0d8;
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 6px;
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.2s;
-    }
-
-    .sub-cat-section.checked-all .sub-cat-header {
-      background: #dcedc8;
-    }
-
-    .sub-cat-body {
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      overflow: hidden;
-      max-height: 100000px;
-      opacity: 1;
-    }
-
-    .sub-cat-body.collapsed {
-      max-height: 0;
-      opacity: 0;
-    }
-
-    .sub-cat-section .sub-cat-section {
-      margin-left: 20px;
-      border-left: 3px solid #c8bdb3;
-      background: #f7f3ef;
-    }
-
+    /* Boutons d'action */
     .action-buttons {
       display: flex;
       gap: 12px;
@@ -412,8 +347,16 @@
       text-align: center;
     }
 
-    .btn-finalize:hover { background: #388e3c; transform: translateY(-1px); }
-    .btn-finalize:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
+    .btn-finalize:hover {
+      background: #388e3c;
+      transform: translateY(-1px);
+    }
+
+    .btn-finalize:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
 
     .btn-find-missing {
       flex: 1;
@@ -430,10 +373,23 @@
       text-align: center;
     }
 
-    .btn-find-missing:hover { background: #e09600; transform: translateY(-1px); }
-    .btn-find-missing.disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
-    .btn-find-missing.disabled:hover { background: #ccc; transform: none; }
+    .btn-find-missing:hover {
+      background: #e09600;
+      transform: translateY(-1px);
+    }
 
+    .btn-find-missing.disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn-find-missing.disabled:hover {
+      background: #ccc;
+      transform: none;
+    }
+
+    /* Modals */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -470,12 +426,12 @@
     @media (max-width: 480px) {
       .obj-item { flex-direction: column; align-items: flex-start; }
       .obj-right { align-self: flex-end; }
-      .sub-cat-section { margin-left: 8px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
       <div class="header-left">
         <span id="header-title" style="font-weight:600;">Thot – Inventaires</span>
@@ -486,8 +442,10 @@
       </div>
     </div>
 
+    <!-- Contenu dynamique -->
     <div id="content"></div>
 
+    <!-- Barre de progression (affichée seulement dans un inventaire) -->
     <div id="progress-container" style="display:none;">
       <div class="progress-bar-container">
         <div class="progress-stats">
@@ -499,6 +457,7 @@
         </div>
       </div>
 
+      <!-- Boutons d'action -->
       <div class="action-buttons" style="margin-top:12px;">
         <button class="btn-finalize" id="btn-finalize">✅ Finaliser l'inventaire</button>
         <button class="btn-find-missing" id="btn-find-missing">🔍 Chercher objet manquant</button>
@@ -506,6 +465,7 @@
     </div>
   </div>
 
+  <!-- Modal -->
   <div class="modal-overlay" id="modal-overlay" style="display:none;">
     <div class="modal" id="modal-content"></div>
   </div>
@@ -534,9 +494,7 @@
     let inventoryData = null;
     let checkedItems = {};
     let userRole = null;
-    let isViewingPreviousFinalized = false;
-
-    const collapsedState = {};
+    let isViewingPreviousFinalized = false; // true si on voit le résultat d'un inventaire finalisé mais on peut en relancer un
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -573,69 +531,7 @@
       return getUrlParams().get('inv');
     }
 
-    function isSubCategory(item) {
-      return item && typeof item === 'object' && item._sub === true;
-    }
-
-    function isCollapsed(path) {
-      return collapsedState[path] === true;
-    }
-
-    function toggleCollapse(path) {
-      collapsedState[path] = !collapsedState[path];
-    }
-
-    function countAllObjects(objets) {
-      let count = 0;
-      Object.keys(objets).forEach(key => {
-        if (key === '_sub') return;
-        const item = objets[key];
-        if (isSubCategory(item)) {
-          count += countAllObjects(item);
-        } else {
-          count++;
-        }
-      });
-      return count;
-    }
-
-    // Récupérer TOUS les objets (pas les sous-catégories) avec leur chemin complet
-    function getAllObjetsFlat(objets, path = '') {
-      const all = [];
-      Object.keys(objets).forEach(key => {
-        if (key === '_sub') return;
-        const item = objets[key];
-        if (isSubCategory(item)) {
-          // C'est une sous-catégorie, on descend dedans
-          const subPath = path ? `${path}.${key}` : key;
-          const subItems = getAllObjetsFlat(item, subPath);
-          all.push(...subItems);
-        } else {
-          // C'est un objet
-          all.push({
-            path: path,
-            objName: key,
-            fullKey: path ? `${path}|${key}` : key
-          });
-        }
-      });
-      return all;
-    }
-
-    // Vérifier si une catégorie (racine) est entièrement cochée
-    function isCategoryFullyChecked(data) {
-      const flatItems = getAllObjetsFlat(data, '');
-      if (flatItems.length === 0) return false;
-      return flatItems.every(item => checkedItems[item.fullKey]);
-    }
-
-    // Vérifier si une sous-catégorie est entièrement cochée
-    function isSubCatFullyChecked(data, path) {
-      const flatItems = getAllObjetsFlat(data, path);
-      if (flatItems.length === 0) return false;
-      return flatItems.every(item => checkedItems[item.fullKey]);
-    }
-
+    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         redirectToLogin();
@@ -684,12 +580,14 @@
     function updateBackButton() {
       const invParam = getInvFromUrl();
       if (invParam) {
+        // Dans un inventaire → retour à la liste
         btnBack.textContent = '← Liste des inventaires';
         btnBack.onclick = () => {
           removeUrlParam('inv');
           showInventoryList();
         };
       } else {
+        // Sur la liste → retour à l'accueil
         btnBack.textContent = '← Retour';
         btnBack.onclick = () => {
           window.location.href = getHomeUrl();
@@ -697,6 +595,7 @@
       }
     }
 
+    // Déconnexion
     document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
@@ -705,6 +604,7 @@
       }
     });
 
+    // Afficher la liste des inventaires
     async function showInventoryList() {
       isViewingPreviousFinalized = false;
       headerTitle.textContent = 'Thot – Inventaires';
@@ -720,7 +620,7 @@
           snap.forEach(docSnap => {
             const data = docSnap.data();
             const nom = data.nom || docSnap.id;
-            const totalObjets = countAllObjects(data.objets || {});
+            const totalObjets = countObjets(data.objets || {});
             let statusText = `${totalObjets} objet(s)`;
             if (data.finaliseDate) {
               const d = new Date(data.finaliseDate);
@@ -749,6 +649,25 @@
       });
     }
 
+    function countObjets(objets) {
+      let count = 0;
+      Object.values(objets).forEach(cat => {
+        count += Object.keys(cat).length;
+      });
+      return count;
+    }
+
+    function getAllObjets(objets) {
+      const all = [];
+      Object.entries(objets).forEach(([cat, items]) => {
+        Object.keys(items).forEach(objName => {
+          all.push({ cat, objName });
+        });
+      });
+      return all;
+    }
+
+    // Charger un inventaire
     async function loadInventory(invId) {
       try {
         const docSnap = await getDoc(doc(db, 'I', invId));
@@ -761,12 +680,8 @@
         currentInventory = invId;
         updateBackButton();
 
+        // Réinitialiser les checks pour un nouvel inventaire
         checkedItems = {};
-        const savedChecks = inventoryData.checks || [];
-        savedChecks.forEach(key => {
-          checkedItems[key] = true;
-        });
-
         isViewingPreviousFinalized = false;
         
         renderInventory();
@@ -802,23 +717,30 @@
       return 'date-ok';
     }
 
+    function isCategoryFullyChecked(cat, items) {
+      return Object.keys(items).every(objName => checkedItems[`${cat}|${objName}`]);
+    }
+
     function renderInventory() {
       headerTitle.textContent = `📋 ${inventoryData.nom || currentInventory}`;
       progressContainer.style.display = 'block';
 
       const objets = inventoryData.objets || {};
-      const allObjets = getAllObjetsFlat(objets);
+      const categories = Object.keys(objets);
+      const allObjets = getAllObjets(objets);
       const totalObjets = allObjets.length;
-      const checkedCount = allObjets.filter(o => checkedItems[o.fullKey]).length;
+      const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
 
+      // Barre de progression
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
       document.getElementById('progress-text').textContent = `Progression : ${checkedCount} / ${totalObjets}`;
       document.getElementById('progress-percent').textContent = `${percent}%`;
       document.getElementById('progress-bar').style.width = `${percent}%`;
 
+      // Bouton Chercher
       const btnFindMissing = document.getElementById('btn-find-missing');
       const btnFinalize = document.getElementById('btn-finalize');
-      const missingObjets = allObjets.filter(o => !checkedItems[o.fullKey]);
+      const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
 
       if (missingObjets.length === 0) {
         btnFindMissing.classList.add('disabled');
@@ -835,6 +757,7 @@
       btnFinalize.style.display = '';
       btnFindMissing.style.display = '';
 
+      // Message d'info si déjà finalisé
       let infoHtml = '';
       if (inventoryData.finaliseDate) {
         const d = new Date(inventoryData.finaliseDate);
@@ -848,115 +771,49 @@
 
       let html = infoHtml;
 
-      const categories = Object.keys(objets).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
-
       if (categories.length === 0) {
         html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
       }
 
       categories.forEach(cat => {
         const items = objets[cat];
-        const catFullyChecked = isCategoryFullyChecked(items);
-        const catPath = cat;
-        const isCatCollapsed = isCollapsed(catPath);
-        const catFlat = getAllObjetsFlat(items, '');
-        const catChecked = catFlat.filter(o => checkedItems[o.fullKey]).length;
+        const itemKeys = Object.keys(items);
+        const catFullyChecked = isCategoryFullyChecked(cat, items);
+        const catCheckedCount = itemKeys.filter(objName => checkedItems[`${cat}|${objName}`]).length;
 
         html += `
-          <div class="section ${catFullyChecked ? 'checked-all' : ''}">
-            <div class="section-header ${isCatCollapsed ? 'collapsed' : ''}" data-collapse-cat="${escapeHtml(cat)}">
+          <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/[^a-zA-Z0-9]/g, '-')}">
+            <div class="section-header">
               <span>
                 <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
                 ${escapeHtml(cat)}
               </span>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <span style="font-size:0.85rem;color:var(--text-light);">${catChecked}/${catFlat.length}</span>
-                <span class="collapse-icon">${isCatCollapsed ? '▶' : '▼'}</span>
-              </div>
+              <span style="font-size:0.85rem;color:var(--text-light);">
+                ${catCheckedCount}/${itemKeys.length}
+              </span>
             </div>
-            <div class="section-body ${isCatCollapsed ? 'collapsed' : ''}">
-              ${renderCategoryContent(cat, items)}
-            </div>
-          </div>
+            <ul class="obj-list">
         `;
-      });
 
-      contentEl.innerHTML = html;
-
-      // Événements collapse
-      document.querySelectorAll('.section-header').forEach(header => {
-        header.addEventListener('click', () => {
-          const cat = header.dataset.collapseCat;
-          toggleCollapse(cat);
-          renderInventory();
-        });
-      });
-
-      document.querySelectorAll('.sub-cat-header').forEach(header => {
-        header.addEventListener('click', () => {
-          const subPath = header.dataset.collapseSubcat;
-          toggleCollapse(subPath);
-          renderInventory();
-        });
-      });
-
-      // Événements clic objets
-      document.querySelectorAll('.obj-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-          if (e.target.classList.contains('btn-update-date')) return;
-          const fullKey = item.dataset.fullkey;
-          const path = item.dataset.path;
-          const objName = item.dataset.obj;
-          toggleCheck(fullKey, path, objName);
-        });
-      });
-
-      // Événements boutons mise à jour date
-      document.querySelectorAll('.btn-update-date').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const path = btn.dataset.path;
-          const objName = btn.dataset.obj;
-          openUpdateDateModal(path, objName);
-        });
-      });
-    }
-
-    // Rendu récursif : objets d'abord, puis sous-catégories
-    function renderCategoryContent(path, data) {
-      const keys = Object.keys(data).filter(k => k !== '_sub');
-      const objKeys = keys.filter(k => !isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
-      const subCatKeys = keys.filter(k => isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
-
-      let html = '';
-
-      if (keys.length === 0) {
-        html += '<p style="padding:12px 18px;color:#999;font-size:0.9rem;">Catégorie vide.</p>';
-      } else {
-        html += '<ul class="obj-list">';
-
-        // Objets directs d'abord
-        objKeys.forEach(key => {
-          const item = data[key];
-          const q = item.q || 0;
-          const d = item.d || null;
-          const fullKey = path ? `${path}|${key}` : key;
-          const isChecked = checkedItems[fullKey];
+        itemKeys.forEach(objName => {
+          const obj = items[objName];
+          const q = obj.q || 0;
+          const d = obj.d || null;
+          const checkKey = `${cat}|${objName}`;
+          const isChecked = checkedItems[checkKey];
           const dateStatus = getDateStatus(d);
           const showUpdateBtn = dateStatus === 'warning' || dateStatus === 'danger';
 
           html += `
             <li class="obj-item ${isChecked ? 'checked' : ''}" 
-                data-fullkey="${escapeHtml(fullKey)}" 
-                data-path="${escapeHtml(path)}" 
-                data-obj="${escapeHtml(key)}"
-                id="obj-${escapeHtml(fullKey.replace(/[^a-zA-Z0-9]/g, '-'))}">
+                data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}" 
+                id="obj-${cat.replace(/[^a-zA-Z0-9]/g, '-')}-${objName.replace(/[^a-zA-Z0-9]/g, '-')}">
               <div class="obj-left">
                 <div class="check-circle">${isChecked ? '✓' : ''}</div>
                 <div class="obj-info">
-                  <span class="obj-name">${escapeHtml(key)}</span>
+                  <span class="obj-name">${escapeHtml(objName)}</span>
                   ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}
-                    ${showUpdateBtn ? `<button class="btn-update-date" data-path="${escapeHtml(path)}" data-obj="${escapeHtml(key)}">📅 Nouvelle date</button>` : ''}
+                    ${showUpdateBtn ? `<button class="btn-update-date" data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}">📅 Nouvelle date</button>` : ''}
                   </span>` : ''}
                 </div>
               </div>
@@ -967,49 +824,47 @@
           `;
         });
 
-        // Sous-catégories ensuite
-        subCatKeys.forEach(key => {
-          const item = data[key];
-          const subPath = path ? `${path}.${key}` : key;
-          const subFullyChecked = isSubCatFullyChecked(item, subPath);
-          const isSubCollapsed = isCollapsed(subPath);
-          const subFlat = getAllObjetsFlat(item, subPath);
-          const subChecked = subFlat.filter(o => checkedItems[o.fullKey]).length;
+        html += `
+            </ul>
+          </div>
+        `;
+      });
 
-          html += `
-            <li class="sub-cat-section ${subFullyChecked ? 'checked-all' : ''}">
-              <div class="sub-cat-header ${isSubCollapsed ? 'collapsed' : ''}" data-collapse-subcat="${escapeHtml(subPath)}">
-                <span>
-                  <span class="cat-check-icon">${subFullyChecked ? '✅' : '📂'}</span>
-                  ${escapeHtml(key)}
-                </span>
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <span style="font-size:0.85rem;color:var(--text-light);">${subChecked}/${subFlat.length}</span>
-                  <span class="collapse-icon">${isSubCollapsed ? '▶' : '▼'}</span>
-                </div>
-              </div>
-              <div class="sub-cat-body ${isSubCollapsed ? 'collapsed' : ''}">
-                ${renderCategoryContent(subPath, item)}
-              </div>
-            </li>
-          `;
+      contentEl.innerHTML = html;
+
+      // Événements clic objets
+      document.querySelectorAll('.obj-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.classList.contains('btn-update-date')) return;
+          const cat = item.dataset.cat;
+          const objName = item.dataset.obj;
+          toggleCheck(cat, objName);
         });
+      });
 
-        html += '</ul>';
-      }
-
-      return html;
+      // Événements boutons mise à jour date
+      document.querySelectorAll('.btn-update-date').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const objName = btn.dataset.obj;
+          openUpdateDateModal(cat, objName);
+        });
+      });
     }
 
     function escapeHtml(str) {
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    async function toggleCheck(fullKey, path, objName) {
-      if (checkedItems[fullKey]) {
-        delete checkedItems[fullKey];
+    // Toggle check
+    async function toggleCheck(cat, objName) {
+      const checkKey = `${cat}|${objName}`;
+
+      if (checkedItems[checkKey]) {
+        delete checkedItems[checkKey];
       } else {
-        checkedItems[fullKey] = true;
+        checkedItems[checkKey] = true;
       }
 
       try {
@@ -1020,32 +875,23 @@
         inventoryData.checks = allChecks;
         renderInventory();
       } catch(e) {
-        if (checkedItems[fullKey]) {
-          delete checkedItems[fullKey];
+        if (checkedItems[checkKey]) {
+          delete checkedItems[checkKey];
         } else {
-          checkedItems[fullKey] = true;
+          checkedItems[checkKey] = true;
         }
         alert('Erreur lors de la sauvegarde : ' + e.message);
       }
     }
 
-    function openUpdateDateModal(path, objName) {
-      let current = inventoryData.objets || {};
-      if (path) {
-        const parts = path.split('.');
-        for (const part of parts) {
-          if (current[part] === undefined) return;
-          current = current[part];
-        }
-      }
-      const obj = current[objName];
-      if (!obj) return;
-
+    // Modal mise à jour date
+    function openUpdateDateModal(cat, objName) {
+      const obj = inventoryData.objets[cat][objName];
       const currentDate = obj.d || '';
 
       modalContent.innerHTML = `
         <h3>Nouvelle date de péremption</h3>
-        <p><strong>${escapeHtml(objName)}</strong> (${escapeHtml(path || 'Racine')})</p>
+        <p><strong>${escapeHtml(objName)}</strong> (${escapeHtml(cat)})</p>
         <p style="font-size:0.85rem;color:var(--text-light);">Date actuelle : ${currentDate ? new Date(currentDate).toLocaleDateString('fr-FR') : 'Aucune'}</p>
         <input type="date" id="modal-new-date" value="${currentDate}" min="${new Date().toISOString().split('T')[0]}">
         <div class="modal-actions">
@@ -1061,27 +907,25 @@
         if (!newDate) return alert('Veuillez sélectionner une date.');
 
         try {
-          const fieldPath = path ? `objets.${path}.${objName}.d` : `objets.${objName}.d`;
           await updateDoc(doc(db, 'I', currentInventory), {
-            [fieldPath]: newDate
+            [`objets.${cat}.${objName}.d`]: newDate
           });
-          await addLog(`Nouvelle date pour ${objName} (${path}) : ${newDate}`);
+          await addLog(`Nouvelle date pour ${objName} (${cat}) : ${newDate}`);
+          inventoryData.objets[cat][objName].d = newDate;
           closeModal();
-          await loadInventory(currentInventory);
+          renderInventory();
         } catch(e) {
           alert('Erreur : ' + e.message);
         }
       });
     }
 
+    // Finaliser
     document.getElementById('btn-finalize').addEventListener('click', () => {
-      const allObjets = getAllObjetsFlat(inventoryData.objets || {});
+      const allObjets = getAllObjets(inventoryData.objets || {});
       const manquants = allObjets
-        .filter(o => !checkedItems[o.fullKey])
-        .map(o => {
-          const location = o.path ? `${o.objName} (${o.path})` : `${o.objName}`;
-          return location;
-        });
+        .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
+        .map(o => `${o.objName} (${o.cat})`);
 
       const message = manquants.length > 0
         ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :\n\n${manquants.join('\n')}\n\nConfirmer la finalisation ?`
@@ -1120,42 +964,21 @@
       });
     });
 
+    // Chercher manquant
     document.getElementById('btn-find-missing').addEventListener('click', () => {
-      const allObjets = getAllObjetsFlat(inventoryData.objets || {});
-      const missing = allObjets.filter(o => !checkedItems[o.fullKey]);
+      const allObjets = getAllObjets(inventoryData.objets || {});
+      const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
       if (missing.length === 0) return;
 
       const firstMissing = missing[0];
-      const elementId = `obj-${firstMissing.fullKey.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const elementId = `obj-${firstMissing.cat.replace(/[^a-zA-Z0-9]/g, '-')}-${firstMissing.objName.replace(/[^a-zA-Z0-9]/g, '-')}`;
       const element = document.getElementById(elementId);
 
       if (element) {
-        // S'assurer que la catégorie parente est dépliée
-        if (firstMissing.path) {
-          const parts = firstMissing.path.split('.');
-          for (let i = 0; i < parts.length; i++) {
-            const subPath = parts.slice(0, i + 1).join('.');
-            if (isCollapsed(subPath)) {
-              toggleCollapse(subPath);
-            }
-          }
-          renderInventory();
-          // Re-requérir l'élément après re-rendu
-          setTimeout(() => {
-            const el = document.getElementById(elementId);
-            if (el) {
-              document.querySelectorAll('.missing-highlight').forEach(e => e.classList.remove('missing-highlight'));
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              el.classList.add('missing-highlight');
-              setTimeout(() => el.classList.remove('missing-highlight'), 3000);
-            }
-          }, 100);
-        } else {
-          document.querySelectorAll('.missing-highlight').forEach(e => e.classList.remove('missing-highlight'));
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('missing-highlight');
-          setTimeout(() => element.classList.remove('missing-highlight'), 3000);
-        }
+        document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('missing-highlight');
+        setTimeout(() => element.classList.remove('missing-highlight'), 3000);
       }
     });
 
