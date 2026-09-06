@@ -601,8 +601,8 @@
     let inventoryData = null;
     let checkedItems = {};
     let userRole = null;
-    let missingIndex = 0; // Index pour naviguer entre les objets manquants
-    let collapsedState = {}; // État de collapse/expand
+    let missingIndex = 0;
+    let collapsedState = {};
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -756,14 +756,15 @@
       return item && typeof item === 'object' && item._sub === true;
     }
 
-    // Compter tous les objets de manière récursive
+    // Compter tous les objets de manière récursive (uniquement les objets, pas les sous-catégories)
     function countAllObjectsRecursive(objets) {
       let count = 0;
       Object.keys(objets).forEach(key => {
+        if (key === '_sub') return;
         const item = objets[key];
         if (isSubCategory(item)) {
           count += countAllObjectsRecursive(item);
-        } else if (key !== '_sub') {
+        } else {
           count++;
         }
       });
@@ -771,22 +772,30 @@
     }
 
     // Obtenir tous les objets de manière récursive
+    // Retourne: [{ cat: 'Catégorie', objName: 'Objet', path: 'Catégorie.SousCat', checkKey: 'Catégorie.SousCat|Objet' }]
     function getAllObjetsRecursive(objets, prefix = '') {
       const all = [];
       Object.keys(objets).forEach(key => {
+        if (key === '_sub') return;
         const item = objets[key];
         if (isSubCategory(item)) {
           const subPath = prefix ? `${prefix}.${key}` : key;
           all.push(...getAllObjetsRecursive(item, subPath));
-        } else if (key !== '_sub') {
-          const cat = prefix || key;
-          all.push({ cat, objName: key, path: prefix, displayName: `${key}${prefix ? ` (${prefix})` : ''}` });
+        } else {
+          const path = prefix || '';
+          const checkKey = path ? `${path}|${key}` : key;
+          all.push({
+            cat: path || key,
+            objName: key,
+            path: path,
+            checkKey: checkKey,
+            displayName: path ? `${key} (${path})` : key
+          });
         }
       });
       return all;
     }
 
-    // Vérifier si un chemin est collapsé
     function isCollapsed(path) {
       return collapsedState[path] === true;
     }
@@ -808,7 +817,14 @@
         missingIndex = 0;
         collapsedState = {};
         updateBackButton();
+        
+        // Charger les checks depuis Firestore
         checkedItems = {};
+        const savedChecks = inventoryData.checks || [];
+        savedChecks.forEach(key => {
+          checkedItems[key] = true;
+        });
+        
         renderInventory();
       } catch(e) {
         contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>';
@@ -842,18 +858,17 @@
       return 'date-ok';
     }
 
-    // Vérifier si tous les objets d'une catégorie (récursif) sont cochés
+    // Vérifier si tous les objets d'une structure (récursif) sont cochés
     function isCategoryFullyCheckedRecursive(items, prefix = '') {
-      return Object.keys(items).every(key => {
-        if (key === '_sub') return true;
-        const item = items[key];
-        if (isSubCategory(item)) {
-          const subPath = prefix ? `${prefix}.${key}` : key;
-          return isCategoryFullyCheckedRecursive(item, subPath);
-        }
-        const checkKey = prefix ? `${prefix}|${key}` : `${key}|${key}`;
-        return checkedItems[checkKey] === true;
-      });
+      const allObjets = getAllObjetsRecursive(items, prefix);
+      if (allObjets.length === 0) return true;
+      return allObjets.every(o => checkedItems[o.checkKey] === true);
+    }
+
+    // Compter les objets cochés dans une structure
+    function countCheckedInRecursive(items, prefix = '') {
+      const allObjets = getAllObjetsRecursive(items, prefix);
+      return allObjets.filter(o => checkedItems[o.checkKey] === true).length;
     }
 
     function renderInventory() {
@@ -863,14 +878,7 @@
       const objets = inventoryData.objets || {};
       const allObjets = getAllObjetsRecursive(objets);
       const totalObjets = allObjets.length;
-
-      // Construire la clé de check pour chaque objet
-      const objCheckKeys = allObjets.map(o => {
-        const catKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
-        return { ...o, checkKey: catKey };
-      });
-
-      const checkedCount = objCheckKeys.filter(o => checkedItems[o.checkKey]).length;
+      const checkedCount = allObjets.filter(o => checkedItems[o.checkKey] === true).length;
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
 
       document.getElementById('progress-text').textContent = `Progression : ${checkedCount} / ${totalObjets}`;
@@ -879,7 +887,7 @@
 
       const btnFindMissing = document.getElementById('btn-find-missing');
       const btnFinalize = document.getElementById('btn-finalize');
-      const missingObjets = objCheckKeys.filter(o => !checkedItems[o.checkKey]);
+      const missingObjets = allObjets.filter(o => checkedItems[o.checkKey] !== true);
 
       if (missingObjets.length === 0) {
         btnFindMissing.classList.add('disabled');
@@ -918,16 +926,13 @@
         const items = objets[cat];
         const catFullyChecked = isCategoryFullyCheckedRecursive(items, cat);
         const catTotalCount = countAllObjectsRecursive(items);
-        const catCheckedCount = getAllObjetsRecursive(items, cat).filter(o => {
-          const checkKey = o.path ? `${o.path}|${o.objName}` : `${cat}|${o.objName}`;
-          return checkedItems[checkKey];
-        }).length;
+        const catCheckedCount = countCheckedInRecursive(items, cat);
         const catPath = cat;
         const isCatCollapsed = isCollapsed(catPath);
 
         html += `
           <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/[^a-zA-Z0-9]/g, '-')}">
-            <div class="section-header ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
+            <div class="section-header ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${escapeHtml(cat)}">
               <span>
                 <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
                 ${escapeHtml(cat)}
@@ -937,7 +942,7 @@
                 <span class="collapse-icon">${isCatCollapsed ? '▶' : '▼'}</span>
               </div>
             </div>
-            <div class="section-body ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
+            <div class="section-body ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${escapeHtml(cat)}">
               ${renderCategoryContentRecursive(cat, items)}
             </div>
           </div>
@@ -956,8 +961,7 @@
       });
 
       document.querySelectorAll('.sub-cat-header').forEach(header => {
-        header.addEventListener('click', (e) => {
-          if (e.target.closest('button')) return;
+        header.addEventListener('click', () => {
           const subPath = header.dataset.subpath;
           toggleCollapse(subPath);
           renderInventory();
@@ -968,10 +972,9 @@
       document.querySelectorAll('.obj-item').forEach(item => {
         item.addEventListener('click', (e) => {
           if (e.target.closest('.btn-update-date')) return;
-          const cat = item.dataset.cat;
           const objName = item.dataset.obj;
           const path = item.dataset.path || '';
-          toggleCheck(cat, objName, path);
+          toggleCheck(objName, path);
         });
       });
 
@@ -979,10 +982,9 @@
       document.querySelectorAll('.btn-update-date').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const cat = btn.dataset.cat;
           const objName = btn.dataset.obj;
           const path = btn.dataset.path || '';
-          openUpdateDateModal(cat, objName, path);
+          openUpdateDateModal(objName, path);
         });
       });
     }
@@ -1005,22 +1007,22 @@
           const item = data[key];
           const q = item.q || 0;
           const d = item.d || null;
-          const checkKey = `${path}|${key}`;
-          const isChecked = checkedItems[checkKey];
+          const checkKey = path ? `${path}|${key}` : key;
+          const isChecked = checkedItems[checkKey] === true;
           const dateStatus = getDateStatus(d);
           const showUpdateBtn = dateStatus === 'warning' || dateStatus === 'danger';
           const elementId = `obj-${path.replace(/[^a-zA-Z0-9]/g, '-')}-${key.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
           html += `
             <li class="obj-item ${isChecked ? 'checked' : ''}" 
-                data-cat="${escapeHtml(path)}" data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}"
+                data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}"
                 id="${elementId}">
               <div class="obj-left">
                 <div class="check-circle">${isChecked ? '✓' : ''}</div>
                 <div class="obj-info">
                   <span class="obj-name">${escapeHtml(key)}</span>
                   ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}
-                    ${showUpdateBtn ? `<button class="btn-update-date" data-cat="${escapeHtml(path)}" data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}">📅 Nouvelle date</button>` : ''}
+                    ${showUpdateBtn ? `<button class="btn-update-date" data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}">📅 Nouvelle date</button>` : ''}
                   </span>` : ''}
                 </div>
               </div>
@@ -1037,10 +1039,7 @@
           const subPath = `${path}.${key}`;
           const subTotalCount = countAllObjectsRecursive(item);
           const isSubCollapsed = isCollapsed(subPath);
-          const subCheckedCount = getAllObjetsRecursive(item, subPath).filter(o => {
-            const checkKey = `${o.path}|${o.objName}`;
-            return checkedItems[checkKey];
-          }).length;
+          const subCheckedCount = countCheckedInRecursive(item, subPath);
 
           html += `
             <li class="sub-cat-section" data-subpath="${escapeHtml(subPath)}">
@@ -1068,8 +1067,8 @@
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    async function toggleCheck(cat, objName, path) {
-      const checkKey = path ? `${path}|${objName}` : `${cat}|${objName}`;
+    async function toggleCheck(objName, path) {
+      const checkKey = path ? `${path}|${objName}` : objName;
 
       if (checkedItems[checkKey]) {
         delete checkedItems[checkKey];
@@ -1094,19 +1093,21 @@
       }
     }
 
-    function openUpdateDateModal(cat, objName, path) {
-      // Naviguer dans la structure pour trouver l'objet
+    function openUpdateDateModal(objName, path) {
+      // Naviguer dans la structure
       let current = inventoryData.objets || {};
-      const parts = path ? path.split('.') : [cat];
-      for (const part of parts) {
-        if (current[part] === undefined) return;
-        current = current[part];
+      if (path) {
+        const parts = path.split('.');
+        for (const part of parts) {
+          if (current[part] === undefined) return;
+          current = current[part];
+        }
       }
       const obj = current[objName];
       if (!obj) return;
 
       const currentDate = obj.d || '';
-      const displayPath = path ? `${path} > ${objName}` : `${cat} > ${objName}`;
+      const displayPath = path ? `${path} > ${objName}` : objName;
 
       modalContent.innerHTML = `
         <h3>Nouvelle date de péremption</h3>
@@ -1128,8 +1129,8 @@
 
         try {
           const fieldPath = path 
-            ? `objets.${path.split('.').map(p => p).join('.')}.${objName}.d`
-            : `objets.${cat}.${objName}.d`;
+            ? `objets.${path}.${objName}.d`
+            : `objets.${objName}.d`;
           await updateDoc(doc(db, 'I', currentInventory), {
             [fieldPath]: newDate
           });
@@ -1137,9 +1138,11 @@
           
           // Mettre à jour localement
           let current = inventoryData.objets;
-          const parts = path ? path.split('.') : [cat];
-          for (const part of parts) {
-            current = current[part];
+          if (path) {
+            const parts = path.split('.');
+            for (const part of parts) {
+              current = current[part];
+            }
           }
           current[objName].d = newDate;
           
@@ -1155,11 +1158,8 @@
     document.getElementById('btn-finalize').addEventListener('click', () => {
       const allObjets = getAllObjetsRecursive(inventoryData.objets || {});
       const manquants = allObjets
-        .filter(o => {
-          const checkKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
-          return !checkedItems[checkKey];
-        })
-        .map(o => o.displayName || `${o.objName} (${o.path || o.cat})`);
+        .filter(o => checkedItems[o.checkKey] !== true)
+        .map(o => o.displayName);
 
       let messageHtml = '';
       if (manquants.length > 0) {
@@ -1210,10 +1210,7 @@
     // Chercher manquant avec navigation cyclique
     document.getElementById('btn-find-missing').addEventListener('click', () => {
       const allObjets = getAllObjetsRecursive(inventoryData.objets || {});
-      const missing = allObjets.filter(o => {
-        const checkKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
-        return !checkedItems[checkKey];
-      });
+      const missing = allObjets.filter(o => checkedItems[o.checkKey] !== true);
 
       if (missing.length === 0) return;
 
@@ -1222,24 +1219,25 @@
       missingIndex = (missingIndex + 1) % missing.length;
 
       // Construire l'ID de l'élément
-      const pathForId = target.path ? target.path.replace(/[^a-zA-Z0-9]/g, '-') : target.cat.replace(/[^a-zA-Z0-9]/g, '-');
+      const pathForId = target.path ? target.path.replace(/[^a-zA-Z0-9]/g, '-') : '';
       const objForId = target.objName.replace(/[^a-zA-Z0-9]/g, '-');
       const elementId = `obj-${pathForId}-${objForId}`;
 
-      // Vérifier si l'élément est dans une catégorie/sous-catégorie collapsée
-      // Si oui, on l'expand
-      const pathParts = target.path ? target.path.split('.') : [target.cat];
-      for (let i = 1; i <= pathParts.length; i++) {
-        const partialPath = pathParts.slice(0, i).join('.');
-        if (isCollapsed(partialPath)) {
-          toggleCollapse(partialPath);
+      // Expand les catégories/sous-catégories collapsées sur le chemin
+      if (target.path) {
+        const pathParts = target.path.split('.');
+        for (let i = 1; i <= pathParts.length; i++) {
+          const partialPath = pathParts.slice(0, i).join('.');
+          if (isCollapsed(partialPath)) {
+            toggleCollapse(partialPath);
+          }
         }
       }
 
       // Re-render pour appliquer les changements de collapse
       renderInventory();
 
-      // Maintenant scroll vers l'élément
+      // Scroll vers l'élément
       setTimeout(() => {
         const element = document.getElementById(elementId);
         if (element) {
