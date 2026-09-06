@@ -322,6 +322,7 @@
       color: #2e7d32;
     }
 
+    /* Sous-catégorie */
     .sub-cat-section {
       border-left: 3px solid #e0d5cc;
       background: var(--sub-cat-bg);
@@ -333,6 +334,12 @@
     }
 
     .sub-cat-section:last-child { margin-bottom: 0; }
+
+    .sub-cat-section.checked-all {
+      background: var(--checked);
+      border-color: var(--ok);
+      border-left: 3px solid var(--ok);
+    }
 
     .sub-cat-header {
       padding: 10px 14px;
@@ -350,16 +357,20 @@
       transition: background 0.2s;
     }
 
-    .sub-cat-header:hover { background: #ede8e2; }
-
-    .sub-cat-header.collapsed .collapse-icon {
-      transform: rotate(-90deg);
+    .sub-cat-section.checked-all .sub-cat-header {
+      background: #dcedc8;
     }
 
-    .collapse-icon {
+    .sub-cat-header:hover { background: #ede8e2; }
+
+    .sub-cat-header .collapse-icon {
       font-size: 1.1rem;
       transition: transform 0.3s;
       display: inline-block;
+    }
+
+    .sub-cat-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
     }
 
     .sub-cat-body {
@@ -699,50 +710,29 @@
     function countAllObjects(objets) {
       let count = 0;
       Object.keys(objets).forEach(key => {
+        if (key === '_sub') return;
         const item = objets[key];
         if (isSubCategory(item)) {
           count += countAllObjects(item);
-        } else if (key !== '_sub') {
+        } else {
           count++;
         }
       });
       return count;
     }
 
-    // Récupère TOUS les objets (y compris dans les sous-catégories) avec leur chemin
+    // Récupère TOUS les objets (y compris dans les sous-catégories) avec leur chemin complet
     function getAllObjets(objets, parentPath = '') {
       const all = [];
-      Object.entries(objets).forEach(([cat, items]) => {
-        const fullPath = parentPath ? `${parentPath}.${cat}` : cat;
-        if (isSubCategory(items)) {
-          const subObjets = getAllObjets(items, fullPath);
-          all.push(...subObjets);
-        } else {
-          Object.keys(items).forEach(objName => {
-            if (isSubCategory(items[objName])) {
-              const subObjets = getAllObjets(items[objName], `${fullPath}.${objName}`);
-              all.push(...subObjets);
-            } else {
-              all.push({ cat: fullPath, objName });
-            }
-          });
-        }
-      });
-      return all;
-    }
-
-    // CORRECTION : Fonction pour obtenir tous les objets d'une catégorie avec le bon chemin
-    function getAllObjetsFromCategory(items, path) {
-      const all = [];
-      Object.keys(items).forEach(key => {
+      Object.keys(objets).forEach(key => {
         if (key === '_sub') return;
-        const item = items[key];
+        const item = objets[key];
+        const fullPath = parentPath ? `${parentPath}.${key}` : key;
         if (isSubCategory(item)) {
-          const subPath = `${path}.${key}`;
-          const subObjets = getAllObjetsFromCategory(item, subPath);
+          const subObjets = getAllObjets(item, fullPath);
           all.push(...subObjets);
         } else {
-          all.push({ cat: path, objName: key });
+          all.push({ cat: parentPath, objName: key });
         }
       });
       return all;
@@ -774,7 +764,7 @@
         checkedItems = {};
         collapsedState = {};
         
-        if (inventoryData.checks) {
+        if (inventoryData.checks && Array.isArray(inventoryData.checks)) {
           inventoryData.checks.forEach(key => {
             checkedItems[key] = true;
           });
@@ -813,16 +803,43 @@
       return 'date-ok';
     }
 
-    // CORRECTION : Vérifie si tous les objets d'un chemin sont cochés
-    function isCategoryFullyChecked(path, items) {
-      const allInPath = getAllObjetsFromCategory(items, path);
-      return allInPath.length > 0 && allInPath.every(o => checkedItems[`${o.cat}|${o.objName}`]);
+    // Compte les objets cochés dans un chemin donné (récursif)
+    function countCheckedInPath(path, items) {
+      let count = 0;
+      Object.keys(items).forEach(key => {
+        if (key === '_sub') return;
+        const item = items[key];
+        if (isSubCategory(item)) {
+          const subPath = `${path}.${key}`;
+          count += countCheckedInPath(subPath, item);
+        } else {
+          const checkKey = `${path}|${key}`;
+          if (checkedItems[checkKey]) count++;
+        }
+      });
+      return count;
     }
 
-    // CORRECTION : Compte les objets cochés dans un chemin
-    function countCheckedInPath(path, items) {
-      const allInPath = getAllObjetsFromCategory(items, path);
-      return allInPath.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
+    // Compte le total des objets dans un chemin donné (récursif)
+    function countTotalInPath(items) {
+      let count = 0;
+      Object.keys(items).forEach(key => {
+        if (key === '_sub') return;
+        const item = items[key];
+        if (isSubCategory(item)) {
+          count += countTotalInPath(item);
+        } else {
+          count++;
+        }
+      });
+      return count;
+    }
+
+    // Vérifie si tous les objets dans un chemin sont cochés
+    function isPathFullyChecked(path, items) {
+      const total = countTotalInPath(items);
+      const checked = countCheckedInPath(path, items);
+      return total > 0 && checked === total;
     }
 
     function isCollapsed(path) {
@@ -887,7 +904,12 @@
 
       categories.forEach(cat => {
         const items = objets[cat];
-        html += renderCategorySection(cat, items);
+        if (isSubCategory(items)) {
+          // Sécurité : une catégorie racine ne devrait pas être une sous-catégorie
+          html += renderCategorySection(cat, items);
+        } else {
+          html += renderCategorySection(cat, items);
+        }
       });
 
       contentEl.innerHTML = html;
@@ -896,10 +918,9 @@
 
     function renderCategorySection(cat, items) {
       const catPath = cat;
-      const catFullyChecked = isCategoryFullyChecked(catPath, items);
+      const catFullyChecked = isPathFullyChecked(catPath, items);
       const catCheckedCount = countCheckedInPath(catPath, items);
-      const allInCat = getAllObjetsFromCategory(items, catPath);
-      const catTotalCount = allInCat.length;
+      const catTotalCount = countTotalInPath(items);
 
       let html = `
         <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/[^a-zA-Z0-9]/g, '-')}">
@@ -932,6 +953,7 @@
       } else {
         html += '<ul class="obj-list">';
 
+        // Objets d'abord
         objKeys.forEach(objName => {
           const obj = data[objName];
           const q = obj.q || 0;
@@ -961,13 +983,13 @@
           `;
         });
 
+        // Puis sous-catégories
         subCatKeys.forEach(key => {
           const item = data[key];
           const subPath = `${path}.${key}`;
-          const subFullyChecked = isCategoryFullyChecked(subPath, item);
+          const subFullyChecked = isPathFullyChecked(subPath, item);
           const subCheckedCount = countCheckedInPath(subPath, item);
-          const allInSub = getAllObjetsFromCategory(item, subPath);
-          const subTotalCount = allInSub.length;
+          const subTotalCount = countTotalInPath(item);
           const isSubCollapsed = isCollapsed(subPath);
 
           html += `
@@ -996,6 +1018,7 @@
     }
 
     function attachEvents() {
+      // Collapse/expand sous-catégories
       document.querySelectorAll('.sub-cat-header').forEach(header => {
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
@@ -1007,6 +1030,7 @@
         });
       });
 
+      // Clic objets
       document.querySelectorAll('.obj-item').forEach(item => {
         item.addEventListener('click', (e) => {
           if (e.target.classList.contains('btn-update-date')) return;
@@ -1016,6 +1040,7 @@
         });
       });
 
+      // Mise à jour date
       document.querySelectorAll('.btn-update-date').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1084,11 +1109,13 @@
             [`objets.${cat}.${objName}.d`]: newDate
           });
           await addLog(`Nouvelle date pour ${objName} (${cat}) : ${newDate}`);
-          // Mettre à jour localement
-          const parent = getObjetsAtPath(cat);
-          if (parent && parent[objName]) {
-            parent[objName].d = newDate;
+          // Mettre à jour les données locales
+          let current = inventoryData.objets;
+          const parts = cat.split('.');
+          for (const part of parts) {
+            current = current[part];
           }
+          current[objName].d = newDate;
           closeModal();
           renderInventory();
         } catch(e) {
@@ -1150,36 +1177,38 @@
       const element = document.getElementById(elementId);
 
       if (element) {
-        // Déplier les sous-catégories parentes si nécessaire
-        const parentSubCats = element.closestAll('.sub-cat-section');
-        parentSubCats.forEach(subCat => {
-          const subCatHeader = subCat.querySelector(':scope > .sub-cat-header');
-          const subCatBody = subCat.querySelector(':scope > .sub-cat-body');
+        // Déplier les sous-catégories parents
+        const parents = element.closestAll('.sub-cat-section');
+        parents.forEach(parent => {
+          const subCatHeader = parent.querySelector('.sub-cat-header');
+          const subCatBody = parent.querySelector('.sub-cat-body');
           if (subCatHeader && subCatBody && subCatBody.classList.contains('collapsed')) {
             subCatBody.classList.remove('collapsed');
             subCatHeader.classList.remove('collapsed');
             const subcat = subCatHeader.dataset.subcat;
-            const parent = subCatHeader.dataset.parent;
-            collapsedState[`${parent}.${subcat}`] = false;
+            const parentPath = subCatHeader.dataset.parent;
+            collapsedState[`${parentPath}.${subcat}`] = false;
           }
         });
 
         document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('missing-highlight');
-        setTimeout(() => element.classList.remove('missing-highlight'), 3000);
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('missing-highlight');
+          setTimeout(() => element.classList.remove('missing-highlight'), 3000);
+        }, 100);
       }
     });
 
-    // Helper : closestAll pour trouver tous les ancêtres
+    // Polyfill pour closestAll (remonte tous les ancêtres correspondants)
     Element.prototype.closestAll = function(selector) {
       const result = [];
-      let current = this.parentElement;
-      while (current) {
-        if (current.matches && current.matches(selector)) {
-          result.push(current);
+      let el = this.parentElement;
+      while (el) {
+        if (el.matches && el.matches(selector)) {
+          result.push(el);
         }
-        current = current.parentElement;
+        el = el.parentElement;
       }
       return result;
     };
