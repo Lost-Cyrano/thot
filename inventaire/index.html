@@ -19,7 +19,7 @@
     .progress-stats { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:.9rem; }
     .progress-outer { background:#e0e0e0; border-radius:10px; height:12px; overflow:hidden; }
     .progress-inner { background:var(--ok); height:100%; border-radius:10px; transition:width .4s ease; }
-    .info-banner { background:#e3f2fd; border:1px solid #90caf9; border-radius:var(--radius); padding:10px 16px; font-size:.9rem; color:#1565c0; text-align:center; }
+    .info-banner { background:#e3f2fd; border:1px solid #90caf9; border-radius:var(--radius); padding:10px 16px; font-size:.9rem; color:#1565c0; text-align:center; margin-bottom:24px; }
     .inventory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
     .inventory-card { background:var(--card-bg); border:2px solid var(--border); border-radius:var(--radius); padding:20px; cursor:pointer; transition:all .2s; text-align:center; font-weight:600; font-size:1.1rem; box-shadow:var(--shadow); }
     .inventory-card:hover { border-color:var(--red); transform:translateY(-2px); }
@@ -50,7 +50,7 @@
     .obj-quantity { font-weight:600; font-size:.9rem; background:#f0f0f0; padding:4px 10px; border-radius:12px; }
     .obj-item.checked .obj-quantity { background:#c8e6c9; color:#2e7d32; }
     .sub-cat-section { border-left:3px solid #e0d5cc; background:var(--sub-cat-bg); border-radius:0 8px 8px 0; margin:8px 0 8px 16px; overflow:hidden; border:1px solid #e8e0d8; border-left:3px solid #d0c5bc; }
-    .sub-cat-section:last-child { margin-bottom:0; }
+    .sub-cat-section:last-child { margin-bottom:12px; }
     .sub-cat-section.checked-all { background:var(--checked); border-color:var(--ok); border-left:3px solid var(--ok); }
     .sub-cat-header { padding:10px 14px; background:#f5f0eb; border-bottom:1px solid #e8e0d8; font-weight:600; font-size:.9rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; cursor:pointer; user-select:none; transition:background .2s; }
     .sub-cat-section.checked-all .sub-cat-header { background:#dcedc8; }
@@ -60,17 +60,21 @@
     .sub-cat-body { transition:max-height .3s ease,opacity .3s ease; overflow:hidden; max-height:100000px; opacity:1; }
     .sub-cat-body.collapsed { max-height:0; opacity:0; }
     .sub-cat-section .sub-cat-section { margin-left:20px; border-left:3px solid #c8bdb3; background:#f7f3ef; }
+    .sub-cat-section .sub-cat-section:last-child { margin-bottom:12px; }
     .action-buttons { display:flex; gap:12px; flex-wrap:wrap; }
     .btn-finalize,.btn-find-missing { flex:1; min-width:180px; padding:14px 20px; border-radius:var(--radius); cursor:pointer; font-weight:700; font-size:1rem; transition:all .2s; text-align:center; border:none; color:#fff; }
     .btn-finalize { background:var(--ok); } .btn-finalize:hover { background:#388e3c; transform:translateY(-1px); } .btn-finalize:disabled { background:#ccc; cursor:not-allowed; opacity:.6; }
     .btn-find-missing { background:var(--warning); } .btn-find-missing:hover { background:#e09600; transform:translateY(-1px); } .btn-find-missing.disabled { background:#ccc; cursor:not-allowed; opacity:.6; }
     .btn-find-missing.disabled:hover { background:#ccc; transform:none; }
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
-    .modal { background:#fff; border-radius:var(--radius); padding:24px; width:100%; max-width:420px; box-shadow:0 10px 30px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:14px; }
+    .modal { background:#fff; border-radius:var(--radius); padding:24px; width:100%; max-width:420px; box-shadow:0 10px 30px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:14px; max-height:80vh; overflow-y:auto; }
     .modal h3 { font-size:1.1rem; } .modal input { width:100%; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-size:.95rem; }
     .modal-actions { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
     .btn { padding:10px 18px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:.9rem; }
     .btn-cancel { background:#eee; color:#333; } .btn-confirm { background:var(--ok); color:#fff; } .btn-save { background:var(--red); color:#fff; } .btn-danger { background:#c00; color:#fff; }
+    .missing-list { background:#f5f5f5; border-radius:8px; padding:12px; margin:8px 0; max-height:200px; overflow-y:auto; }
+    .missing-list-item { padding:6px 10px; border-bottom:1px solid #e0e0e0; font-size:0.85rem; }
+    .missing-list-item:last-child { border-bottom:none; }
     @media (max-width:480px) { .obj-item { flex-direction:column; align-items:flex-start; } .obj-right { align-self:flex-end; } .sub-cat-section { margin-left:8px; } }
   </style>
 </head>
@@ -121,6 +125,7 @@
     let checkedItems = {};
     let userRole = null;
     let collapsedState = {};
+    let missingIndex = 0; // Pour cycler sur les objets manquants
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -166,23 +171,13 @@
       if (user) { await deleteUser(user).catch(()=>{}); window.location.href = '../login.html'; }
     });
 
-    // ===== FONCTIONS DE COMPTAGE =====
     function isSubCategory(item) { return item && typeof item === 'object' && item._sub === true; }
     function countObjectsInCategory(categoryData) {
       let count = 0;
-      Object.keys(categoryData).forEach(key => {
-        if (key === '_sub') return;
-        const item = categoryData[key];
-        if (isSubCategory(item)) count += countObjectsInCategory(item);
-        else count++;
-      });
+      Object.keys(categoryData).forEach(key => { if (key === '_sub') return; const item = categoryData[key]; if (isSubCategory(item)) count += countObjectsInCategory(item); else count++; });
       return count;
     }
-    function countAllObjectsInInventory(objets) {
-      let count = 0;
-      Object.keys(objets).forEach(catName => { count += countObjectsInCategory(objets[catName]); });
-      return count;
-    }
+    function countAllObjectsInInventory(objets) { let count = 0; Object.keys(objets).forEach(catName => { count += countObjectsInCategory(objets[catName]); }); return count; }
     function getObjetsFromCategory(categoryData, path) {
       const all = [];
       Object.keys(categoryData).forEach(key => {
@@ -193,11 +188,7 @@
       });
       return all;
     }
-    function getAllObjetsFromInventory(objets) {
-      const all = [];
-      Object.keys(objets).forEach(catName => { all.push(...getObjetsFromCategory(objets[catName], catName)); });
-      return all;
-    }
+    function getAllObjetsFromInventory(objets) { const all = []; Object.keys(objets).forEach(catName => { all.push(...getObjetsFromCategory(objets[catName], catName)); }); return all; }
     function getObjetsAtPath(path) {
       let current = inventoryData.objets || {};
       if (!path) return current;
@@ -206,7 +197,6 @@
       return current;
     }
 
-    // ===== AFFICHAGE LISTE =====
     async function showInventoryList() {
       headerTitle.textContent = 'Thot – Inventaires';
       progressContainer.style.display = 'none';
@@ -233,7 +223,6 @@
       });
     }
 
-    // ===== CHARGEMENT INVENTAIRE =====
     async function loadInventory(invId) {
       try {
         const docSnap = await getDoc(doc(db, 'I', invId));
@@ -243,6 +232,7 @@
         updateBackButton();
         checkedItems = {};
         collapsedState = {};
+        missingIndex = 0;
         if (inventoryData.checks && Array.isArray(inventoryData.checks)) { inventoryData.checks.forEach(key => { checkedItems[key] = true; }); }
         renderInventory();
       } catch(e) { contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>'; progressContainer.style.display = 'none'; }
@@ -254,12 +244,7 @@
 
     function countCheckedInPath(path, items) {
       let count = 0;
-      Object.keys(items).forEach(key => {
-        if (key === '_sub') return;
-        const item = items[key];
-        if (isSubCategory(item)) { const subPath = `${path}.${key}`; count += countCheckedInPath(subPath, item); }
-        else { const checkKey = `${path}|${key}`; if (checkedItems[checkKey]) count++; }
-      });
+      Object.keys(items).forEach(key => { if (key === '_sub') return; const item = items[key]; if (isSubCategory(item)) { const subPath = `${path}.${key}`; count += countCheckedInPath(subPath, item); } else { const checkKey = `${path}|${key}`; if (checkedItems[checkKey]) count++; } });
       return count;
     }
     function countTotalInPath(items) { return countObjectsInCategory(items); }
@@ -449,20 +434,27 @@
     document.getElementById('btn-finalize').addEventListener('click', () => {
       const allObjets = getAllObjetsFromInventory(inventoryData.objets || {});
       const manquants = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]).map(o => `${o.objName} (${o.cat})`);
-      const message = manquants.length > 0 ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :\n\n${manquants.join('\n')}\n\nConfirmer la finalisation ?` : '🎉 Tous les objets ont été vérifiés !\n\nConfirmer la finalisation de l\'inventaire ?';
-      modalContent.innerHTML = `<h3>Finaliser l'inventaire</h3><p style="white-space:pre-line;">${message}</p><div class="modal-actions"><button class="btn btn-cancel" id="modal-cancel">Annuler</button><button class="btn btn-confirm" id="modal-confirm">Finaliser</button></div>`;
+      const message = manquants.length > 0 ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :` : '🎉 Tous les objets ont été vérifiés !';
+      const manquantsHtml = manquants.map(m => `<div class="missing-list-item">• ${escapeHtml(m)}</div>`).join('');
+      modalContent.innerHTML = `
+        <h3>Finaliser l'inventaire</h3>
+        <p>${message}</p>
+        ${manquants.length > 0 ? `<div class="missing-list">${manquantsHtml}</div>` : ''}
+        <p>Confirmer la finalisation ?</p>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-confirm" id="modal-confirm">Finaliser</button>
+        </div>`;
       modalOverlay.style.display = 'flex';
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-confirm').addEventListener('click', async () => {
         try {
-          await updateDoc(doc(db, 'I', currentInventory), { finalise: true, finaliseDate: new Date().toISOString(), finalisePar: currentNivol, manquants: manquants, checks: Object.keys(checkedItems) });
+          await updateDoc(doc(db, 'I', currentInventory), { finalise: true, finaliseDate: new Date().toISOString(), finalisePar: currentNivol, manquants: manquants, checks: [] });
           await addLog(`Finalisation de l'inventaire (${manquants.length} manquants)`);
-          inventoryData.finalise = true;
-          inventoryData.finaliseDate = new Date().toISOString();
-          inventoryData.finalisePar = currentNivol;
-          inventoryData.manquants = manquants;
           closeModal();
-          renderInventory();
+          // Retour à la liste des inventaires
+          removeUrlParam('inv');
+          showInventoryList();
         } catch(e) { alert('Erreur : ' + e.message); }
       });
     });
@@ -471,8 +463,10 @@
       const allObjets = getAllObjetsFromInventory(inventoryData.objets || {});
       const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
       if (missing.length === 0) return;
-      const firstMissing = missing[0];
-      const elementId = `obj-${firstMissing.cat.replace(/[^a-zA-Z0-9]/g,'-')}-${firstMissing.objName.replace(/[^a-zA-Z0-9]/g,'-')}`;
+      missingIndex = missingIndex % missing.length;
+      const target = missing[missingIndex];
+      missingIndex++;
+      const elementId = `obj-${target.cat.replace(/[^a-zA-Z0-9]/g,'-')}-${target.objName.replace(/[^a-zA-Z0-9]/g,'-')}`;
       const element = document.getElementById(elementId);
       if (element) {
         element.closestAll?.('.sub-cat-section')?.forEach(parent => {
