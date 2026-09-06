@@ -238,7 +238,7 @@
       } catch(e) { contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>'; progressContainer.style.display = 'none'; }
     }
 
-    function getDateStatus(dateStr) { if (!dateStr) return null; const now = new Date(); const date = new Date(dateStr); const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24)); if (diffDays <= 0) return 'danger'; if (diffDays <= 30) return 'warning'; return 'ok'; }
+    function getDateStatus(dateStr) { if (!dateStr) return null; const now = new Date(); const date = new Date(dateStr); const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24)); if (diffDays <= 0) return 'danger'; if (diffDays <= 60) return 'warning'; return 'ok'; }
     function getDateLabel(dateStr) { if (!dateStr) return ''; const status = getDateStatus(dateStr); const formatted = new Date(dateStr).toLocaleDateString('fr-FR'); if (status === 'danger') return `⚠️ ${formatted} — PÉRIMÉ`; if (status === 'warning') return `🟠 ${formatted} — Proche`; return `🟢 ${formatted}`; }
     function getDateClass(dateStr) { const status = getDateStatus(dateStr); if (status === 'danger') return 'date-danger'; if (status === 'warning') return 'date-warning'; return 'date-ok'; }
 
