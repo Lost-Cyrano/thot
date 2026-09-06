@@ -19,6 +19,7 @@
       --warning: #f5a623;
       --danger: #e60000;
       --checked: #e8f5e9;
+      --sub-cat-bg: #faf8f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -122,7 +123,6 @@
       transition: width 0.4s ease;
     }
 
-    /* Message info inventaire précédent */
     .info-banner {
       background: #e3f2fd;
       border: 1px solid #90caf9;
@@ -164,15 +164,18 @@
       margin-top: 6px;
     }
 
-    /* Sections catégories */
+    /* Sections */
     .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
+      margin-bottom: 16px;
       transition: all 0.3s;
     }
+
+    .section:last-child { margin-bottom: 0; }
 
     .section.checked-all {
       background: var(--checked);
@@ -189,11 +192,37 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
-      cursor: default;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
     }
+
+    .section-header:hover { background: #f0f0f0; }
 
     .section.checked-all .section-header {
       background: #dcedc8;
+    }
+
+    .section-header .collapse-icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    .section-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .section-body {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 100000px;
+      opacity: 1;
+    }
+
+    .section-body.collapsed {
+      max-height: 0;
+      opacity: 0;
     }
 
     .cat-check-icon {
@@ -325,6 +354,63 @@
       color: #2e7d32;
     }
 
+    /* Sous-catégorie */
+    .sub-cat-section {
+      border-left: 3px solid #d0c5bc;
+      background: var(--sub-cat-bg);
+      border-radius: 0 8px 8px 0;
+      margin: 8px 0 8px 16px;
+      overflow: hidden;
+      border: 1px solid #e8e0d8;
+      border-left: 3px solid #d0c5bc;
+    }
+
+    .sub-cat-header {
+      padding: 10px 14px;
+      background: #f5f0eb;
+      border-bottom: 1px solid #e8e0d8;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .sub-cat-header:hover { background: #ede8e2; }
+
+    .sub-cat-header .collapse-icon {
+      font-size: 1.1rem;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    .sub-cat-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .sub-cat-body {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 100000px;
+      opacity: 1;
+    }
+
+    .sub-cat-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+
+    .sub-cat-section .sub-cat-section {
+      margin-left: 20px;
+      border-left: 3px solid #c8bdb3;
+      background: #f7f3ef;
+    }
+
     /* Boutons d'action */
     .action-buttons {
       display: flex;
@@ -406,11 +492,13 @@
       border-radius: var(--radius);
       padding: 24px;
       width: 100%;
-      max-width: 420px;
+      max-width: 500px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       display: flex;
       flex-direction: column;
       gap: 14px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal h3 { font-size: 1.1rem; }
@@ -423,9 +511,29 @@
     .btn-save { background: var(--red); color: #fff; }
     .btn-danger { background: #c00; color: #fff; }
 
+    /* Liste des manquants dans le modal */
+    .missing-list-modal {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+    }
+
+    .missing-list-modal li {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.9rem;
+      background: #fff8f0;
+    }
+
+    .missing-list-modal li:last-child { border-bottom: none; }
+    .missing-list-modal li:nth-child(odd) { background: #fff3e0; }
+
     @media (max-width: 480px) {
       .obj-item { flex-direction: column; align-items: flex-start; }
       .obj-right { align-self: flex-end; }
+      .sub-cat-section { margin-left: 8px; }
     }
   </style>
 </head>
@@ -445,7 +553,7 @@
     <!-- Contenu dynamique -->
     <div id="content"></div>
 
-    <!-- Barre de progression (affichée seulement dans un inventaire) -->
+    <!-- Barre de progression -->
     <div id="progress-container" style="display:none;">
       <div class="progress-bar-container">
         <div class="progress-stats">
@@ -457,7 +565,6 @@
         </div>
       </div>
 
-      <!-- Boutons d'action -->
       <div class="action-buttons" style="margin-top:12px;">
         <button class="btn-finalize" id="btn-finalize">✅ Finaliser l'inventaire</button>
         <button class="btn-find-missing" id="btn-find-missing">🔍 Chercher objet manquant</button>
@@ -494,7 +601,8 @@
     let inventoryData = null;
     let checkedItems = {};
     let userRole = null;
-    let isViewingPreviousFinalized = false; // true si on voit le résultat d'un inventaire finalisé mais on peut en relancer un
+    let missingIndex = 0; // Index pour naviguer entre les objets manquants
+    let collapsedState = {}; // État de collapse/expand
 
     const contentEl = document.getElementById('content');
     const headerTitle = document.getElementById('header-title');
@@ -531,7 +639,6 @@
       return getUrlParams().get('inv');
     }
 
-    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         redirectToLogin();
@@ -580,14 +687,12 @@
     function updateBackButton() {
       const invParam = getInvFromUrl();
       if (invParam) {
-        // Dans un inventaire → retour à la liste
         btnBack.textContent = '← Liste des inventaires';
         btnBack.onclick = () => {
           removeUrlParam('inv');
           showInventoryList();
         };
       } else {
-        // Sur la liste → retour à l'accueil
         btnBack.textContent = '← Retour';
         btnBack.onclick = () => {
           window.location.href = getHomeUrl();
@@ -595,7 +700,6 @@
       }
     }
 
-    // Déconnexion
     document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
       if (user) {
@@ -604,9 +708,7 @@
       }
     });
 
-    // Afficher la liste des inventaires
     async function showInventoryList() {
-      isViewingPreviousFinalized = false;
       headerTitle.textContent = 'Thot – Inventaires';
       progressContainer.style.display = 'none';
       updateBackButton();
@@ -620,7 +722,7 @@
           snap.forEach(docSnap => {
             const data = docSnap.data();
             const nom = data.nom || docSnap.id;
-            const totalObjets = countObjets(data.objets || {});
+            const totalObjets = countAllObjectsRecursive(data.objets || {});
             let statusText = `${totalObjets} objet(s)`;
             if (data.finaliseDate) {
               const d = new Date(data.finaliseDate);
@@ -649,25 +751,50 @@
       });
     }
 
-    function countObjets(objets) {
+    // Vérifier si c'est une sous-catégorie
+    function isSubCategory(item) {
+      return item && typeof item === 'object' && item._sub === true;
+    }
+
+    // Compter tous les objets de manière récursive
+    function countAllObjectsRecursive(objets) {
       let count = 0;
-      Object.values(objets).forEach(cat => {
-        count += Object.keys(cat).length;
+      Object.keys(objets).forEach(key => {
+        const item = objets[key];
+        if (isSubCategory(item)) {
+          count += countAllObjectsRecursive(item);
+        } else if (key !== '_sub') {
+          count++;
+        }
       });
       return count;
     }
 
-    function getAllObjets(objets) {
+    // Obtenir tous les objets de manière récursive
+    function getAllObjetsRecursive(objets, prefix = '') {
       const all = [];
-      Object.entries(objets).forEach(([cat, items]) => {
-        Object.keys(items).forEach(objName => {
-          all.push({ cat, objName });
-        });
+      Object.keys(objets).forEach(key => {
+        const item = objets[key];
+        if (isSubCategory(item)) {
+          const subPath = prefix ? `${prefix}.${key}` : key;
+          all.push(...getAllObjetsRecursive(item, subPath));
+        } else if (key !== '_sub') {
+          const cat = prefix || key;
+          all.push({ cat, objName: key, path: prefix, displayName: `${key}${prefix ? ` (${prefix})` : ''}` });
+        }
       });
       return all;
     }
 
-    // Charger un inventaire
+    // Vérifier si un chemin est collapsé
+    function isCollapsed(path) {
+      return collapsedState[path] === true;
+    }
+
+    function toggleCollapse(path) {
+      collapsedState[path] = !collapsedState[path];
+    }
+
     async function loadInventory(invId) {
       try {
         const docSnap = await getDoc(doc(db, 'I', invId));
@@ -678,12 +805,10 @@
         }
         inventoryData = docSnap.data();
         currentInventory = invId;
+        missingIndex = 0;
+        collapsedState = {};
         updateBackButton();
-
-        // Réinitialiser les checks pour un nouvel inventaire
         checkedItems = {};
-        isViewingPreviousFinalized = false;
-        
         renderInventory();
       } catch(e) {
         contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>';
@@ -717,8 +842,18 @@
       return 'date-ok';
     }
 
-    function isCategoryFullyChecked(cat, items) {
-      return Object.keys(items).every(objName => checkedItems[`${cat}|${objName}`]);
+    // Vérifier si tous les objets d'une catégorie (récursif) sont cochés
+    function isCategoryFullyCheckedRecursive(items, prefix = '') {
+      return Object.keys(items).every(key => {
+        if (key === '_sub') return true;
+        const item = items[key];
+        if (isSubCategory(item)) {
+          const subPath = prefix ? `${prefix}.${key}` : key;
+          return isCategoryFullyCheckedRecursive(item, subPath);
+        }
+        const checkKey = prefix ? `${prefix}|${key}` : `${key}|${key}`;
+        return checkedItems[checkKey] === true;
+      });
     }
 
     function renderInventory() {
@@ -726,21 +861,25 @@
       progressContainer.style.display = 'block';
 
       const objets = inventoryData.objets || {};
-      const categories = Object.keys(objets);
-      const allObjets = getAllObjets(objets);
+      const allObjets = getAllObjetsRecursive(objets);
       const totalObjets = allObjets.length;
-      const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
 
-      // Barre de progression
+      // Construire la clé de check pour chaque objet
+      const objCheckKeys = allObjets.map(o => {
+        const catKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
+        return { ...o, checkKey: catKey };
+      });
+
+      const checkedCount = objCheckKeys.filter(o => checkedItems[o.checkKey]).length;
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
+
       document.getElementById('progress-text').textContent = `Progression : ${checkedCount} / ${totalObjets}`;
       document.getElementById('progress-percent').textContent = `${percent}%`;
       document.getElementById('progress-bar').style.width = `${percent}%`;
 
-      // Bouton Chercher
       const btnFindMissing = document.getElementById('btn-find-missing');
       const btnFinalize = document.getElementById('btn-finalize');
-      const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
+      const missingObjets = objCheckKeys.filter(o => !checkedItems[o.checkKey]);
 
       if (missingObjets.length === 0) {
         btnFindMissing.classList.add('disabled');
@@ -757,11 +896,11 @@
       btnFinalize.style.display = '';
       btnFindMissing.style.display = '';
 
-      // Message d'info si déjà finalisé
-      let infoHtml = '';
+      let html = '';
+
       if (inventoryData.finaliseDate) {
         const d = new Date(inventoryData.finaliseDate);
-        infoHtml = `
+        html += `
           <div class="info-banner">
             📅 Dernier inventaire réalisé le ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR')} par ${inventoryData.finalisePar || 'quelqu\'un'}.<br>
             Vous pouvez lancer un nouvel inventaire ci-dessous.
@@ -769,7 +908,7 @@
         `;
       }
 
-      let html = infoHtml;
+      const categories = Object.keys(objets).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
 
       if (categories.length === 0) {
         html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
@@ -777,43 +916,111 @@
 
       categories.forEach(cat => {
         const items = objets[cat];
-        const itemKeys = Object.keys(items);
-        const catFullyChecked = isCategoryFullyChecked(cat, items);
-        const catCheckedCount = itemKeys.filter(objName => checkedItems[`${cat}|${objName}`]).length;
+        const catFullyChecked = isCategoryFullyCheckedRecursive(items, cat);
+        const catTotalCount = countAllObjectsRecursive(items);
+        const catCheckedCount = getAllObjetsRecursive(items, cat).filter(o => {
+          const checkKey = o.path ? `${o.path}|${o.objName}` : `${cat}|${o.objName}`;
+          return checkedItems[checkKey];
+        }).length;
+        const catPath = cat;
+        const isCatCollapsed = isCollapsed(catPath);
 
         html += `
           <div class="section ${catFullyChecked ? 'checked-all' : ''}" id="cat-${cat.replace(/[^a-zA-Z0-9]/g, '-')}">
-            <div class="section-header">
+            <div class="section-header ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
               <span>
                 <span class="cat-check-icon">${catFullyChecked ? '✅' : '📁'}</span>
                 ${escapeHtml(cat)}
               </span>
-              <span style="font-size:0.85rem;color:var(--text-light);">
-                ${catCheckedCount}/${itemKeys.length}
-              </span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.85rem;color:var(--text-light);">${catCheckedCount}/${catTotalCount}</span>
+                <span class="collapse-icon">${isCatCollapsed ? '▶' : '▼'}</span>
+              </div>
             </div>
-            <ul class="obj-list">
+            <div class="section-body ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
+              ${renderCategoryContentRecursive(cat, items)}
+            </div>
+          </div>
         `;
+      });
 
-        itemKeys.forEach(objName => {
-          const obj = items[objName];
-          const q = obj.q || 0;
-          const d = obj.d || null;
-          const checkKey = `${cat}|${objName}`;
+      contentEl.innerHTML = html;
+
+      // Événements collapse
+      document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const cat = header.dataset.cat;
+          toggleCollapse(cat);
+          renderInventory();
+        });
+      });
+
+      document.querySelectorAll('.sub-cat-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          const subPath = header.dataset.subpath;
+          toggleCollapse(subPath);
+          renderInventory();
+        });
+      });
+
+      // Événements clic objets
+      document.querySelectorAll('.obj-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-update-date')) return;
+          const cat = item.dataset.cat;
+          const objName = item.dataset.obj;
+          const path = item.dataset.path || '';
+          toggleCheck(cat, objName, path);
+        });
+      });
+
+      // Boutons mise à jour date
+      document.querySelectorAll('.btn-update-date').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.cat;
+          const objName = btn.dataset.obj;
+          const path = btn.dataset.path || '';
+          openUpdateDateModal(cat, objName, path);
+        });
+      });
+    }
+
+    // Rendu récursif : objets d'abord, puis sous-catégories
+    function renderCategoryContentRecursive(path, data) {
+      const keys = Object.keys(data).filter(k => k !== '_sub');
+      const objKeys = keys.filter(k => !isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+      const subCatKeys = keys.filter(k => isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+
+      let html = '';
+
+      if (keys.length === 0) {
+        html += '<p style="padding:12px 18px;color:#999;font-size:0.9rem;">Catégorie vide.</p>';
+      } else {
+        html += '<ul class="obj-list">';
+
+        // D'abord les objets
+        objKeys.forEach(key => {
+          const item = data[key];
+          const q = item.q || 0;
+          const d = item.d || null;
+          const checkKey = `${path}|${key}`;
           const isChecked = checkedItems[checkKey];
           const dateStatus = getDateStatus(d);
           const showUpdateBtn = dateStatus === 'warning' || dateStatus === 'danger';
+          const elementId = `obj-${path.replace(/[^a-zA-Z0-9]/g, '-')}-${key.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
           html += `
             <li class="obj-item ${isChecked ? 'checked' : ''}" 
-                data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}" 
-                id="obj-${cat.replace(/[^a-zA-Z0-9]/g, '-')}-${objName.replace(/[^a-zA-Z0-9]/g, '-')}">
+                data-cat="${escapeHtml(path)}" data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}"
+                id="${elementId}">
               <div class="obj-left">
                 <div class="check-circle">${isChecked ? '✓' : ''}</div>
                 <div class="obj-info">
-                  <span class="obj-name">${escapeHtml(objName)}</span>
+                  <span class="obj-name">${escapeHtml(key)}</span>
                   ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}
-                    ${showUpdateBtn ? `<button class="btn-update-date" data-cat="${escapeHtml(cat)}" data-obj="${escapeHtml(objName)}">📅 Nouvelle date</button>` : ''}
+                    ${showUpdateBtn ? `<button class="btn-update-date" data-cat="${escapeHtml(path)}" data-obj="${escapeHtml(key)}" data-path="${escapeHtml(path)}">📅 Nouvelle date</button>` : ''}
                   </span>` : ''}
                 </div>
               </div>
@@ -824,42 +1031,45 @@
           `;
         });
 
-        html += `
-            </ul>
-          </div>
-        `;
-      });
+        // Ensuite les sous-catégories
+        subCatKeys.forEach(key => {
+          const item = data[key];
+          const subPath = `${path}.${key}`;
+          const subTotalCount = countAllObjectsRecursive(item);
+          const isSubCollapsed = isCollapsed(subPath);
+          const subCheckedCount = getAllObjetsRecursive(item, subPath).filter(o => {
+            const checkKey = `${o.path}|${o.objName}`;
+            return checkedItems[checkKey];
+          }).length;
 
-      contentEl.innerHTML = html;
-
-      // Événements clic objets
-      document.querySelectorAll('.obj-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-          if (e.target.classList.contains('btn-update-date')) return;
-          const cat = item.dataset.cat;
-          const objName = item.dataset.obj;
-          toggleCheck(cat, objName);
+          html += `
+            <li class="sub-cat-section" data-subpath="${escapeHtml(subPath)}">
+              <div class="sub-cat-header ${isSubCollapsed ? 'collapsed' : ''}" data-subpath="${escapeHtml(subPath)}">
+                <span>📂 ${escapeHtml(key)}</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:0.8rem;color:var(--text-light);">${subCheckedCount}/${subTotalCount}</span>
+                  <span class="collapse-icon">${isSubCollapsed ? '▶' : '▼'}</span>
+                </div>
+              </div>
+              <div class="sub-cat-body ${isSubCollapsed ? 'collapsed' : ''}" data-subpath="${escapeHtml(subPath)}">
+                ${renderCategoryContentRecursive(subPath, item)}
+              </div>
+            </li>
+          `;
         });
-      });
 
-      // Événements boutons mise à jour date
-      document.querySelectorAll('.btn-update-date').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const cat = btn.dataset.cat;
-          const objName = btn.dataset.obj;
-          openUpdateDateModal(cat, objName);
-        });
-      });
+        html += '</ul>';
+      }
+
+      return html;
     }
 
     function escapeHtml(str) {
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Toggle check
-    async function toggleCheck(cat, objName) {
-      const checkKey = `${cat}|${objName}`;
+    async function toggleCheck(cat, objName, path) {
+      const checkKey = path ? `${path}|${objName}` : `${cat}|${objName}`;
 
       if (checkedItems[checkKey]) {
         delete checkedItems[checkKey];
@@ -884,14 +1094,24 @@
       }
     }
 
-    // Modal mise à jour date
-    function openUpdateDateModal(cat, objName) {
-      const obj = inventoryData.objets[cat][objName];
+    function openUpdateDateModal(cat, objName, path) {
+      // Naviguer dans la structure pour trouver l'objet
+      let current = inventoryData.objets || {};
+      const parts = path ? path.split('.') : [cat];
+      for (const part of parts) {
+        if (current[part] === undefined) return;
+        current = current[part];
+      }
+      const obj = current[objName];
+      if (!obj) return;
+
       const currentDate = obj.d || '';
+      const displayPath = path ? `${path} > ${objName}` : `${cat} > ${objName}`;
 
       modalContent.innerHTML = `
         <h3>Nouvelle date de péremption</h3>
-        <p><strong>${escapeHtml(objName)}</strong> (${escapeHtml(cat)})</p>
+        <p><strong>${escapeHtml(objName)}</strong></p>
+        <p style="font-size:0.85rem;color:var(--text-light);">Emplacement : ${escapeHtml(displayPath)}</p>
         <p style="font-size:0.85rem;color:var(--text-light);">Date actuelle : ${currentDate ? new Date(currentDate).toLocaleDateString('fr-FR') : 'Aucune'}</p>
         <input type="date" id="modal-new-date" value="${currentDate}" min="${new Date().toISOString().split('T')[0]}">
         <div class="modal-actions">
@@ -907,11 +1127,22 @@
         if (!newDate) return alert('Veuillez sélectionner une date.');
 
         try {
+          const fieldPath = path 
+            ? `objets.${path.split('.').map(p => p).join('.')}.${objName}.d`
+            : `objets.${cat}.${objName}.d`;
           await updateDoc(doc(db, 'I', currentInventory), {
-            [`objets.${cat}.${objName}.d`]: newDate
+            [fieldPath]: newDate
           });
-          await addLog(`Nouvelle date pour ${objName} (${cat}) : ${newDate}`);
-          inventoryData.objets[cat][objName].d = newDate;
+          await addLog(`Nouvelle date pour ${objName} (${displayPath}) : ${newDate}`);
+          
+          // Mettre à jour localement
+          let current = inventoryData.objets;
+          const parts = path ? path.split('.') : [cat];
+          for (const part of parts) {
+            current = current[part];
+          }
+          current[objName].d = newDate;
+          
           closeModal();
           renderInventory();
         } catch(e) {
@@ -922,18 +1153,31 @@
 
     // Finaliser
     document.getElementById('btn-finalize').addEventListener('click', () => {
-      const allObjets = getAllObjets(inventoryData.objets || {});
+      const allObjets = getAllObjetsRecursive(inventoryData.objets || {});
       const manquants = allObjets
-        .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
-        .map(o => `${o.objName} (${o.cat})`);
+        .filter(o => {
+          const checkKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
+          return !checkedItems[checkKey];
+        })
+        .map(o => o.displayName || `${o.objName} (${o.path || o.cat})`);
 
-      const message = manquants.length > 0
-        ? `⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :\n\n${manquants.join('\n')}\n\nConfirmer la finalisation ?`
-        : '🎉 Tous les objets ont été vérifiés !\n\nConfirmer la finalisation de l\'inventaire ?';
+      let messageHtml = '';
+      if (manquants.length > 0) {
+        const manquantsList = manquants.map(m => `<li>${escapeHtml(m)}</li>`).join('');
+        messageHtml = `
+          <p style="font-weight:600;color:var(--danger);">⚠️ ${manquants.length} objet(s) non vérifié(s) seront marqués comme manquants :</p>
+          <ul class="missing-list-modal">
+            ${manquantsList}
+          </ul>
+          <p>Confirmer la finalisation ?</p>
+        `;
+      } else {
+        messageHtml = '<p>🎉 Tous les objets ont été vérifiés !</p><p>Confirmer la finalisation de l\'inventaire ?</p>';
+      }
 
       modalContent.innerHTML = `
         <h3>Finaliser l'inventaire</h3>
-        <p style="white-space:pre-line;">${message}</p>
+        ${messageHtml}
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
           <button class="btn btn-confirm" id="modal-confirm">Finaliser</button>
@@ -952,34 +1196,59 @@
             checks: Object.keys(checkedItems)
           });
           await addLog(`Finalisation de l'inventaire (${manquants.length} manquants)`);
-          inventoryData.finalise = true;
-          inventoryData.finaliseDate = new Date().toISOString();
-          inventoryData.finalisePar = currentNivol;
-          inventoryData.manquants = manquants;
           closeModal();
-          renderInventory();
+          
+          // Rediriger vers la liste des inventaires
+          removeUrlParam('inv');
+          await showInventoryList();
         } catch(e) {
           alert('Erreur : ' + e.message);
         }
       });
     });
 
-    // Chercher manquant
+    // Chercher manquant avec navigation cyclique
     document.getElementById('btn-find-missing').addEventListener('click', () => {
-      const allObjets = getAllObjets(inventoryData.objets || {});
-      const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
+      const allObjets = getAllObjetsRecursive(inventoryData.objets || {});
+      const missing = allObjets.filter(o => {
+        const checkKey = o.path ? `${o.path}|${o.objName}` : `${o.cat}|${o.objName}`;
+        return !checkedItems[checkKey];
+      });
+
       if (missing.length === 0) return;
 
-      const firstMissing = missing[0];
-      const elementId = `obj-${firstMissing.cat.replace(/[^a-zA-Z0-9]/g, '-')}-${firstMissing.objName.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      const element = document.getElementById(elementId);
+      // Utiliser l'index pour naviguer
+      const target = missing[missingIndex % missing.length];
+      missingIndex = (missingIndex + 1) % missing.length;
 
-      if (element) {
-        document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('missing-highlight');
-        setTimeout(() => element.classList.remove('missing-highlight'), 3000);
+      // Construire l'ID de l'élément
+      const pathForId = target.path ? target.path.replace(/[^a-zA-Z0-9]/g, '-') : target.cat.replace(/[^a-zA-Z0-9]/g, '-');
+      const objForId = target.objName.replace(/[^a-zA-Z0-9]/g, '-');
+      const elementId = `obj-${pathForId}-${objForId}`;
+
+      // Vérifier si l'élément est dans une catégorie/sous-catégorie collapsée
+      // Si oui, on l'expand
+      const pathParts = target.path ? target.path.split('.') : [target.cat];
+      for (let i = 1; i <= pathParts.length; i++) {
+        const partialPath = pathParts.slice(0, i).join('.');
+        if (isCollapsed(partialPath)) {
+          toggleCollapse(partialPath);
+        }
       }
+
+      // Re-render pour appliquer les changements de collapse
+      renderInventory();
+
+      // Maintenant scroll vers l'élément
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          document.querySelectorAll('.missing-highlight').forEach(el => el.classList.remove('missing-highlight'));
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('missing-highlight');
+          setTimeout(() => element.classList.remove('missing-highlight'), 3000);
+        }
+      }, 100);
     });
 
     async function addLog(action) {
