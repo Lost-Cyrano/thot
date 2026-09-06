@@ -246,7 +246,6 @@
       opacity: 0;
     }
 
-    /* Sous-sous-catégorie : encore plus indentée */
     .sub-cat-section .sub-cat-section {
       margin-left: 20px;
       border-left: 3px solid #c8bdb3;
@@ -525,6 +524,7 @@
         </select>
         <button class="btn-back" id="btn-rename-inv" title="Renommer" style="display:none;">✏️</button>
         <button class="btn-icon delete" id="btn-delete-inv" title="Supprimer" style="display:none;">🗑️</button>
+        <button class="btn-add" id="btn-qrcode" style="display:none; margin-left:8px;">📱 QR Code</button>
       </div>
       <button class="btn-add" id="btn-create">+ Créer</button>
     </div>
@@ -569,7 +569,6 @@
     let currentInventoryId = null;
     let currentInventoryData = null;
 
-    // État de collapse/expand (session)
     const collapsedState = {};
 
     const inventorySelect = document.getElementById('inventory-select');
@@ -578,6 +577,7 @@
     const modalContent = document.getElementById('modal-content');
     const btnRenameInv = document.getElementById('btn-rename-inv');
     const btnDeleteInv = document.getElementById('btn-delete-inv');
+    const btnQRCode = document.getElementById('btn-qrcode');
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = '../login.html'; return; }
@@ -625,6 +625,12 @@
 
     document.getElementById('btn-create').addEventListener('click', () => openCreateModal());
 
+    btnQRCode.addEventListener('click', () => {
+      if (currentInventoryId) {
+        window.location.href = `./QRCode.html?inv=${encodeURIComponent(currentInventoryId)}`;
+      }
+    });
+
     inventorySelect.addEventListener('change', () => {
       const invId = inventorySelect.value;
       if (invId) {
@@ -634,6 +640,7 @@
         currentInventoryData = null;
         btnRenameInv.style.display = 'none';
         btnDeleteInv.style.display = 'none';
+        btnQRCode.style.display = 'none';
         inventoryContent.innerHTML = `
           <div class="empty-state">
             <div class="icon">📋</div>
@@ -684,6 +691,7 @@
             currentInventoryData = null;
             btnRenameInv.style.display = 'none';
             btnDeleteInv.style.display = 'none';
+            btnQRCode.style.display = 'none';
             inventoryContent.innerHTML = '<div class="empty-state"><p>Cet inventaire n\'existe plus.</p></div>';
           }
         }
@@ -699,6 +707,7 @@
       currentInventoryData = inv;
       btnRenameInv.style.display = 'inline-block';
       btnDeleteInv.style.display = 'inline-block';
+      btnQRCode.style.display = 'inline-block';
       renderInventoryContent();
     }
 
@@ -756,12 +765,10 @@
       return current;
     }
 
-    // Vérifier si un chemin est collapsé
     function isCollapsed(path) {
       return collapsedState[path] === true;
     }
 
-    // Toggle collapse
     function toggleCollapse(path) {
       collapsedState[path] = !collapsedState[path];
     }
@@ -823,7 +830,6 @@
       attachContentEvents();
     }
 
-    // Fonction récursive : objets d'abord, puis sous-catégories
     function renderCategoryContent(path, data) {
       const keys = Object.keys(data).filter(k => k !== '_sub');
       const objKeys = keys.filter(k => !isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
@@ -836,7 +842,6 @@
       } else {
         html += '<ul class="list">';
 
-        // D'abord les objets
         objKeys.forEach(key => {
           const item = data[key];
           const q = item.q || 0;
@@ -862,7 +867,6 @@
           `;
         });
 
-        // Ensuite les sous-catégories
         subCatKeys.forEach(key => {
           const item = data[key];
           const subTotalCount = countAllObjects(item);
@@ -895,7 +899,6 @@
     }
 
     function attachContentEvents() {
-      // Collapse/expand sections
       document.querySelectorAll('.section-header').forEach(header => {
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
@@ -905,7 +908,6 @@
         });
       });
 
-      // Collapse/expand sous-catégories
       document.querySelectorAll('.sub-cat-header').forEach(header => {
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
@@ -917,7 +919,6 @@
         });
       });
 
-      // Quantité +
       document.querySelectorAll('.qty-plus').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -925,7 +926,6 @@
         });
       });
 
-      // Quantité -
       document.querySelectorAll('.qty-minus').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -933,7 +933,6 @@
         });
       });
 
-      // Modifier objet
       document.querySelectorAll('.edit-obj').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -941,7 +940,6 @@
         });
       });
 
-      // Supprimer objet
       document.querySelectorAll('.delete-obj').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -949,7 +947,6 @@
         });
       });
 
-      // Supprimer sous-catégorie
       document.querySelectorAll('.delete-subcat').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -957,14 +954,12 @@
         });
       });
 
-      // Ajouter objet ou sous-catégorie
       document.querySelectorAll('.add-obj').forEach(btn => {
         btn.addEventListener('click', () => {
           openAddObjectModal(btn.dataset.cat);
         });
       });
 
-      // Supprimer catégorie
       document.querySelectorAll('.delete-cat').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -972,7 +967,6 @@
         });
       });
 
-      // Ajouter catégorie
       const btnAddCat = document.getElementById('btn-add-cat');
       if (btnAddCat) {
         btnAddCat.addEventListener('click', openAddCategoryModal);
@@ -1176,6 +1170,7 @@
           currentInventoryData = null;
           btnRenameInv.style.display = 'none';
           btnDeleteInv.style.display = 'none';
+          btnQRCode.style.display = 'none';
           await loadInventories();
           inventorySelect.value = '';
           inventoryContent.innerHTML = '<div class="empty-state"><p>Sélectionnez un inventaire.</p></div>';
