@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Inventaire</title>
-  <!-- Styles identiques au précédent, je les inclus pour être complet -->
   <style>
     :root { --red:#e60000; --red-hover:#b30000; --bg:#f5f5f5; --card-bg:#fff; --border:#ddd; --text:#333; --text-light:#666; --radius:12px; --shadow:0 2px 8px rgba(0,0,0,.08); --ok:#4caf50; --warning:#f5a623; --danger:#e60000; --checked:#e8f5e9; --sub-cat-bg:#faf8f5; }
     * { box-sizing:border-box; margin:0; padding:0; }
@@ -58,7 +57,7 @@
     .sub-cat-header:hover { background:#ede8e2; }
     .sub-cat-header .collapse-icon { font-size:1.1rem; transition:transform .3s; display:inline-block; }
     .sub-cat-header.collapsed .collapse-icon { transform:rotate(-90deg); }
-    .sub-cat-body { transition:max-height .3s ease, opacity .3s ease; overflow:hidden; max-height:100000px; opacity:1; }
+    .sub-cat-body { transition:max-height .3s ease,opacity .3s ease; overflow:hidden; max-height:100000px; opacity:1; }
     .sub-cat-body.collapsed { max-height:0; opacity:0; }
     .sub-cat-section .sub-cat-section { margin-left:20px; border-left:3px solid #c8bdb3; background:#f7f3ef; }
     .action-buttons { display:flex; gap:12px; flex-wrap:wrap; }
@@ -167,10 +166,8 @@
       if (user) { await deleteUser(user).catch(()=>{}); window.location.href = '../login.html'; }
     });
 
-    // ===== FONCTIONS DE COMPTAGE ET RÉCUPÉRATION CORRIGÉES =====
+    // ===== FONCTIONS DE COMPTAGE =====
     function isSubCategory(item) { return item && typeof item === 'object' && item._sub === true; }
-    
-    // Compte les objets dans une catégorie (y compris sous-catégories récursivement)
     function countObjectsInCategory(categoryData) {
       let count = 0;
       Object.keys(categoryData).forEach(key => {
@@ -181,114 +178,92 @@
       });
       return count;
     }
-
-    // Compte tous les objets de l'inventaire (somme sur toutes les catégories racines)
     function countAllObjectsInInventory(objets) {
       let count = 0;
-      Object.keys(objets).forEach(catName => {
-        const catData = objets[catName];
-        count += countObjectsInCategory(catData);
-      });
+      Object.keys(objets).forEach(catName => { count += countObjectsInCategory(objets[catName]); });
       return count;
     }
-
-    // Récupère tous les objets d'une catégorie (avec leur chemin complet)
     function getObjetsFromCategory(categoryData, path) {
       const all = [];
       Object.keys(categoryData).forEach(key => {
         if (key === '_sub') return;
         const item = categoryData[key];
-        if (isSubCategory(item)) {
-          const subPath = `${path}.${key}`;
-          all.push(...getObjetsFromCategory(item, subPath));
-        } else {
-          all.push({ cat: path, objName: key });
-        }
+        if (isSubCategory(item)) { const subPath = `${path}.${key}`; all.push(...getObjetsFromCategory(item, subPath)); }
+        else all.push({ cat: path, objName: key });
       });
       return all;
     }
-
-    // Récupère tous les objets de l'inventaire en parcourant les catégories racines
     function getAllObjetsFromInventory(objets) {
       const all = [];
-      Object.keys(objets).forEach(catName => {
-        const catData = objets[catName];
-        all.push(...getObjetsFromCategory(catData, catName));
-      });
+      Object.keys(objets).forEach(catName => { all.push(...getObjetsFromCategory(objets[catName], catName)); });
       return all;
     }
-
     function getObjetsAtPath(path) {
       let current = inventoryData.objets || {};
       if (!path) return current;
       const parts = path.split('.');
-      for (const part of parts) {
-        if (current[part] === undefined) return null;
-        current = current[part];
-      }
+      for (const part of parts) { if (current[part] === undefined) return null; current = current[part]; }
       return current;
     }
 
-    // ===== CHARGEMENT =====
+    // ===== AFFICHAGE LISTE =====
+    async function showInventoryList() {
+      headerTitle.textContent = 'Thot – Inventaires';
+      progressContainer.style.display = 'none';
+      updateBackButton();
+      let html = '<div class="inventory-grid">';
+      try {
+        const snap = await getDocs(collection(db, 'I'));
+        if (snap.empty) html += '<p style="text-align:center;padding:20px;">Aucun inventaire trouvé.</p>';
+        else {
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const nom = data.nom || docSnap.id;
+            const totalObjets = countAllObjectsInInventory(data.objets || {});
+            let statusText = `${totalObjets} objet(s)`;
+            if (data.finaliseDate) { const d = new Date(data.finaliseDate); statusText = `📅 Dernier : ${d.toLocaleDateString('fr-FR')}`; }
+            html += `<div class="inventory-card" data-inv="${docSnap.id}">📋 ${nom}<div class="card-status">${statusText}</div></div>`;
+          });
+        }
+      } catch(e) { html += '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>'; }
+      html += '</div>';
+      contentEl.innerHTML = html;
+      document.querySelectorAll('.inventory-card').forEach(card => {
+        card.addEventListener('click', () => { const invId = card.dataset.inv; updateUrlParam('inv', invId); loadInventory(invId); });
+      });
+    }
+
+    // ===== CHARGEMENT INVENTAIRE =====
     async function loadInventory(invId) {
       try {
         const docSnap = await getDoc(doc(db, 'I', invId));
-        if (!docSnap.exists()) {
-          contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Inventaire introuvable.</p>';
-          progressContainer.style.display = 'none';
-          return;
-        }
+        if (!docSnap.exists()) { contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Inventaire introuvable.</p>'; progressContainer.style.display = 'none'; return; }
         inventoryData = docSnap.data();
         currentInventory = invId;
         updateBackButton();
         checkedItems = {};
         collapsedState = {};
-        if (inventoryData.checks && Array.isArray(inventoryData.checks)) {
-          inventoryData.checks.forEach(key => { checkedItems[key] = true; });
-        }
+        if (inventoryData.checks && Array.isArray(inventoryData.checks)) { inventoryData.checks.forEach(key => { checkedItems[key] = true; }); }
         renderInventory();
-      } catch(e) {
-        contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>';
-        progressContainer.style.display = 'none';
-      }
+      } catch(e) { contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>'; progressContainer.style.display = 'none'; }
     }
 
-    function getDateStatus(dateStr) {
-      if (!dateStr) return null;
-      const now = new Date();
-      const date = new Date(dateStr);
-      const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 0) return 'danger';
-      if (diffDays <= 30) return 'warning';
-      return 'ok';
-    }
+    function getDateStatus(dateStr) { if (!dateStr) return null; const now = new Date(); const date = new Date(dateStr); const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24)); if (diffDays <= 0) return 'danger'; if (diffDays <= 30) return 'warning'; return 'ok'; }
     function getDateLabel(dateStr) { if (!dateStr) return ''; const status = getDateStatus(dateStr); const formatted = new Date(dateStr).toLocaleDateString('fr-FR'); if (status === 'danger') return `⚠️ ${formatted} — PÉRIMÉ`; if (status === 'warning') return `🟠 ${formatted} — Proche`; return `🟢 ${formatted}`; }
     function getDateClass(dateStr) { const status = getDateStatus(dateStr); if (status === 'danger') return 'date-danger'; if (status === 'warning') return 'date-warning'; return 'date-ok'; }
 
-    // Compte des objets cochés dans une catégorie (récursif)
     function countCheckedInPath(path, items) {
       let count = 0;
       Object.keys(items).forEach(key => {
         if (key === '_sub') return;
         const item = items[key];
-        if (isSubCategory(item)) {
-          const subPath = `${path}.${key}`;
-          count += countCheckedInPath(subPath, item);
-        } else {
-          const checkKey = `${path}|${key}`;
-          if (checkedItems[checkKey]) count++;
-        }
+        if (isSubCategory(item)) { const subPath = `${path}.${key}`; count += countCheckedInPath(subPath, item); }
+        else { const checkKey = `${path}|${key}`; if (checkedItems[checkKey]) count++; }
       });
       return count;
     }
     function countTotalInPath(items) { return countObjectsInCategory(items); }
-
-    function isPathFullyChecked(path, items) {
-      const total = countTotalInPath(items);
-      const checked = countCheckedInPath(path, items);
-      return total > 0 && checked === total;
-    }
-
+    function isPathFullyChecked(path, items) { const total = countTotalInPath(items); const checked = countCheckedInPath(path, items); return total > 0 && checked === total; }
     function isCollapsed(path) { return collapsedState[path] === true; }
     function toggleCollapse(path) { collapsedState[path] = !collapsedState[path]; }
 
@@ -296,7 +271,7 @@
       headerTitle.textContent = `📋 ${inventoryData.nom || currentInventory}`;
       progressContainer.style.display = 'block';
       const objets = inventoryData.objets || {};
-      const allObjets = getAllObjetsFromInventory(objets); // Correction clé
+      const allObjets = getAllObjetsFromInventory(objets);
       const totalObjets = allObjets.length;
       const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
@@ -307,30 +282,17 @@
       const btnFindMissing = document.getElementById('btn-find-missing');
       const btnFinalize = document.getElementById('btn-finalize');
       const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
-      if (missingObjets.length === 0) {
-        btnFindMissing.classList.add('disabled');
-        btnFindMissing.textContent = '✅ Aucun objet manquant';
-        btnFindMissing.disabled = true;
-      } else {
-        btnFindMissing.classList.remove('disabled');
-        btnFindMissing.textContent = `🔍 Chercher objet manquant (${missingObjets.length})`;
-        btnFindMissing.disabled = false;
-      }
+      if (missingObjets.length === 0) { btnFindMissing.classList.add('disabled'); btnFindMissing.textContent = '✅ Aucun objet manquant'; btnFindMissing.disabled = true; }
+      else { btnFindMissing.classList.remove('disabled'); btnFindMissing.textContent = `🔍 Chercher objet manquant (${missingObjets.length})`; btnFindMissing.disabled = false; }
       btnFinalize.disabled = false;
       btnFinalize.textContent = '✅ Finaliser l\'inventaire';
 
       let infoHtml = '';
-      if (inventoryData.finaliseDate) {
-        const d = new Date(inventoryData.finaliseDate);
-        infoHtml = `<div class="info-banner">📅 Dernier inventaire réalisé le ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR')} par ${inventoryData.finalisePar || 'quelqu\'un'}.<br>Vous pouvez lancer un nouvel inventaire ci-dessous.</div>`;
-      }
+      if (inventoryData.finaliseDate) { const d = new Date(inventoryData.finaliseDate); infoHtml = `<div class="info-banner">📅 Dernier inventaire réalisé le ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR')} par ${inventoryData.finalisePar || 'quelqu\'un'}.<br>Vous pouvez lancer un nouvel inventaire ci-dessous.</div>`; }
       let html = infoHtml;
       const categories = Object.keys(objets).sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
       if (categories.length === 0) html += '<p style="text-align:center;padding:20px;">Aucun objet dans cet inventaire.</p>';
-      categories.forEach(cat => {
-        const items = objets[cat];
-        html += renderCategorySection(cat, items);
-      });
+      categories.forEach(cat => { html += renderCategorySection(cat, objets[cat]); });
       contentEl.innerHTML = html;
       attachEvents();
     }
@@ -536,10 +498,7 @@
     Element.prototype.closestAll = function(selector) {
       const result = [];
       let el = this.parentElement;
-      while (el) {
-        if (el.matches && el.matches(selector)) result.push(el);
-        el = el.parentElement;
-      }
+      while (el) { if (el.matches && el.matches(selector)) result.push(el); el = el.parentElement; }
       return result;
     };
 
