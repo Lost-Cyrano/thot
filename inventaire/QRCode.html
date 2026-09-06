@@ -109,12 +109,14 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 12px rgba(230, 0, 0, 0.15);
+      position: relative;
     }
 
     #qr-code {
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     #qr-code img,
@@ -124,18 +126,35 @@
       max-width: 100%;
     }
 
+    /* Logo superposé au centre du QR code */
+    .qr-logo-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 55px;
+      height: 55px;
+      background: #fff;
+      padding: 4px;
+      border-radius: 4px;
+      box-shadow: 0 0 0 3px #fff;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .qr-logo-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
     .inventory-name {
       font-size: 1.3rem;
       font-weight: 700;
       color: var(--text);
       text-align: center;
       word-break: break-word;
-    }
-
-    .inventory-id {
-      font-size: 0.85rem;
-      color: var(--text-light);
-      text-align: center;
     }
 
     .btn-download {
@@ -217,6 +236,15 @@
     const urlParams = new URLSearchParams(window.location.search);
     const invId = urlParams.get('inv');
 
+    // Construire le lien du QR code en supprimant "QRCode.html" de l'URL actuelle
+    function buildQRCodeUrl() {
+      const currentUrl = window.location.href;
+      // Supprimer "QRCode.html" de l'URL
+      const baseUrl = currentUrl.replace(/QRCode\.html.*$/, '');
+      // Ajouter le paramètre inv
+      return `${baseUrl}?inv=${encodeURIComponent(invId)}`;
+    }
+
     // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { redirectToLogin(); return; }
@@ -250,9 +278,9 @@
 
         const data = invSnap.data();
         const invName = data.nom || invId;
-        const qrTargetUrl = `./?inv=${encodeURIComponent(invId)}`;
+        const qrTargetUrl = buildQRCodeUrl();
 
-        renderQRCode(qrTargetUrl, invName, invId);
+        renderQRCode(qrTargetUrl, invName);
 
       } catch (e) {
         console.error(e);
@@ -280,17 +308,19 @@
 
     // Retour admin
     document.getElementById('btn-back-admin').addEventListener('click', () => {
-      window.location.href = '../admin.html';
+      window.location.href = './admin.html';
     });
 
-    function renderQRCode(qrTargetUrl, invName, invId) {
+    function renderQRCode(qrTargetUrl, invName) {
       contentEl.innerHTML = `
         <div class="qr-card">
           <div class="qr-container">
             <div id="qr-code"></div>
+            <div class="qr-logo-overlay" id="qr-logo-overlay">
+              <img src="../images/LogoThot.png" alt="Logo Thot" onerror="this.style.display='none';">
+            </div>
           </div>
           <div class="inventory-name">${invName}</div>
-          <div class="inventory-id">ID : ${invId}</div>
           <button class="btn-download" id="btn-download">📥 Télécharger</button>
         </div>
       `;
@@ -307,47 +337,13 @@
         correctLevel: QRCode.CorrectLevel.H
       });
 
-      // Attendre que le QR code soit rendu, puis ajouter le logo
-      setTimeout(() => {
-        addLogoToQR(qrContainer);
-      }, 300);
-
       // Bouton télécharger
       document.getElementById('btn-download').addEventListener('click', () => {
-        downloadQRCode(qrContainer, invName, invId);
+        downloadQRCode(qrContainer, invName);
       });
     }
 
-    function addLogoToQR(qrContainer) {
-      const canvas = qrContainer.querySelector('canvas');
-      const img = qrContainer.querySelector('img');
-      
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        const logo = new Image();
-        logo.crossOrigin = 'anonymous';
-        logo.onload = () => {
-          const size = canvas.width * 0.22;
-          const x = (canvas.width - size) / 2;
-          const y = (canvas.height - size) / 2;
-          
-          // Fond blanc circulaire derrière le logo
-          ctx.beginPath();
-          ctx.arc(canvas.width / 2, canvas.height / 2, size / 2 + 6, 0, 2 * Math.PI);
-          ctx.fillStyle = '#ffffff';
-          ctx.fill();
-          
-          // Dessiner le logo
-          ctx.drawImage(logo, x, y, size, size);
-        };
-        logo.onerror = () => {
-          console.log('Logo non chargé, QR code sans logo.');
-        };
-        logo.src = '../images/LogoThot.png';
-      }
-    }
-
-    function downloadQRCode(qrContainer, invName, invId) {
+    function downloadQRCode(qrContainer, invName) {
       const canvas = qrContainer.querySelector('canvas');
       const img = qrContainer.querySelector('img');
 
@@ -375,7 +371,7 @@
         ctx.drawImage(img, padding, padding, qrSize, qrSize);
       }
 
-      // Ajouter le logo au centre
+      // Ajouter le logo au centre (carré, pas en cercle)
       const logo = new Image();
       logo.crossOrigin = 'anonymous';
       logo.onload = () => {
@@ -383,12 +379,16 @@
         const logoX = padding + (qrSize - logoSize) / 2;
         const logoY = padding + (qrSize - logoSize) / 2;
         
-        // Fond blanc circulaire
-        ctx.beginPath();
-        ctx.arc(padding + qrSize / 2, padding + qrSize / 2, logoSize / 2 + 6, 0, 2 * Math.PI);
+        // Fond blanc carré derrière le logo
         ctx.fillStyle = '#ffffff';
-        ctx.fill();
+        ctx.fillRect(
+          padding + qrSize / 2 - logoSize / 2 - 4,
+          padding + qrSize / 2 - logoSize / 2 - 4,
+          logoSize + 8,
+          logoSize + 8
+        );
         
+        // Dessiner le logo (carré)
         ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
         
         // Ajouter le texte
@@ -398,7 +398,7 @@
         ctx.fillText(invName, totalWidth / 2, totalHeight - 20);
 
         // Télécharger
-        triggerDownload(combinedCanvas, invId);
+        triggerDownload(combinedCanvas, invName);
       };
       logo.onerror = () => {
         // Sans logo
@@ -406,14 +406,15 @@
         ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(invName, totalWidth / 2, totalHeight - 20);
-        triggerDownload(combinedCanvas, invId);
+        triggerDownload(combinedCanvas, invName);
       };
       logo.src = '../images/LogoThot.png';
     }
 
-    function triggerDownload(canvas, invId) {
+    function triggerDownload(canvas, invName) {
+      const safeName = invName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const link = document.createElement('a');
-      link.download = `QRCode_${invId}.png`;
+      link.download = `QRCode_${safeName}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     }
