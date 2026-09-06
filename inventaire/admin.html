@@ -35,7 +35,7 @@
 
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -195,15 +195,16 @@
 
     /* Sous-catégorie */
     .sub-cat-section {
-      border-left: 3px solid #e8e0d8;
+      border-left: 3px solid #e0d5cc;
       background: var(--sub-cat-bg);
       border-radius: 0 8px 8px 0;
-      margin: 0;
+      margin: 8px 0 8px 16px;
       overflow: hidden;
-      border-bottom: 1px solid #f0f0f0;
+      border: 1px solid #e8e0d8;
+      border-left: 3px solid #d0c5bc;
     }
 
-    .sub-cat-section:last-child { border-bottom: none; }
+    .sub-cat-section:last-child { margin-bottom: 0; }
 
     .sub-cat-header {
       padding: 10px 14px;
@@ -243,6 +244,13 @@
     .sub-cat-body.collapsed {
       max-height: 0;
       opacity: 0;
+    }
+
+    /* Sous-sous-catégorie : encore plus indentée */
+    .sub-cat-section .sub-cat-section {
+      margin-left: 20px;
+      border-left: 3px solid #c8bdb3;
+      background: #f7f3ef;
     }
 
     .obj-info {
@@ -492,6 +500,7 @@
       .list-item { flex-direction: column; align-items: flex-start; }
       .obj-quantity { align-self: flex-end; }
       .header { flex-direction: column; align-items: flex-start; }
+      .sub-cat-section { margin-left: 8px; }
     }
   </style>
 </head>
@@ -559,6 +568,9 @@
     let inventories = [];
     let currentInventoryId = null;
     let currentInventoryData = null;
+
+    // État de collapse/expand (session)
+    const collapsedState = {};
 
     const inventorySelect = document.getElementById('inventory-select');
     const inventoryContent = document.getElementById('inventory-content');
@@ -716,12 +728,10 @@
       return 'date-ok';
     }
 
-    // Vérifier si un élément est une sous-catégorie
     function isSubCategory(item) {
       return item && typeof item === 'object' && item._sub === true;
     }
 
-    // Compter tous les objets dans une catégorie (récursif)
     function countAllObjects(objets) {
       let count = 0;
       Object.keys(objets).forEach(key => {
@@ -735,27 +745,6 @@
       return count;
     }
 
-    // Obtenir un objet à un chemin donné (chemin avec points)
-    function getObjectAtPath(catPath, objName) {
-      let current = currentInventoryData.objets || {};
-      const parts = catPath.split('.');
-      for (const part of parts) {
-        if (current[part] === undefined) return null;
-        current = current[part];
-      }
-      return current[objName] || null;
-    }
-
-    // Vérifier si un chemin est une sous-catégorie
-    function isPathSubCategory(catPath) {
-      const parts = catPath.split('.');
-      const lastPart = parts[parts.length - 1];
-      const parentPath = parts.slice(0, -1).join('.');
-      const parent = getParentAtPath(parentPath);
-      if (!parent) return false;
-      return isSubCategory(parent[lastPart]);
-    }
-
     function getParentAtPath(path) {
       let current = currentInventoryData.objets || {};
       if (!path) return current;
@@ -765,6 +754,16 @@
         current = current[part];
       }
       return current;
+    }
+
+    // Vérifier si un chemin est collapsé
+    function isCollapsed(path) {
+      return collapsedState[path] === true;
+    }
+
+    // Toggle collapse
+    function toggleCollapse(path) {
+      collapsedState[path] = !collapsedState[path];
     }
 
     function renderInventoryContent() {
@@ -782,30 +781,21 @@
       categories.forEach(cat => {
         const items = objets[cat];
         const totalCount = countAllObjects(items);
-        const isSub = isSubCategory(items);
+        const catPath = cat;
+        const isCatCollapsed = isCollapsed(catPath);
 
         html += `
           <div class="section" data-cat="${cat}">
-            <div class="section-header" data-cat="${cat}">
+            <div class="section-header ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
               <span>📁 ${cat}</span>
               <div style="display:flex;gap:6px;align-items:center;">
                 <span class="badge">${totalCount} objet(s)</span>
-                <span class="collapse-icon">▼</span>
+                <span class="collapse-icon">${isCatCollapsed ? '▶' : '▼'}</span>
                 <button class="btn-icon delete delete-cat" data-cat="${cat}" title="Supprimer la catégorie">🗑️</button>
               </div>
             </div>
-            <div class="section-body" data-cat="${cat}">
-        `;
-
-        if (isSub) {
-          // Sécurité : ne devrait pas arriver au niveau racine
-          html += '<p>Erreur de structure.</p>';
-        } else {
-          // Rendu récursif du contenu de la catégorie
-          html += renderCategoryContent(cat, items);
-        }
-
-        html += `
+            <div class="section-body ${isCatCollapsed ? 'collapsed' : ''}" data-cat="${cat}">
+              ${renderCategoryContent(cat, items)}
             </div>
           </div>
         `;
@@ -833,66 +823,72 @@
       attachContentEvents();
     }
 
-    // Fonction récursive pour rendre le contenu d'une catégorie ou sous-catégorie
+    // Fonction récursive : objets d'abord, puis sous-catégories
     function renderCategoryContent(path, data) {
-      const keys = Object.keys(data).filter(k => k !== '_sub').sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+      const keys = Object.keys(data).filter(k => k !== '_sub');
+      const objKeys = keys.filter(k => !isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+      const subCatKeys = keys.filter(k => isSubCategory(data[k])).sort((a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'}));
+
       let html = '';
 
       if (keys.length === 0) {
         html += '<p style="padding:12px 18px;color:#999;font-size:0.9rem;">Catégorie vide.</p>';
       } else {
         html += '<ul class="list">';
-        keys.forEach(key => {
-          const item = data[key];
-          if (isSubCategory(item)) {
-            // C'est une sous-catégorie
-            const subTotalCount = countAllObjects(item);
-            const subKeys = Object.keys(item).filter(k => k !== '_sub');
 
-            html += `
-              <li class="sub-cat-section" data-subcat="${key}" data-parent="${path}">
-                <div class="sub-cat-header" data-subcat="${key}" data-parent="${path}">
-                  <span>📂 ${key}</span>
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <span class="badge">${subTotalCount} objet(s)</span>
-                    <span class="collapse-icon">▼</span>
-                    <button class="btn-icon delete delete-subcat" data-subcat="${key}" data-parent="${path}" title="Supprimer">🗑️</button>
-                  </div>
+        // D'abord les objets
+        objKeys.forEach(key => {
+          const item = data[key];
+          const q = item.q || 0;
+          const d = item.d || null;
+          html += `
+            <li class="list-item" data-cat="${path}" data-obj="${key}">
+              <div class="obj-info">
+                <span class="obj-name">${key}</span>
+                ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="obj-quantity">
+                  <button class="qty-btn qty-minus" data-cat="${path}" data-obj="${key}">−</button>
+                  <span class="qty-num">${q}</span>
+                  <button class="qty-btn qty-plus" data-cat="${path}" data-obj="${key}">+</button>
                 </div>
-                <div class="sub-cat-body" data-subcat="${key}" data-parent="${path}">
-                  ${renderCategoryContent(path + '.' + key, item)}
+                <div class="item-actions">
+                  <button class="btn-icon edit-obj" data-cat="${path}" data-obj="${key}" title="Modifier">✏️</button>
+                  <button class="btn-icon delete delete-obj" data-cat="${path}" data-obj="${key}" title="Supprimer">🗑️</button>
                 </div>
-              </li>
-            `;
-          } else {
-            // C'est un objet normal
-            const q = item.q || 0;
-            const d = item.d || null;
-            html += `
-              <li class="list-item" data-cat="${path}" data-obj="${key}">
-                <div class="obj-info">
-                  <span class="obj-name">${key}</span>
-                  ${d ? `<span class="obj-date ${getDateClass(d)}">${getDateLabel(d)}</span>` : '<span class="obj-date" style="color:#999;">Pas de date</span>'}
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <div class="obj-quantity">
-                    <button class="qty-btn qty-minus" data-cat="${path}" data-obj="${key}">−</button>
-                    <span class="qty-num">${q}</span>
-                    <button class="qty-btn qty-plus" data-cat="${path}" data-obj="${key}">+</button>
-                  </div>
-                  <div class="item-actions">
-                    <button class="btn-icon edit-obj" data-cat="${path}" data-obj="${key}" title="Modifier">✏️</button>
-                    <button class="btn-icon delete delete-obj" data-cat="${path}" data-obj="${key}" title="Supprimer">🗑️</button>
-                  </div>
-                </div>
-              </li>
-            `;
-          }
+              </div>
+            </li>
+          `;
         });
+
+        // Ensuite les sous-catégories
+        subCatKeys.forEach(key => {
+          const item = data[key];
+          const subTotalCount = countAllObjects(item);
+          const subPath = path + '.' + key;
+          const isSubCollapsed = isCollapsed(subPath);
+
+          html += `
+            <li class="sub-cat-section" data-subcat="${key}" data-parent="${path}">
+              <div class="sub-cat-header ${isSubCollapsed ? 'collapsed' : ''}" data-subcat="${key}" data-parent="${path}">
+                <span>📂 ${key}</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span class="badge">${subTotalCount} objet(s)</span>
+                  <span class="collapse-icon">${isSubCollapsed ? '▶' : '▼'}</span>
+                  <button class="btn-icon delete delete-subcat" data-subcat="${key}" data-parent="${path}" title="Supprimer">🗑️</button>
+                </div>
+              </div>
+              <div class="sub-cat-body ${isSubCollapsed ? 'collapsed' : ''}" data-subcat="${key}" data-parent="${path}">
+                ${renderCategoryContent(subPath, item)}
+              </div>
+            </li>
+          `;
+        });
+
         html += '</ul>';
       }
 
-      // Bouton ajouter
       html += `<button class="btn-add-obj add-obj" data-cat="${path}">+ Ajouter un objet ou sous-catégorie</button>`;
 
       return html;
@@ -904,11 +900,8 @@
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
           const cat = header.dataset.cat;
-          const body = document.querySelector(`.section-body[data-cat="${cat}"]`);
-          if (body) {
-            body.classList.toggle('collapsed');
-            header.classList.toggle('collapsed');
-          }
+          toggleCollapse(cat);
+          renderInventoryContent();
         });
       });
 
@@ -918,11 +911,9 @@
           if (e.target.closest('button')) return;
           const subcat = header.dataset.subcat;
           const parent = header.dataset.parent;
-          const body = document.querySelector(`.sub-cat-body[data-subcat="${subcat}"][data-parent="${parent}"]`);
-          if (body) {
-            body.classList.toggle('collapsed');
-            header.classList.toggle('collapsed');
-          }
+          const subPath = parent + '.' + subcat;
+          toggleCollapse(subPath);
+          renderInventoryContent();
         });
       });
 
@@ -1271,7 +1262,6 @@
       if (!obj) return;
 
       if (isSubCategory(obj)) {
-        // C'est une sous-catégorie, on la renomme
         modalContent.innerHTML = `
           <h3>Renommer la sous-catégorie "${objName}"</h3>
           <div><label>Nom</label><input type="text" id="modal-nom" value="${objName}"></div>
@@ -1303,7 +1293,6 @@
         return;
       }
 
-      // Objet normal
       modalContent.innerHTML = `
         <h3>Modifier "${objName}"</h3>
         <div><label>Nom</label><input type="text" id="modal-nom" value="${objName}"></div>
