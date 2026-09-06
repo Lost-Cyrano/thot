@@ -721,7 +721,7 @@
       return count;
     }
 
-    // Récupère TOUS les objets (y compris dans les sous-catégories) avec leur chemin complet
+    // Récupère TOUS les objets avec leur chemin complet
     function getAllObjets(objets, parentPath = '') {
       const all = [];
       Object.keys(objets).forEach(key => {
@@ -772,6 +772,7 @@
         
         renderInventory();
       } catch(e) {
+        console.error('Erreur loadInventory:', e);
         contentEl.innerHTML = '<p style="text-align:center;padding:20px;">Erreur lors du chargement.</p>';
         progressContainer.style.display = 'none';
       }
@@ -814,7 +815,7 @@
           count += countCheckedInPath(subPath, item);
         } else {
           const checkKey = `${path}|${key}`;
-          if (checkedItems[checkKey]) count++;
+          if (checkedItems[checkKey] === true) count++;
         }
       });
       return count;
@@ -857,7 +858,7 @@
       const objets = inventoryData.objets || {};
       const allObjets = getAllObjets(objets);
       const totalObjets = allObjets.length;
-      const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`]).length;
+      const checkedCount = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`] === true).length;
 
       const percent = totalObjets > 0 ? Math.round((checkedCount / totalObjets) * 100) : 0;
       document.getElementById('progress-text').textContent = `Progression : ${checkedCount} / ${totalObjets}`;
@@ -866,7 +867,7 @@
 
       const btnFindMissing = document.getElementById('btn-find-missing');
       const btnFinalize = document.getElementById('btn-finalize');
-      const missingObjets = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
+      const missingObjets = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`] !== true);
 
       if (missingObjets.length === 0) {
         btnFindMissing.classList.add('disabled');
@@ -904,12 +905,7 @@
 
       categories.forEach(cat => {
         const items = objets[cat];
-        if (isSubCategory(items)) {
-          // Sécurité : une catégorie racine ne devrait pas être une sous-catégorie
-          html += renderCategorySection(cat, items);
-        } else {
-          html += renderCategorySection(cat, items);
-        }
+        html += renderCategorySection(cat, items);
       });
 
       contentEl.innerHTML = html;
@@ -959,7 +955,7 @@
           const q = obj.q || 0;
           const d = obj.d || null;
           const checkKey = `${path}|${objName}`;
-          const isChecked = checkedItems[checkKey];
+          const isChecked = checkedItems[checkKey] === true;
           const dateStatus = getDateStatus(d);
           const showUpdateBtn = dateStatus === 'warning' || dateStatus === 'danger';
 
@@ -1052,13 +1048,13 @@
     }
 
     function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     async function toggleCheck(cat, objName) {
       const checkKey = `${cat}|${objName}`;
 
-      if (checkedItems[checkKey]) {
+      if (checkedItems[checkKey] === true) {
         delete checkedItems[checkKey];
       } else {
         checkedItems[checkKey] = true;
@@ -1072,7 +1068,8 @@
         inventoryData.checks = allChecks;
         renderInventory();
       } catch(e) {
-        if (checkedItems[checkKey]) {
+        console.error('Erreur toggleCheck:', e);
+        if (checkedItems[checkKey] === true) {
           delete checkedItems[checkKey];
         } else {
           checkedItems[checkKey] = true;
@@ -1113,12 +1110,15 @@
           let current = inventoryData.objets;
           const parts = cat.split('.');
           for (const part of parts) {
+            if (current[part] === undefined) return;
             current = current[part];
           }
+          if (current[objName] === undefined) return;
           current[objName].d = newDate;
           closeModal();
           renderInventory();
         } catch(e) {
+          console.error('Erreur updateDate:', e);
           alert('Erreur : ' + e.message);
         }
       });
@@ -1127,7 +1127,7 @@
     document.getElementById('btn-finalize').addEventListener('click', () => {
       const allObjets = getAllObjets(inventoryData.objets || {});
       const manquants = allObjets
-        .filter(o => !checkedItems[`${o.cat}|${o.objName}`])
+        .filter(o => checkedItems[`${o.cat}|${o.objName}`] !== true)
         .map(o => `${o.objName} (${o.cat})`);
 
       const message = manquants.length > 0
@@ -1162,6 +1162,7 @@
           closeModal();
           renderInventory();
         } catch(e) {
+          console.error('Erreur finalisation:', e);
           alert('Erreur : ' + e.message);
         }
       });
@@ -1169,7 +1170,7 @@
 
     document.getElementById('btn-find-missing').addEventListener('click', () => {
       const allObjets = getAllObjets(inventoryData.objets || {});
-      const missing = allObjets.filter(o => !checkedItems[`${o.cat}|${o.objName}`]);
+      const missing = allObjets.filter(o => checkedItems[`${o.cat}|${o.objName}`] !== true);
       if (missing.length === 0) return;
 
       const firstMissing = missing[0];
@@ -1178,10 +1179,18 @@
 
       if (element) {
         // Déplier les sous-catégories parents
-        const parents = element.closestAll('.sub-cat-section');
-        parents.forEach(parent => {
-          const subCatHeader = parent.querySelector('.sub-cat-header');
-          const subCatBody = parent.querySelector('.sub-cat-body');
+        const parentElements = [];
+        let el = element.parentElement;
+        while (el) {
+          if (el.classList && el.classList.contains('sub-cat-section')) {
+            parentElements.push(el);
+          }
+          el = el.parentElement;
+        }
+
+        parentElements.forEach(parent => {
+          const subCatHeader = parent.querySelector(':scope > .sub-cat-header');
+          const subCatBody = parent.querySelector(':scope > .sub-cat-body');
           if (subCatHeader && subCatBody && subCatBody.classList.contains('collapsed')) {
             subCatBody.classList.remove('collapsed');
             subCatHeader.classList.remove('collapsed');
@@ -1199,19 +1208,6 @@
         }, 100);
       }
     });
-
-    // Polyfill pour closestAll (remonte tous les ancêtres correspondants)
-    Element.prototype.closestAll = function(selector) {
-      const result = [];
-      let el = this.parentElement;
-      while (el) {
-        if (el.matches && el.matches(selector)) {
-          result.push(el);
-        }
-        el = el.parentElement;
-      }
-      return result;
-    };
 
     async function addLog(action) {
       const log = {
