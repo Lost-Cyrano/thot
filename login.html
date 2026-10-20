@@ -5,7 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thot – Connexion</title>
   <style>
-    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; max-width: 400px; margin: 50px auto; padding: 0 20px; }
+    /* Fond d'écran statique avec le logo, transparent */
+    #bg-logo {
+      position: fixed;
+      inset: 0;
+      background-image: url('./images/LogoThot.png');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: min(70vmin, 600px) auto;
+      opacity: 0.15;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 0 20px;
+      position: relative;
+      background: transparent;
+    }
+
     .error { color: #c00; margin-top: 10px; }
     input, button { padding: 10px; width: 100%; margin: 5px 0; box-sizing: border-box; }
     button { background: #e60000; color: white; border: none; cursor: pointer; }
@@ -13,6 +34,9 @@
   </style>
 </head>
 <body>
+  <!-- Fond d'écran avec le logo -->
+  <div id="bg-logo" aria-hidden="true"></div>
+
   <h1>Thot – Inventaires</h1>
   <form id="login-form">
     <label for="nivol">NIVOL</label>
