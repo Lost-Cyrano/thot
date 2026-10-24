@@ -72,7 +72,7 @@
     .btn-logout { color: var(--red); border-color: var(--red); }
     .btn-logout:hover { background: var(--red); color: #fff; }
 
-    /* Barre d'info (inventaires sélectionnés) */
+    /* Info bar */
     .info-bar {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -86,14 +86,8 @@
       box-shadow: var(--shadow);
     }
 
-    .info-bar-label {
-      font-size: 0.9rem;
-      color: var(--text-light);
-    }
-
-    .info-bar-label strong {
-      color: var(--text);
-    }
+    .info-bar-label { font-size: 0.9rem; color: var(--text-light); }
+    .info-bar-label strong { color: var(--text); }
 
     .btn-select-inv {
       background: var(--card-bg);
@@ -220,7 +214,7 @@
     .btn-danger { background: #c00; color: #fff; }
     .btn-danger:hover { background: #a00; }
 
-    /* Sélecteur d'inventaires dans le modal */
+    /* Sélecteur inventaires */
     .inv-selector {
       display: flex;
       flex-wrap: wrap;
@@ -267,8 +261,9 @@
     }
     .tree-node-header:hover { background: #f0f0f0; }
     .tree-node-header.inv-header { background: #f5f5f5; font-weight: 600; }
-    .tree-node-header.cat-header { padding-left: 30px; background: #fafafa; }
-    .tree-node-header.subcat-header { padding-left: 50px; background: #f7f5f2; }
+    .tree-node-header.cat-header { padding-left: 30px; background: #fafafa; font-weight: 600; }
+    .tree-node-header.subcat-header { padding-left: 50px; background: #f7f5f2; font-weight: 600; }
+    .tree-node-header.subsubcat-header { padding-left: 70px; background: #f5f2ee; font-weight: 600; }
     .tree-node-header.obj-header { padding-left: 70px; cursor: pointer; }
     .tree-node-header.obj-header:hover { background: #e8f5e9; }
     .tree-node-header .arrow {
@@ -363,6 +358,7 @@
       .btn-action { width: 100%; }
       .tree-node-header.cat-header { padding-left: 20px; }
       .tree-node-header.subcat-header { padding-left: 30px; }
+      .tree-node-header.subsubcat-header { padding-left: 40px; }
       .tree-node-header.obj-header { padding-left: 40px; }
     }
   </style>
@@ -380,7 +376,7 @@
       </div>
     </div>
 
-    <!-- Barre d'info compacte : inventaires sélectionnés -->
+    <!-- Info bar -->
     <div class="info-bar">
       <div class="info-bar-label" id="inv-info-label">
         <strong>Inventaires :</strong> Tous
@@ -439,7 +435,6 @@
     let rearmMode = false;
     let rearmChecked = {};
 
-    // Panier du modal d'ajout
     let cart = {};
 
     const contentEl = document.getElementById('content');
@@ -535,21 +530,27 @@
       }
     }
 
-    // ===== CHARGEMENT INVENTAIRES =====
+    // ===== CHARGEMENT INVENTAIRES (même logique que la page de validation) =====
     async function loadInventories() {
       try {
         const snap = await getDocs(collection(db, 'I'));
         inventories = [];
-        snap.forEach(d => {
-          const data = d.data();
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
           inventories.push({
-            id: d.id,
-            nom: data.nom || d.id,
+            id: docSnap.id,
+            nom: data.nom || docSnap.id,
             objets: data.objets || {}
           });
         });
         inventories.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
-      } catch (e) { console.error(e); }
+        console.log('✅ Inventaires chargés:', inventories.length);
+        inventories.forEach(inv => {
+          console.log(`  📋 ${inv.nom} (${inv.id}) :`, Object.keys(inv.objets).length, 'catégorie(s)');
+        });
+      } catch (e) {
+        console.error('❌ Erreur loadInventories:', e);
+      }
     }
 
     function isInventoryActive(invId) {
@@ -573,7 +574,7 @@
       });
     }
 
-    // ===== HELPERS =====
+    // ===== HELPERS (mêmes fonctions que la page de validation) =====
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -584,8 +585,60 @@
       return inv ? inv.nom : invId;
     }
 
+    // ⚠️ MÊME LOGIQUE QUE LA PAGE DE VALIDATION : détection sous-catégorie via _sub
     function isSubCategory(item) {
       return item && typeof item === 'object' && item._sub === true;
+    }
+
+    // Compte récursivement les objets d'une catégorie
+    function countObjectsInCategory(categoryData) {
+      let count = 0;
+      Object.keys(categoryData).forEach(key => {
+        if (key === '_sub') return;
+        const item = categoryData[key];
+        if (isSubCategory(item)) {
+          count += countObjectsInCategory(item);
+        } else {
+          count++;
+        }
+      });
+      return count;
+    }
+
+    // Récupère TOUS les objets d'une catégorie avec leur chemin
+    function getObjetsFromCategory(categoryData, path) {
+      const all = [];
+      Object.keys(categoryData).forEach(key => {
+        if (key === '_sub') return;
+        const item = categoryData[key];
+        if (isSubCategory(item)) {
+          const subPath = `${path}.${key}`;
+          all.push(...getObjetsFromCategory(item, subPath));
+        } else {
+          all.push({ cat: path, objName: key });
+        }
+      });
+      return all;
+    }
+
+    // Récupère tous les objets d'un inventaire (avec leur chemin)
+    function getAllObjetsFromInventory(objets) {
+      const all = [];
+      Object.keys(objets).forEach(catName => {
+        all.push(...getObjetsFromCategory(objets[catName], catName));
+      });
+      return all;
+    }
+
+    function getObjetsAtPath(objets, path) {
+      let current = objets;
+      if (!path) return current;
+      const parts = path.split('.');
+      for (const part of parts) {
+        if (current[part] === undefined) return null;
+        current = current[part];
+      }
+      return current;
     }
 
     // ===== RENDU PRINCIPAL =====
@@ -603,7 +656,6 @@
     function renderUsageList() {
       const filteredUsages = usages.filter(u => isInventoryActive(u.inventaireId));
 
-      // Regrouper
       const grouped = {};
       filteredUsages.forEach(u => {
         const key = `${u.inventaireId}|${u.path}`;
@@ -786,7 +838,6 @@
             await updateDoc(doc(db, 'I', invId), { manquants: newManquants });
           }
 
-          // Supprimer les usages des inventaires actifs
           for (const u of usages) {
             if (isInventoryActive(u.inventaireId)) {
               await deleteDoc(doc(db, USAGE_COLLECTION, u.id));
@@ -831,14 +882,12 @@
       modalOverlay.style.display = 'flex';
 
       const container = document.getElementById('inv-selector-modal');
-      // Temporaire state
       let tempAll = allInventoriesSelected;
       let tempSelected = [...selectedInventories];
 
       function renderChips() {
         container.innerHTML = '';
 
-        // Chip "Tous"
         const allChip = document.createElement('div');
         allChip.className = 'inv-chip' + (tempAll ? ' selected' : '');
         allChip.textContent = 'Tous';
@@ -880,7 +929,7 @@
       });
     }
 
-    // ===== MODAL AJOUT USAGE (arborescence + panier) =====
+    // ===== MODAL AJOUT USAGE =====
     function openAddUsageModal() {
       cart = {};
       const activeInvs = inventories.filter(inv => isInventoryActive(inv.id));
@@ -931,7 +980,6 @@
       }
 
       modalSearch.addEventListener('input', refreshTree);
-
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-save').addEventListener('click', () => saveCartToFirestore());
 
@@ -939,23 +987,32 @@
       updateCartUI();
     }
 
-    // Rendu de l'arborescence complète (avec expand auto si recherche)
+    // ===== RENDU ARBORESCENCE (mêmes helpers que la page de validation) =====
     function renderFullTree(activeInvs, searchQuery) {
       const q = (searchQuery || '').toLowerCase().trim();
       let html = '';
 
       activeInvs.forEach(inv => {
-        const invMatches = q && inv.nom.toLowerCase().includes(q);
-        const filteredTree = filterTree(inv.objets, q, invMatches);
+        const objets = inv.objets || {};
+        const catKeys = Object.keys(objets);
 
-        // Si recherche et aucun résultat → skip
-        if (q && !invMatches && Object.keys(filteredTree).length === 0) return;
+        // Log pour debug
+        console.log(`Rendering ${inv.nom}:`, catKeys.length, 'catégorie(s)', catKeys);
 
-        // Si pas de recherche → afficher tout
-        const treeToRender = q ? filteredTree : inv.objets;
-        if (Object.keys(treeToRender).length === 0 && q) return;
+        if (catKeys.length === 0) return;
 
-        html += renderInventoryNode(inv.id, inv.nom, treeToRender, q || invMatches);
+        // Si recherche, vérifier si l'inventaire ou une catégorie/objet matche
+        if (q) {
+          const invMatches = inv.nom.toLowerCase().includes(q);
+          const hasMatch = catKeys.some(catKey => {
+            if (catKey.toLowerCase().includes(q)) return true;
+            const cat = objets[catKey];
+            return objectTreeContainsMatch(cat, q);
+          });
+          if (!invMatches && !hasMatch) return;
+        }
+
+        html += renderInventoryNode(inv.id, inv.nom, objets, q);
       });
 
       if (!html) {
@@ -964,32 +1021,37 @@
       return html;
     }
 
-    // Filtre récursif : si forceInclude → tout garder, sinon filtrer par nom
-    function filterTree(objets, q, forceInclude) {
-      const result = {};
-      Object.keys(objets).forEach(key => {
-        if (key === '_sub') return;
-        const item = objets[key];
-        if (!item || typeof item !== 'object') return;
-
-        if (item._sub === true) {
-          const filteredSub = filterTree(item, q, forceInclude);
-          if (Object.keys(filteredSub).length > 0) {
-            result[key] = { ...filteredSub, _sub: true };
-          }
-        } else if (item.q !== undefined) {
-          if (forceInclude || !q || key.toLowerCase().includes(q)) {
-            result[key] = item;
-          }
+    // Vérifie récursivement si un objet/catégorie contient un match
+    function objectTreeContainsMatch(data, q) {
+      if (!data || typeof data !== 'object') return false;
+      return Object.keys(data).some(key => {
+        if (key === '_sub') return false;
+        if (key.toLowerCase().includes(q)) return true;
+        const item = data[key];
+        if (item && typeof item === 'object') {
+          return objectTreeContainsMatch(item, q);
         }
+        return false;
       });
-      return result;
     }
 
-    // Rendu d'un inventaire (racine)
-    function renderInventoryNode(invId, invName, objets, autoExpand) {
-      const innerHtml = renderChildren(invId, invName, objets, '', 0, autoExpand);
-      if (!innerHtml) return '';
+    function renderInventoryNode(invId, invName, objets, q) {
+      const catKeys = Object.keys(objets);
+      if (catKeys.length === 0) return '';
+
+      const autoExpand = !!q;
+      let childrenHtml = '';
+
+      catKeys.forEach(catKey => {
+        if (catKey === '_sub') return;
+        const cat = objets[catKey];
+        if (!cat || typeof cat !== 'object') return;
+
+        childrenHtml += renderCategoryNode(invId, catKey, cat, catKey, 1, q, autoExpand);
+      });
+
+      if (!childrenHtml) return '';
+
       return `
         <div class="tree-node" data-inv="${escapeHtml(invId)}">
           <div class="tree-node-header inv-header" data-toggle="true">
@@ -997,58 +1059,92 @@
             <span class="tree-node-label">📋 ${escapeHtml(invName)}</span>
           </div>
           <div class="tree-node-children ${autoExpand ? 'expanded' : ''}">
-            ${innerHtml}
+            ${childrenHtml}
           </div>
         </div>
       `;
     }
 
-    function renderChildren(invId, invName, objets, path, depth, autoExpand) {
-      let html = '';
+    // Rendu d'une catégorie ou sous-catégorie : parcourt les objets (q) et les sous-catégories (_sub)
+    function renderCategoryNode(invId, name, data, path, depth, q, autoExpand) {
+      const keys = Object.keys(data).filter(k => k !== '_sub');
 
-      Object.keys(objets).forEach(key => {
-        if (key === '_sub') return;
-        const item = objets[key];
-        if (!item || typeof item !== 'object') return;
+      // D'abord, filtrer les objets et sous-catégories si q
+      const objKeys = keys.filter(k => !isSubCategory(data[k])).filter(k => !q || k.toLowerCase().includes(q));
+      const subCatKeys = keys.filter(k => isSubCategory(data[k]));
 
-        if (item._sub === true) {
-          // Sous-catégorie
-          const subPath = path ? `${path}.${key}` : key;
-          const innerHtml = renderChildren(invId, invName, item, subPath, depth + 1, autoExpand);
-          const cls = depth === 0 ? 'cat-header' : 'subcat-header';
-          html += `
-            <div class="tree-node" data-path="${escapeHtml(subPath)}">
-              <div class="tree-node-header ${cls}" data-toggle="true">
-                <span class="arrow ${autoExpand ? 'expanded' : ''}">▶</span>
-                <span class="tree-node-label">📂 ${escapeHtml(key)}</span>
-              </div>
-              <div class="tree-node-children ${autoExpand ? 'expanded' : ''}">
-                ${innerHtml}
-              </div>
-            </div>
-          `;
-        } else if (item.q !== undefined) {
-          // Objet
-          const fullPath = path ? `${path}.${key}` : key;
-          const cartKey = `${invId}|${fullPath}`;
-          const selected = !!cart[cartKey];
-          html += `
-            <div class="tree-node ${selected ? 'selected' : ''}" data-obj-inv="${escapeHtml(invId)}" data-obj-path="${escapeHtml(fullPath)}" data-obj-nom="${escapeHtml(key)}">
-              <div class="tree-node-header obj-header">
-                <span style="width:14px;"></span>
-                <span class="tree-node-label">${escapeHtml(key)}</span>
-                <span class="tree-node-qty">×${item.q}</span>
-                <button class="tree-add-btn" data-add-obj="true" title="Ajouter">+</button>
-              </div>
-            </div>
-          `;
-        }
+      // Filtrer les sous-catégories récursivement
+      const filteredSubCats = subCatKeys.filter(k => {
+        if (!q) return true;
+        if (k.toLowerCase().includes(q)) return true;
+        return objectTreeContainsMatch(data[k], q);
       });
 
-      return html;
+      // Si recherche et rien ne matche dans cette catégorie → skip
+      if (q && objKeys.length === 0 && filteredSubCats.length === 0) return '';
+
+      let childrenHtml = '';
+
+      // Objets en premier
+      objKeys.forEach(objKey => {
+        const obj = data[objKey];
+        const fullPath = `${path}.${objKey}`;
+        const cartKey = `${invId}|${fullPath}`;
+        const selected = !!cart[cartKey];
+        const qty = obj.q !== undefined ? obj.q : (obj.quantite !== undefined ? obj.quantite : 0);
+        childrenHtml += `
+          <div class="tree-node ${selected ? 'selected' : ''}" data-obj-inv="${escapeHtml(invId)}" data-obj-path="${escapeHtml(fullPath)}" data-obj-nom="${escapeHtml(objKey)}">
+            <div class="tree-node-header obj-header">
+              <span style="width:14px;"></span>
+              <span class="tree-node-label">${escapeHtml(objKey)}</span>
+              <span class="tree-node-qty">×${qty}</span>
+              <button class="tree-add-btn" data-add-obj="true" title="Ajouter">+</button>
+            </div>
+          </div>
+        `;
+      });
+
+      // Sous-catégories ensuite
+      filteredSubCats.forEach(subKey => {
+        const subData = data[subKey];
+        const subPath = `${path}.${subKey}`;
+        const innerHtml = renderCategoryNode(invId, subKey, subData, subPath, depth + 1, q, autoExpand);
+        if (q && !innerHtml) return; // skip si vide en recherche
+
+        let cls = 'subcat-header';
+        if (depth === 1) cls = 'cat-header';
+        else if (depth === 2) cls = 'subcat-header';
+        else if (depth >= 3) cls = 'subsubcat-header';
+
+        // Auto-expand si recherche ou si l'enfant contient le match
+        const expanded = autoExpand;
+
+        childrenHtml += `
+          <div class="tree-node" data-path="${escapeHtml(subPath)}">
+            <div class="tree-node-header ${cls}" data-toggle="true">
+              <span class="arrow ${expanded ? 'expanded' : ''}">▶</span>
+              <span class="tree-node-label">📂 ${escapeHtml(subKey)}</span>
+            </div>
+            <div class="tree-node-children ${expanded ? 'expanded' : ''}">
+              ${innerHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      return `
+        <div class="tree-node" data-path="${escapeHtml(path)}">
+          <div class="tree-node-header ${depth === 1 ? 'cat-header' : 'subcat-header'}" data-toggle="true">
+            <span class="arrow ${autoExpand ? 'expanded' : ''}">▶</span>
+            <span class="tree-node-label">📂 ${escapeHtml(name)}</span>
+          </div>
+          <div class="tree-node-children ${autoExpand ? 'expanded' : ''}">
+            ${childrenHtml}
+          </div>
+        </div>
+      `;
     }
 
-    // Attacher les événements de l'arborescence
     function attachTreeEvents() {
       // Toggles
       document.querySelectorAll('#modal-tree-view .tree-node-header[data-toggle="true"]').forEach(header => {
@@ -1064,7 +1160,7 @@
         });
       });
 
-      // Bouton + pour ajouter
+      // Bouton +
       document.querySelectorAll('#modal-tree-view .tree-add-btn[data-add-obj="true"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1091,7 +1187,6 @@
       });
     }
 
-    // Mise à jour du panier
     function updateCartUI() {
       const cartEl = document.getElementById('modal-cart');
       const cartLabel = document.getElementById('cart-label');
@@ -1136,7 +1231,6 @@
         btn.addEventListener('click', () => {
           const key = btn.dataset.remove;
           delete cart[key];
-          // Retirer la classe selected
           const [invId, ...pathParts] = key.split('|');
           const path = pathParts.join('|');
           const node = document.querySelector(`#modal-tree-view .tree-node[data-obj-inv="${CSS.escape(invId)}"][data-obj-path="${CSS.escape(path)}"]`);
