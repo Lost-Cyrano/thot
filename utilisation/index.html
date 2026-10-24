@@ -57,7 +57,7 @@
     .header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .header-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    .btn-back {
+    .btn-back, .btn-logout {
       background: transparent;
       border: 1.5px solid #ccc;
       padding: 8px 14px;
@@ -69,33 +69,44 @@
       white-space: nowrap;
     }
     .btn-back:hover { background: #eee; }
+    .btn-logout { color: var(--red); border-color: var(--red); }
+    .btn-logout:hover { background: var(--red); color: #fff; }
 
-    .btn-logout {
-      background: transparent;
-      color: var(--red);
-      border: 1.5px solid var(--red);
-      padding: 8px 16px;
+    /* Barre d'info (inventaires sélectionnés) */
+    .info-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .info-bar-label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    .info-bar-label strong {
+      color: var(--text);
+    }
+
+    .btn-select-inv {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      padding: 8px 14px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       transition: all 0.2s;
       white-space: nowrap;
     }
-    .btn-logout:hover { background: var(--red); color: #fff; }
-
-    .btn-primary {
-      background: var(--red);
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-    }
-    .btn-primary:hover { background: var(--red-hover); }
+    .btn-select-inv:hover { background: #f0f0f0; border-color: #bbb; }
 
     /* Sections */
     .section {
@@ -141,10 +152,7 @@
       border-bottom: 1px solid #f0f0f0;
       flex-wrap: wrap;
       gap: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
     }
-    .list-item:hover { background: #fafafa; }
     .list-item:last-child { border-bottom: none; }
 
     .user-info { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
@@ -155,59 +163,6 @@
     }
     .user-name { font-weight: 600; font-size: 0.95rem; }
     .user-nivol { color: var(--text-light); font-size: 0.8rem; }
-
-    /* Quantités */
-    .qty-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .qty-btn {
-      width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #ccc;
-      background: #fff; font-size: 1.2rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-    }
-    .qty-btn:hover { background: #f0f0f0; }
-    .qty-num { font-weight: 600; font-size: 1.1rem; min-width: 30px; text-align: center; }
-
-    /* Recherche */
-    .search-bar {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 18px;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .search-bar input {
-      width: 100%;
-      padding: 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-
-    /* Sélection des inventaires */
-    .inv-selector {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .inv-chip {
-      padding: 6px 14px;
-      border-radius: 16px;
-      background: #f0f0f0;
-      border: 1.5px solid transparent;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 500;
-      transition: all 0.2s;
-      user-select: none;
-    }
-    .inv-chip:hover { background: #e8e8e8; }
-    .inv-chip.selected {
-      background: var(--red);
-      color: #fff;
-      border-color: var(--red);
-    }
 
     /* Boutons d'action */
     .action-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -246,7 +201,7 @@
     }
     .modal h3 { font-size: 1.1rem; }
     .modal label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.9rem; }
-    .modal input, .modal select {
+    .modal input {
       width: 100%; padding: 10px; border: 1.5px solid var(--border);
       border-radius: 8px; font-size: 0.95rem;
     }
@@ -261,10 +216,38 @@
     .btn-cancel:hover { background: #ddd; }
     .btn-save { background: var(--red); color: #fff; }
     .btn-save:hover { background: var(--red-hover); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-danger { background: #c00; color: #fff; }
     .btn-danger:hover { background: #a00; }
 
-    /* Arborescence de sélection d'objets (mode "liste de courses") */
+    /* Sélecteur d'inventaires dans le modal */
+    .inv-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .inv-chip {
+      padding: 8px 14px;
+      border-radius: 16px;
+      background: #f0f0f0;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .inv-chip:hover { background: #e8e8e8; }
+    .inv-chip.selected {
+      background: var(--red);
+      color: #fff;
+      border-color: var(--red);
+    }
+
+    /* Arborescence */
     .tree-view {
       max-height: 400px;
       overflow-y: auto;
@@ -272,9 +255,7 @@
       border-radius: 8px;
       background: #fafafa;
     }
-    .tree-node {
-      user-select: none;
-    }
+    .tree-node { user-select: none; }
     .tree-node-header {
       padding: 10px 14px;
       display: flex;
@@ -299,16 +280,16 @@
     .tree-node-header .arrow.expanded { transform: rotate(90deg); }
     .tree-node-children { display: none; }
     .tree-node-children.expanded { display: block; }
-    .tree-node-label { flex: 1; }
+    .tree-node-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
     .tree-node-qty {
       font-size: 0.75rem;
       background: #f0f0f0;
       padding: 2px 8px;
       border-radius: 8px;
       color: var(--text-light);
+      flex-shrink: 0;
     }
-    .tree-node.selected { background: #e8f5e9; }
-    .tree-node.selected .tree-node-header { background: #c8e6c9; }
+    .tree-node.selected > .tree-node-header { background: #c8e6c9; }
     .tree-add-btn {
       background: var(--red);
       color: #fff;
@@ -323,10 +304,11 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      font-weight: 600;
     }
     .tree-add-btn:hover { background: var(--red-hover); }
 
-    /* Panier (objets sélectionnés) */
+    /* Panier */
     .cart-panel {
       background: #f5f5f5;
       border-radius: 8px;
@@ -348,14 +330,10 @@
     .cart-item:last-child { margin-bottom: 0; }
     .cart-item-info { flex: 1; min-width: 0; }
     .cart-item-name { font-weight: 600; }
-    .cart-item-path { font-size: 0.75rem; color: var(--text-light); }
-    .cart-item-qty {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
+    .cart-item-path { font-size: 0.75rem; color: var(--text-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-item-qty { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .cart-item-qty input {
-      width: 50px;
+      width: 55px;
       padding: 4px;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -367,25 +345,20 @@
       border: none;
       color: var(--danger);
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 1.1rem;
       padding: 0 4px;
+      flex-shrink: 0;
     }
 
-    /* Empty */
+    /* Empty / Loading */
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
-
-    /* Loading */
     .loading { text-align: center; padding: 20px; color: var(--text-light); }
-
-    /* Mark */
-    mark { background: #fff59d; padding: 0 2px; border-radius: 2px; }
 
     @media (max-width: 480px) {
       .header { flex-direction: column; align-items: flex-start; }
       .header-buttons { width: 100%; justify-content: flex-end; }
       .list-item { flex-direction: column; align-items: flex-start; }
-      .qty-controls { align-self: flex-end; }
       .action-buttons { flex-direction: column; }
       .btn-action { width: 100%; }
       .tree-node-header.cat-header { padding-left: 20px; }
@@ -407,13 +380,12 @@
       </div>
     </div>
 
-    <!-- Recherche + sélection inventaires -->
-    <div class="search-bar">
-      <input type="text" id="search-input" placeholder="🔍 Rechercher un objet, une catégorie ou un inventaire...">
-      <div>
-        <label style="font-size:0.85rem;color:var(--text-light);margin-bottom:6px;display:block;">Inventaires à utiliser :</label>
-        <div class="inv-selector" id="inv-selector"></div>
+    <!-- Barre d'info compacte : inventaires sélectionnés -->
+    <div class="info-bar">
+      <div class="info-bar-label" id="inv-info-label">
+        <strong>Inventaires :</strong> Tous
       </div>
+      <button class="btn-select-inv" id="btn-select-inv">⚙️ Sélectionner</button>
     </div>
 
     <!-- Contenu -->
@@ -436,7 +408,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, collection, setDoc, updateDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -457,23 +429,21 @@
     let currentUser = null;
     let userRole = null;
 
-    // Données
     let inventories = [];
     let usages = [];
     let unsubscribeUsages = null;
 
-    // Sélection des inventaires (filtre)
     let selectedInventories = [];
     let allInventoriesSelected = true;
 
-    // État de réarmement
     let rearmMode = false;
     let rearmChecked = {};
 
-    // DOM
+    // Panier du modal d'ajout
+    let cart = {};
+
     const contentEl = document.getElementById('content');
-    const searchInput = document.getElementById('search-input');
-    const invSelector = document.getElementById('inv-selector');
+    const invInfoLabel = document.getElementById('inv-info-label');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
     const actionButtons = document.getElementById('action-buttons');
@@ -490,7 +460,7 @@
         const adminSnap = await getDoc(doc(db, 'A', nivol));
         if (adminSnap.exists()) {
           userRole = 'admin';
-          currentUser = { nivol, nom: adminSnap.data().I || 'Inconnu', fonction: adminSnap.data().F || '' };
+          currentUser = { nivol, nom: adminSnap.data().I || 'Inconnu' };
         } else {
           const userSnap = await getDoc(doc(db, 'U', nivol));
           if (userSnap.exists()) {
@@ -509,7 +479,7 @@
 
         await loadInventories();
         loadSelectedInventoriesFromUrl();
-        renderInventorySelector();
+        updateInfoBar();
         setupRealtimeUsages();
         renderMain();
 
@@ -538,7 +508,6 @@
         selectedInventories = invParam.split(',').filter(Boolean);
         allInventoriesSelected = selectedInventories.length === 0;
       } else {
-        // Par défaut : tous sélectionnés
         selectedInventories = [];
         allInventoriesSelected = true;
       }
@@ -555,6 +524,15 @@
         ? `${window.location.pathname}?${params.toString()}`
         : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
+    }
+
+    function updateInfoBar() {
+      if (allInventoriesSelected || selectedInventories.length === 0) {
+        invInfoLabel.innerHTML = '<strong>Inventaires :</strong> Tous';
+      } else {
+        const names = selectedInventories.map(id => getInventoryName(id)).join(', ');
+        invInfoLabel.innerHTML = `<strong>Inventaires :</strong> ${escapeHtml(names)}`;
+      }
     }
 
     // ===== CHARGEMENT INVENTAIRES =====
@@ -574,48 +552,6 @@
       } catch (e) { console.error(e); }
     }
 
-    // ===== RENDU SÉLECTEUR INVENTAIRES =====
-    function renderInventorySelector() {
-      invSelector.innerHTML = '';
-
-      // Chip "Tous"
-      const allChip = document.createElement('div');
-      allChip.className = 'inv-chip' + (allInventoriesSelected ? ' selected' : '');
-      allChip.textContent = 'Tous';
-      allChip.addEventListener('click', () => {
-        allInventoriesSelected = true;
-        selectedInventories = [];
-        updateUrlWithSelectedInventories();
-        renderInventorySelector();
-        renderMain();
-      });
-      invSelector.appendChild(allChip);
-
-      // Chips par inventaire
-      inventories.forEach(inv => {
-        const chip = document.createElement('div');
-        const isSelected = !allInventoriesSelected && selectedInventories.includes(inv.id);
-        chip.className = 'inv-chip' + (isSelected ? ' selected' : '');
-        chip.textContent = inv.nom;
-        chip.addEventListener('click', () => {
-          allInventoriesSelected = false;
-          if (selectedInventories.includes(inv.id)) {
-            selectedInventories = selectedInventories.filter(i => i !== inv.id);
-          } else {
-            selectedInventories.push(inv.id);
-          }
-          if (selectedInventories.length === 0) {
-            allInventoriesSelected = true;
-          }
-          updateUrlWithSelectedInventories();
-          renderInventorySelector();
-          renderMain();
-        });
-        invSelector.appendChild(chip);
-      });
-    }
-
-    // Vérifier si un inventaire est sélectionné pour la recherche
     function isInventoryActive(invId) {
       if (allInventoriesSelected) return true;
       return selectedInventories.includes(invId);
@@ -643,11 +579,6 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    function formatDate(iso) {
-      if (!iso) return '—';
-      return new Date(iso).toLocaleString('fr-FR');
-    }
-
     function getInventoryName(invId) {
       const inv = inventories.find(i => i.id === invId);
       return inv ? inv.nom : invId;
@@ -670,18 +601,9 @@
     }
 
     function renderUsageList() {
-      const search = (searchInput.value || '').toLowerCase().trim();
+      const filteredUsages = usages.filter(u => isInventoryActive(u.inventaireId));
 
-      // Filtrer les usages
-      const filteredUsages = usages.filter(u => {
-        if (!isInventoryActive(u.inventaireId)) return false;
-        if (!search) return true;
-        const invName = getInventoryName(u.inventaireId).toLowerCase();
-        const objName = (u.objetNom || '').toLowerCase();
-        return invName.includes(search) || objName.includes(search);
-      });
-
-      // Regrouper par objet (inventaire + path)
+      // Regrouper
       const grouped = {};
       filteredUsages.forEach(u => {
         const key = `${u.inventaireId}|${u.path}`;
@@ -691,12 +613,10 @@
             inventaireNom: getInventoryName(u.inventaireId),
             path: u.path,
             objetNom: u.objetNom,
-            quantite: 0,
-            usages: []
+            quantite: 0
           };
         }
         grouped[key].quantite += u.quantite || 0;
-        grouped[key].usages.push(u);
       });
 
       const items = Object.values(grouped);
@@ -744,9 +664,8 @@
       }
     }
 
-    // ===== MODE RÉARMEMENT =====
+    // ===== RÉARMEMENT =====
     function renderRearmMode() {
-      // Regrouper les usages par objet, uniquement pour les inventaires actifs
       const grouped = {};
       usages.filter(u => isInventoryActive(u.inventaireId)).forEach(u => {
         const key = `${u.inventaireId}|${u.path}`;
@@ -756,12 +675,10 @@
             inventaireNom: getInventoryName(u.inventaireId),
             path: u.path,
             objetNom: u.objetNom,
-            quantite: 0,
-            usageIds: []
+            quantite: 0
           };
         }
         grouped[key].quantite += u.quantite || 0;
-        grouped[key].usageIds.push(u.id);
       });
 
       const items = Object.values(grouped);
@@ -774,7 +691,7 @@
             <span class="badge ok">${checkedCount}/${items.length} réarmés</span>
           </div>
           <div style="padding:12px 18px;background:#fff8f0;border-bottom:1px solid #f0f0f0;font-size:0.85rem;color:#666;">
-            Cochez chaque objet que vous avez réarmé. Les objets non cochés seront marqués comme <strong>absents</strong>.
+            Cochez chaque objet réarmé. Les non cochés seront marqués <strong>absents</strong>.
           </div>
           <ul class="list" id="rearm-list">
       `;
@@ -800,7 +717,7 @@
         </div>
         <div class="action-buttons" style="margin-top:12px;">
           <button class="btn-action secondary" id="btn-cancel-rearm">✖ Annuler</button>
-          <button class="btn-action success" id="btn-validate-rearm">✅ Valider le réarmement</button>
+          <button class="btn-action success" id="btn-validate-rearm">✅ Valider</button>
         </div>
       `;
 
@@ -808,9 +725,8 @@
       actionButtons.style.display = 'none';
 
       document.querySelectorAll('.rearm-checkbox').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-          const key = cb.dataset.key;
-          rearmChecked[key] = cb.checked;
+        cb.addEventListener('change', () => {
+          rearmChecked[cb.dataset.key] = cb.checked;
           const total = document.querySelectorAll('.rearm-checkbox').length;
           const checked = document.querySelectorAll('.rearm-checkbox:checked').length;
           const badge = document.querySelector('.section-header .badge');
@@ -829,7 +745,6 @@
       });
     }
 
-    // ===== VALIDATION RÉARMEMENT =====
     async function validateRearm(grouped) {
       const items = Object.values(grouped);
       if (items.length === 0) return;
@@ -839,13 +754,9 @@
         return !rearmChecked[key];
       });
 
-      const message = missingItems.length > 0
-        ? `${missingItems.length} objet(s) non réarmé(s) seront marqués comme <strong>absents</strong>.`
-        : 'Tous les objets ont été réarmés.';
-
       modalContent.innerHTML = `
         <h3>Confirmer le réarmement</h3>
-        <p>${message}</p>
+        <p>${missingItems.length > 0 ? `${missingItems.length} objet(s) non réarmé(s) seront marqués <strong>absents</strong>.` : 'Tous les objets ont été réarmés.'}</p>
         ${missingItems.length > 0 ? `
           <div style="background:#fff0f0;padding:12px;border-radius:8px;max-height:200px;overflow-y:auto;font-size:0.85rem;">
             ${missingItems.map(i => `<div style="padding:4px 0;border-bottom:1px solid #f5e5e5;">❌ ${escapeHtml(i.objetNom)} ×${i.quantite} (${escapeHtml(i.inventaireNom)})</div>`).join('')}
@@ -866,19 +777,16 @@
           for (const invId of invIds) {
             const invItems = items.filter(i => i.inventaireId === invId);
             const invMissing = invItems.filter(i => !rearmChecked[`${i.inventaireId}|${i.path}`]);
-
             if (invMissing.length === 0) continue;
 
             const manquantsSnap = await getDoc(doc(db, 'I', invId));
             const currentManquants = manquantsSnap.data().manquants || [];
-
             const newEntries = invMissing.map(i => `${i.objetNom} (${i.path})`);
             const newManquants = [...new Set([...currentManquants, ...newEntries])];
-
             await updateDoc(doc(db, 'I', invId), { manquants: newManquants });
           }
 
-          // Supprimer tous les usages des inventaires actifs
+          // Supprimer les usages des inventaires actifs
           for (const u of usages) {
             if (isInventoryActive(u.inventaireId)) {
               await deleteDoc(doc(db, USAGE_COLLECTION, u.id));
@@ -889,7 +797,6 @@
           rearmChecked = {};
           closeModal();
           renderMain();
-
         } catch (e) {
           console.error(e);
           alert('Erreur : ' + e.message);
@@ -897,9 +804,8 @@
       });
     }
 
-    // ===== BOUTONS D'ACTION =====
+    // ===== BOUTONS =====
     btnAddUsage.addEventListener('click', () => openAddUsageModal());
-
     btnRearm.addEventListener('click', () => {
       if (usages.filter(u => isInventoryActive(u.inventaireId)).length === 0) return;
       rearmMode = true;
@@ -907,30 +813,103 @@
       renderMain();
     });
 
-    // ===== RECHERCHE =====
-    searchInput.addEventListener('input', () => {
-      if (!rearmMode) renderUsageList();
+    // ===== MODAL SÉLECTION D'INVENTAIRES =====
+    document.getElementById('btn-select-inv').addEventListener('click', () => {
+      openInventorySelectorModal();
     });
 
-    // ===== MODAL AJOUT USAGE (arborescence + panier) =====
-    let cart = {}; // { "invId|path": { inventaireId, path, objetNom, quantite } }
+    function openInventorySelectorModal() {
+      modalContent.innerHTML = `
+        <h3>Inventaires à utiliser</h3>
+        <p class="hint">Sélectionnez les inventaires dans lesquels vous souhaitez naviguer.</p>
+        <div class="inv-selector" id="inv-selector-modal"></div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Valider</button>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
 
+      const container = document.getElementById('inv-selector-modal');
+      // Temporaire state
+      let tempAll = allInventoriesSelected;
+      let tempSelected = [...selectedInventories];
+
+      function renderChips() {
+        container.innerHTML = '';
+
+        // Chip "Tous"
+        const allChip = document.createElement('div');
+        allChip.className = 'inv-chip' + (tempAll ? ' selected' : '');
+        allChip.textContent = 'Tous';
+        allChip.addEventListener('click', () => {
+          tempAll = true;
+          tempSelected = [];
+          renderChips();
+        });
+        container.appendChild(allChip);
+
+        inventories.forEach(inv => {
+          const chip = document.createElement('div');
+          const isSel = !tempAll && tempSelected.includes(inv.id);
+          chip.className = 'inv-chip' + (isSel ? ' selected' : '');
+          chip.textContent = inv.nom;
+          chip.addEventListener('click', () => {
+            tempAll = false;
+            if (tempSelected.includes(inv.id)) {
+              tempSelected = tempSelected.filter(i => i !== inv.id);
+            } else {
+              tempSelected.push(inv.id);
+            }
+            if (tempSelected.length === 0) tempAll = true;
+            renderChips();
+          });
+          container.appendChild(chip);
+        });
+      }
+      renderChips();
+
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', () => {
+        allInventoriesSelected = tempAll;
+        selectedInventories = tempSelected;
+        updateUrlWithSelectedInventories();
+        updateInfoBar();
+        closeModal();
+        renderMain();
+      });
+    }
+
+    // ===== MODAL AJOUT USAGE (arborescence + panier) =====
     function openAddUsageModal() {
       cart = {};
-      // Inventaires actifs uniquement
       const activeInvs = inventories.filter(inv => isInventoryActive(inv.id));
+
+      if (activeInvs.length === 0) {
+        modalContent.innerHTML = `
+          <h3>Aucun inventaire sélectionné</h3>
+          <p>Sélectionnez au moins un inventaire via le bouton "Sélectionner".</p>
+          <div class="modal-actions">
+            <button class="btn btn-cancel" id="modal-cancel">Fermer</button>
+          </div>
+        `;
+        modalOverlay.style.display = 'flex';
+        document.getElementById('modal-cancel').addEventListener('click', closeModal);
+        return;
+      }
 
       modalContent.innerHTML = `
         <h3>➕ Ajouter du matériel utilisé</h3>
         <div>
-          <label>Rechercher</label>
-          <input type="text" id="modal-search" placeholder="Rechercher un objet, une catégorie ou un inventaire..." autofocus>
-        </div>
-        <div style="max-height:350px;overflow-y:auto;border:1px solid #eee;border-radius:8px;background:#fff;" id="modal-tree-view">
-          ${renderTreeView(activeInvs, '')}
+          <label>Rechercher (optionnel)</label>
+          <input type="text" id="modal-search" placeholder="Filtrer par nom d'objet, catégorie ou inventaire...">
         </div>
         <div>
-          <label>Objets sélectionnés (${Object.keys(cart).length})</label>
+          <label>Parcourir les inventaires</label>
+          <div class="tree-view" id="modal-tree-view"></div>
+        </div>
+        <div>
+          <label id="cart-label">Objets sélectionnés (0)</label>
           <div class="cart-panel" id="modal-cart">
             <div style="text-align:center;color:#999;font-size:0.85rem;padding:12px;">Aucun objet sélectionné</div>
           </div>
@@ -945,134 +924,133 @@
       const modalSearch = document.getElementById('modal-search');
       const treeView = document.getElementById('modal-tree-view');
 
-      modalSearch.addEventListener('input', () => {
-        const q = modalSearch.value.toLowerCase().trim();
-        treeView.innerHTML = renderTreeView(activeInvs, q);
-        attachTreeEvents(activeInvs);
-      });
+      function refreshTree() {
+        const q = (modalSearch.value || '').toLowerCase().trim();
+        treeView.innerHTML = renderFullTree(activeInvs, q);
+        attachTreeEvents();
+      }
+
+      modalSearch.addEventListener('input', refreshTree);
 
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
-      document.getElementById('modal-save').addEventListener('click', () => {
-        saveCartToFirestore();
-      });
+      document.getElementById('modal-save').addEventListener('click', () => saveCartToFirestore());
 
-      attachTreeEvents(activeInvs);
+      refreshTree();
       updateCartUI();
     }
 
-    // Rendu de l'arborescence (inventaires > catégories > sous-catégories > objets)
-    // Si searchQuery est fourni, on ne garde que les branches contenant des objets correspondants
-    function renderTreeView(activeInvs, searchQuery) {
+    // Rendu de l'arborescence complète (avec expand auto si recherche)
+    function renderFullTree(activeInvs, searchQuery) {
       const q = (searchQuery || '').toLowerCase().trim();
       let html = '';
 
       activeInvs.forEach(inv => {
         const invMatches = q && inv.nom.toLowerCase().includes(q);
-
-        // Filtrer récursivement
         const filteredTree = filterTree(inv.objets, q, invMatches);
-        if (Object.keys(filteredTree).length === 0) return;
 
-        html += renderTreeNode(inv.id, inv.nom, filteredTree, '', 0);
+        // Si recherche et aucun résultat → skip
+        if (q && !invMatches && Object.keys(filteredTree).length === 0) return;
+
+        // Si pas de recherche → afficher tout
+        const treeToRender = q ? filteredTree : inv.objets;
+        if (Object.keys(treeToRender).length === 0 && q) return;
+
+        html += renderInventoryNode(inv.id, inv.nom, treeToRender, q || invMatches);
       });
 
       if (!html) {
         html = '<div style="padding:20px;text-align:center;color:#999;">Aucun résultat.</div>';
       }
-
       return html;
     }
 
-    // Filtre récursif : garde les objets qui matchent ou les branches contenant des matches
+    // Filtre récursif : si forceInclude → tout garder, sinon filtrer par nom
     function filterTree(objets, q, forceInclude) {
       const result = {};
       Object.keys(objets).forEach(key => {
         if (key === '_sub') return;
         const item = objets[key];
+        if (!item || typeof item !== 'object') return;
 
-        if (item && typeof item === 'object') {
-          if (item._sub === true) {
-            const filteredSub = filterTree(item, q, forceInclude);
-            if (Object.keys(filteredSub).length > 0) {
-              result[key] = { ...filteredSub, _sub: true };
-            }
-          } else if (item.q !== undefined) {
-            // C'est un objet
-            if (forceInclude || !q || key.toLowerCase().includes(q)) {
-              result[key] = item;
-            }
+        if (item._sub === true) {
+          const filteredSub = filterTree(item, q, forceInclude);
+          if (Object.keys(filteredSub).length > 0) {
+            result[key] = { ...filteredSub, _sub: true };
+          }
+        } else if (item.q !== undefined) {
+          if (forceInclude || !q || key.toLowerCase().includes(q)) {
+            result[key] = item;
           }
         }
       });
       return result;
     }
 
-    // Rendu récursif d'un nœud
-    function renderTreeNode(invId, invName, objets, path, depth) {
-      // depth = niveau de profondeur (0 = racine catégorie, 1 = sous-cat, ...)
+    // Rendu d'un inventaire (racine)
+    function renderInventoryNode(invId, invName, objets, autoExpand) {
+      const innerHtml = renderChildren(invId, invName, objets, '', 0, autoExpand);
+      if (!innerHtml) return '';
+      return `
+        <div class="tree-node" data-inv="${escapeHtml(invId)}">
+          <div class="tree-node-header inv-header" data-toggle="true">
+            <span class="arrow ${autoExpand ? 'expanded' : ''}">▶</span>
+            <span class="tree-node-label">📋 ${escapeHtml(invName)}</span>
+          </div>
+          <div class="tree-node-children ${autoExpand ? 'expanded' : ''}">
+            ${innerHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderChildren(invId, invName, objets, path, depth, autoExpand) {
       let html = '';
 
       Object.keys(objets).forEach(key => {
         if (key === '_sub') return;
         const item = objets[key];
+        if (!item || typeof item !== 'object') return;
 
-        if (item && typeof item === 'object') {
-          if (item._sub === true) {
-            // Sous-catégorie
-            const subPath = path ? `${path}.${key}` : key;
-            const subKeys = Object.keys(item).filter(k => k !== '_sub');
-            const headerClass = depth === 0 ? 'cat-header' : 'subcat-header';
-            html += `
-              <div class="tree-node" data-path="${escapeHtml(subPath)}">
-                <div class="tree-node-header ${headerClass}" data-toggle="true">
-                  <span class="arrow">▶</span>
-                  <span class="tree-node-label">📂 ${escapeHtml(key)}</span>
-                  <span class="tree-node-qty">${subKeys.length}</span>
-                </div>
-                <div class="tree-node-children">
-                  ${renderTreeNode(invId, invName, item, subPath, depth + 1)}
-                </div>
+        if (item._sub === true) {
+          // Sous-catégorie
+          const subPath = path ? `${path}.${key}` : key;
+          const innerHtml = renderChildren(invId, invName, item, subPath, depth + 1, autoExpand);
+          const cls = depth === 0 ? 'cat-header' : 'subcat-header';
+          html += `
+            <div class="tree-node" data-path="${escapeHtml(subPath)}">
+              <div class="tree-node-header ${cls}" data-toggle="true">
+                <span class="arrow ${autoExpand ? 'expanded' : ''}">▶</span>
+                <span class="tree-node-label">📂 ${escapeHtml(key)}</span>
               </div>
-            `;
-          } else if (item.q !== undefined) {
-            // C'est un objet
-            const fullPath = path ? `${path}.${key}` : key;
-            const cartKey = `${invId}|${fullPath}`;
-            const inCart = !!cart[cartKey];
-            html += `
-              <div class="tree-node ${inCart ? 'selected' : ''}" data-obj-inv="${escapeHtml(invId)}" data-obj-path="${escapeHtml(fullPath)}" data-obj-nom="${escapeHtml(key)}">
-                <div class="tree-node-header obj-header">
-                  <span style="width:14px;"></span>
-                  <span class="tree-node-label">${escapeHtml(key)}</span>
-                  <span class="tree-node-qty">×${item.q}</span>
-                  <button class="tree-add-btn" title="Ajouter" data-add-obj="true">+</button>
-                </div>
+              <div class="tree-node-children ${autoExpand ? 'expanded' : ''}">
+                ${innerHtml}
               </div>
-            `;
-          }
+            </div>
+          `;
+        } else if (item.q !== undefined) {
+          // Objet
+          const fullPath = path ? `${path}.${key}` : key;
+          const cartKey = `${invId}|${fullPath}`;
+          const selected = !!cart[cartKey];
+          html += `
+            <div class="tree-node ${selected ? 'selected' : ''}" data-obj-inv="${escapeHtml(invId)}" data-obj-path="${escapeHtml(fullPath)}" data-obj-nom="${escapeHtml(key)}">
+              <div class="tree-node-header obj-header">
+                <span style="width:14px;"></span>
+                <span class="tree-node-label">${escapeHtml(key)}</span>
+                <span class="tree-node-qty">×${item.q}</span>
+                <button class="tree-add-btn" data-add-obj="true" title="Ajouter">+</button>
+              </div>
+            </div>
+          `;
         }
       });
 
-      // Si on est au niveau racine, ajouter un wrapper pour l'inventaire
-      if (depth === 0 && html) {
-        return `
-          <div class="tree-node" data-inv="${escapeHtml(invId)}">
-            <div class="tree-node-header inv-header" data-toggle="true">
-              <span class="arrow">▶</span>
-              <span class="tree-node-label">📋 ${escapeHtml(invName)}</span>
-            </div>
-            <div class="tree-node-children">
-              ${html}
-            </div>
-          </div>
-        `;
-      }
       return html;
     }
 
     // Attacher les événements de l'arborescence
-    function attachTreeEvents(activeInvs) {
-      // Toggles (expand/collapse)
+    function attachTreeEvents() {
+      // Toggles
       document.querySelectorAll('#modal-tree-view .tree-node-header[data-toggle="true"]').forEach(header => {
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
@@ -1086,7 +1064,7 @@
         });
       });
 
-      // Ajout d'objets au panier
+      // Bouton + pour ajouter
       document.querySelectorAll('#modal-tree-view .tree-add-btn[data-add-obj="true"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1113,25 +1091,18 @@
       });
     }
 
-    // Mise à jour de l'UI du panier
+    // Mise à jour du panier
     function updateCartUI() {
       const cartEl = document.getElementById('modal-cart');
+      const cartLabel = document.getElementById('cart-label');
       const saveBtn = document.getElementById('modal-save');
       const items = Object.values(cart);
 
-      // Mettre à jour le label "Objets sélectionnés (N)"
-      const label = document.querySelector('#modal-content label');
-      const labels = document.querySelectorAll('#modal-content label');
-      if (labels.length >= 2) {
-        labels[labels.length - 1].textContent = `Objets sélectionnés (${items.length})`;
-      }
+      if (cartLabel) cartLabel.textContent = `Objets sélectionnés (${items.length})`;
 
       if (items.length === 0) {
         cartEl.innerHTML = '<div style="text-align:center;color:#999;font-size:0.85rem;padding:12px;">Aucun objet sélectionné</div>';
-        if (saveBtn) {
-          saveBtn.disabled = true;
-          saveBtn.textContent = 'Ajouter tout';
-        }
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Ajouter tout'; }
         return;
       }
 
@@ -1153,25 +1124,23 @@
       });
       cartEl.innerHTML = html;
 
-      // Événements quantité
       cartEl.querySelectorAll('[data-qty-input]').forEach(input => {
-        input.addEventListener('change', (e) => {
+        input.addEventListener('change', () => {
           const key = input.dataset.qtyInput;
           const val = parseInt(input.value) || 1;
-          if (cart[key]) {
-            cart[key].quantite = Math.max(1, val);
-          }
+          if (cart[key]) cart[key].quantite = Math.max(1, val);
         });
       });
 
-      // Événements retirer
       cartEl.querySelectorAll('[data-remove]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
           const key = btn.dataset.remove;
           delete cart[key];
           // Retirer la classe selected
-          const treeNode = document.querySelector(`#modal-tree-view .tree-node[data-obj-inv="${CSS.escape(key.split('|')[0])}"][data-obj-path="${CSS.escape(key.split('|').slice(1).join('|'))}"]`);
-          if (treeNode) treeNode.classList.remove('selected');
+          const [invId, ...pathParts] = key.split('|');
+          const path = pathParts.join('|');
+          const node = document.querySelector(`#modal-tree-view .tree-node[data-obj-inv="${CSS.escape(invId)}"][data-obj-path="${CSS.escape(path)}"]`);
+          if (node) node.classList.remove('selected');
           updateCartUI();
         });
       });
@@ -1182,7 +1151,6 @@
       }
     }
 
-    // Sauvegarde du panier dans Firestore
     async function saveCartToFirestore() {
       const items = Object.values(cart);
       if (items.length === 0) return;
