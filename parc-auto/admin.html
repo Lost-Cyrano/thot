@@ -18,7 +18,6 @@
       --warning: #f5a623;
       --danger: #e60000;
       --ok: #4caf50;
-      --sub-cat-bg: #faf8f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -103,7 +102,7 @@
 
     .btn-add:hover { background: var(--red-hover); }
 
-    /* Sélecteur de véhicule (même style que .inventory-selector) */
+    /* Sélecteur de véhicule */
     .vehicle-selector {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -335,7 +334,7 @@
     .btn-danger { background: #c00; color: #fff; }
     .btn-danger:hover { background: #a00; }
 
-    /* Confirm modal stylé */
+    /* Confirm modal */
     .confirm-modal {
       background: #fff;
       border-radius: var(--radius);
@@ -361,22 +360,6 @@
     }
     .confirm-modal .btn { flex: 1; min-width: 120px; padding: 12px 18px; font-size: 0.95rem; }
 
-    /* Switch */
-    .switch-container { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-    .switch-container input[type="checkbox"] { display: none; }
-    .switch {
-      width: 44px; height: 24px; background: #ccc; border-radius: 12px;
-      position: relative; transition: background 0.3s; flex-shrink: 0;
-    }
-    .switch::after {
-      content: ''; position: absolute; width: 20px; height: 20px; background: #fff;
-      border-radius: 50%; top: 2px; left: 2px; transition: left 0.3s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .switch-container input:checked + .switch { background: var(--red); }
-    .switch-container input:checked + .switch::after { left: 22px; }
-    .switch-label { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-
     /* Responsive */
     @media (max-width: 480px) {
       .list-item { flex-direction: column; align-items: flex-start; }
@@ -398,7 +381,7 @@
       </div>
     </div>
 
-    <!-- Actions (sélecteur + boutons) -->
+    <!-- Actions -->
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
       <div class="vehicle-selector">
         <select id="vehicle-select">
@@ -445,14 +428,11 @@
     const db = getFirestore(app);
 
     const COLLECTION = 'P';
-    const HIERARCHY = ['Dieu', 'PUL', 'MOT'];
 
     let currentAdmin = null;
     let vehicles = [];
     let currentVehicleId = null;
     let currentVehicleData = null;
-
-    const collapsedState = {};
 
     const vehicleSelect = document.getElementById('vehicle-select');
     const vehicleContent = document.getElementById('vehicle-content');
@@ -511,7 +491,7 @@
 
     btnQRCode.addEventListener('click', () => {
       if (currentVehicleId) {
-        window.location.href = `../qr.html?type=vehicule&id=${encodeURIComponent(currentVehicleId)}`;
+        window.location.href = `./qr.html?type=vehicule&id=${encodeURIComponent(currentVehicleId)}`;
       }
     });
 
@@ -552,12 +532,14 @@
           const data = d.data();
           vehicles.push({ id: d.id, ...data });
         });
-        vehicles.sort((a, b) => (a.n || a.im || a.id).localeCompare(b.n || b.im || b.id, 'fr'));
+        // Tri alphabétique par nom uniquement
+        vehicles.sort((a, b) => (a.n || a.id).localeCompare(b.n || b.id, 'fr'));
 
         const currentVal = vehicleSelect.value;
         vehicleSelect.innerHTML = '<option value="">— Choisir un véhicule —</option>';
         vehicles.forEach(v => {
-          const label = `${v.n || ''} ${v.im ? '(' + v.im + ')' : ''}`.trim() || v.id;
+          // Affichage : nom uniquement (pas d'immatriculation)
+          const label = v.n || v.id;
           vehicleSelect.innerHTML += `<option value="${v.id}"${v.id === currentVal ? ' selected' : ''}>${escapeHtml(label)}</option>`;
         });
 
@@ -667,14 +649,6 @@
       return null;
     }
 
-    function isCollapsed(path) {
-      return collapsedState[path] === true;
-    }
-
-    function toggleCollapse(path) {
-      collapsedState[path] = !collapsedState[path];
-    }
-
     // ===== CONFIRMATION STYLÉE =====
     function showConfirm({ icon = '⚠️', title = 'Confirmation', message = '', confirmLabel = 'Confirmer', confirmClass = 'btn-danger', onConfirm }) {
       modalContent.innerHTML = `
@@ -702,12 +676,15 @@
       const v = currentVehicleData;
       const currentKm = v.km || 0;
 
-      // Section Informations générales
+      // ===== SECTION INFORMATIONS (style original restauré) =====
       let html = `
         <div class="section">
           <div class="section-header">
             <span>🚗 Informations générales</span>
-            <span class="badge">${escapeHtml(v.im || '')}</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span class="badge">${escapeHtml(v.im || '')}</span>
+              <button class="btn-icon" id="btn-edit-vehicle-info" title="Modifier les informations">✏️</button>
+            </div>
           </div>
           <div class="section-body">
             <ul class="list">
@@ -755,37 +732,50 @@
         </div>
       `;
 
-      // Section Nettoyage / Désinfection
+      // ===== SECTION NETTOYAGE & DÉSINFECTION (nouveau style) =====
+      const derniereNettoyage = v.dn ? `${formatDate(v.dn)} par ${escapeHtml(v.dnp || '?')}` : 'Jamais';
+      const derniereDesinfection = v.dd ? `${formatDate(v.dd)} (${escapeHtml(v.ddt || '?')}) par ${escapeHtml(v.ddp || '?')}` : 'Jamais';
+
       html += `
         <div class="section">
           <div class="section-header">
             <span>🧽 Nettoyage & Désinfection</span>
-            <button class="btn-icon" id="btn-edit-clean-freq" title="Fréquence">⚙️</button>
+            <button class="btn-icon" id="btn-edit-clean-freq" title="Configurer les fréquences">⚙️</button>
           </div>
           <div class="section-body">
             <ul class="list">
               <li class="list-item">
-                <div class="obj-info"><span class="obj-name">Fréquence nettoyage</span></div>
-                <span>${v.fn ? v.fn + ' jour(s)' : 'Non définie'}</span>
+                <div class="obj-info">
+                  <span class="obj-name">Fréquence nettoyage</span>
+                  <span class="obj-date" style="color:var(--text-light);">Tous les</span>
+                </div>
+                <span class="badge">${v.fn ? v.fn + ' jour(s)' : 'Non définie'}</span>
               </li>
               <li class="list-item">
-                <div class="obj-info"><span class="obj-name">Fréquence désinfection</span></div>
-                <span>${v.fd ? v.fd + ' jour(s)' : 'Non définie'}</span>
+                <div class="obj-info">
+                  <span class="obj-name">Fréquence désinfection</span>
+                  <span class="obj-date" style="color:var(--text-light);">Tous les</span>
+                </div>
+                <span class="badge">${v.fd ? v.fd + ' jour(s)' : 'Non définie'}</span>
               </li>
               <li class="list-item">
-                <div class="obj-info"><span class="obj-name">Dernier nettoyage</span></div>
-                <span>${v.dn ? formatDate(v.dn) + ' par ' + escapeHtml(v.dnp || '?') : 'Jamais'}</span>
+                <div class="obj-info">
+                  <span class="obj-name">Dernier nettoyage</span>
+                  <span class="obj-date ${v.dn ? 'date-ok' : ''}">${derniereNettoyage}</span>
+                </div>
               </li>
               <li class="list-item">
-                <div class="obj-info"><span class="obj-name">Dernière désinfection</span></div>
-                <span>${v.dd ? formatDate(v.dd) + ' (' + escapeHtml(v.ddt || '?') + ') par ' + escapeHtml(v.ddp || '?') : 'Jamais'}</span>
+                <div class="obj-info">
+                  <span class="obj-name">Dernière désinfection</span>
+                  <span class="obj-date ${v.dd ? 'date-ok' : ''}">${derniereDesinfection}</span>
+                </div>
               </li>
             </ul>
           </div>
         </div>
       `;
 
-      // Section Entretiens
+      // ===== SECTION ENTRETIENS =====
       const entretiens = v.en || [];
       html += `
         <div class="section">
@@ -831,7 +821,7 @@
         </div>
       `;
 
-      // Section Incidents
+      // ===== SECTION INCIDENTS =====
       const incidents = v.inc || [];
       html += `
         <div class="section">
@@ -861,7 +851,7 @@
         </div>
       `;
 
-      // Section Historique
+      // ===== SECTION HISTORIQUE =====
       const logs = v.h || [];
       if (logs.length > 0) {
         html += `
@@ -879,6 +869,8 @@
     }
 
     function attachContentEvents() {
+      // Bouton modifier les informations générales
+      document.getElementById('btn-edit-vehicle-info')?.addEventListener('click', () => openEditVehicleModal());
       document.getElementById('btn-edit-km')?.addEventListener('click', () => openEditKmModal());
       document.getElementById('btn-edit-clean-freq')?.addEventListener('click', () => openCleanFreqModal());
       document.getElementById('btn-add-entretien')?.addEventListener('click', () => openEntretienModal());
