@@ -241,7 +241,7 @@
       border-color: var(--red);
     }
 
-    /* Arborescence */
+    /* Arborescence (pour modal d'ajout) */
     .tree-view {
       max-height: 400px;
       overflow-y: auto;
@@ -260,17 +260,48 @@
       transition: background 0.15s;
     }
     .tree-node-header:hover { background: #f0f0f0; }
-    .tree-node-header.inv-header { background: #f5f5f5; font-weight: 600; }
-    .tree-node-header.cat-header { padding-left: 30px; background: #fafafa; font-weight: 600; }
-    .tree-node-header.subcat-header { padding-left: 50px; background: #f7f5f2; font-weight: 600; }
-    .tree-node-header.subsubcat-header { padding-left: 70px; background: #f5f2ee; font-weight: 600; }
-    .tree-node-header.obj-header { padding-left: 70px; cursor: pointer; }
+    .tree-node-header.inv-header {
+      background: #ffebee;
+      font-weight: 700;
+      color: #c62828;
+      border-left: 4px solid var(--red);
+    }
+    .tree-node-header.cat-header {
+      padding-left: 30px;
+      background: #fff3e0;
+      font-weight: 600;
+      color: #e65100;
+      border-left: 3px solid var(--warning);
+      margin-left: 20px;
+    }
+    .tree-node-header.subcat-header {
+      padding-left: 50px;
+      background: #fef5e7;
+      font-weight: 600;
+      color: #b26500;
+      border-left: 3px solid #d4a574;
+      margin-left: 20px;
+    }
+    .tree-node-header.subsubcat-header {
+      padding-left: 70px;
+      background: #fdf8f3;
+      font-weight: 500;
+      color: #8a5a2b;
+      border-left: 3px solid #e0c4a8;
+      margin-left: 20px;
+    }
+    .tree-node-header.obj-header {
+      padding-left: 70px;
+      cursor: pointer;
+      background: #fafafa;
+    }
     .tree-node-header.obj-header:hover { background: #e8f5e9; }
     .tree-node-header .arrow {
       font-size: 0.8rem;
       transition: transform 0.2s;
       display: inline-block;
       width: 14px;
+      color: var(--text-light);
     }
     .tree-node-header .arrow.expanded { transform: rotate(90deg); }
     .tree-node-children { display: none; }
@@ -345,6 +376,96 @@
       flex-shrink: 0;
     }
 
+    /* Vue récapitulative groupée (comme un inventaire) */
+    .inventory-summary {
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+    }
+    .inventory-summary:last-child { margin-bottom: 0; }
+
+    .inv-summary-header {
+      padding: 14px 18px;
+      background: #ffebee;
+      border-bottom: 1px solid #f5d5d5;
+      border-left: 4px solid var(--red);
+      font-weight: 700;
+      color: #c62828;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .cat-summary-header {
+      padding: 10px 14px 10px 30px;
+      background: #fff3e0;
+      border-bottom: 1px solid #f5e0c5;
+      border-left: 3px solid var(--warning);
+      font-weight: 600;
+      color: #e65100;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .subcat-summary-header {
+      padding: 8px 14px 8px 50px;
+      background: #fef5e7;
+      border-bottom: 1px solid #f5e8d5;
+      border-left: 3px solid #d4a574;
+      font-weight: 600;
+      color: #b26500;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .subsubcat-summary-header {
+      padding: 8px 14px 8px 70px;
+      background: #fdf8f3;
+      border-bottom: 1px solid #f5ede0;
+      border-left: 3px solid #e0c4a8;
+      font-weight: 500;
+      color: #8a5a2b;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .obj-summary-item {
+      padding: 10px 18px 10px 70px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #fafafa;
+    }
+    .obj-summary-item:last-child { border-bottom: none; }
+    .obj-summary-item:hover { background: #f5f5f5; }
+
+    .obj-summary-info { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .obj-summary-name { font-weight: 600; font-size: 0.9rem; }
+    .obj-summary-qty {
+      background: #fff3e0;
+      color: #e65100;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
     /* Empty / Loading */
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
@@ -356,10 +477,14 @@
       .list-item { flex-direction: column; align-items: flex-start; }
       .action-buttons { flex-direction: column; }
       .btn-action { width: 100%; }
-      .tree-node-header.cat-header { padding-left: 20px; }
-      .tree-node-header.subcat-header { padding-left: 30px; }
-      .tree-node-header.subsubcat-header { padding-left: 40px; }
+      .tree-node-header.cat-header { padding-left: 20px; margin-left: 10px; }
+      .tree-node-header.subcat-header { padding-left: 30px; margin-left: 10px; }
+      .tree-node-header.subsubcat-header { padding-left: 40px; margin-left: 10px; }
       .tree-node-header.obj-header { padding-left: 40px; }
+      .cat-summary-header { padding-left: 20px; }
+      .subcat-summary-header { padding-left: 30px; }
+      .subsubcat-summary-header { padding-left: 40px; }
+      .obj-summary-item { padding-left: 40px; }
     }
   </style>
 </head>
@@ -379,7 +504,7 @@
     <!-- Info bar -->
     <div class="info-bar">
       <div class="info-bar-label" id="inv-info-label">
-        <strong>Inventaires :</strong> Tous
+        <strong>Filtre d'ajout :</strong> Tous les inventaires
       </div>
       <button class="btn-select-inv" id="btn-select-inv">⚙️ Sélectionner</button>
     </div>
@@ -429,6 +554,7 @@
     let usages = [];
     let unsubscribeUsages = null;
 
+    // Sélection d'inventaires → FILTRE D'AJOUT UNIQUEMENT
     let selectedInventories = [];
     let allInventoriesSelected = true;
 
@@ -495,7 +621,7 @@
       if (user) { await deleteUser(user).catch(() => {}); window.location.href = '../login.html'; }
     });
 
-    // ===== SÉLECTION INVENTAIRES VIA URL =====
+    // ===== SÉLECTION INVENTAIRES (filtre d'ajout uniquement) =====
     function loadSelectedInventoriesFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const invParam = params.get('inv');
@@ -523,14 +649,20 @@
 
     function updateInfoBar() {
       if (allInventoriesSelected || selectedInventories.length === 0) {
-        invInfoLabel.innerHTML = '<strong>Inventaires :</strong> Tous';
+        invInfoLabel.innerHTML = '<strong>Filtre d\'ajout :</strong> Tous les inventaires';
       } else {
         const names = selectedInventories.map(id => getInventoryName(id)).join(', ');
-        invInfoLabel.innerHTML = `<strong>Inventaires :</strong> ${escapeHtml(names)}`;
+        invInfoLabel.innerHTML = `<strong>Filtre d'ajout :</strong> ${escapeHtml(names)}`;
       }
     }
 
-    // ===== CHARGEMENT INVENTAIRES (même logique que la page de validation) =====
+    // ⚠️ Cette fonction sert UNIQUEMENT à filtrer les inventaires dans le modal d'ajout
+    function isInventoryActive(invId) {
+      if (allInventoriesSelected) return true;
+      return selectedInventories.includes(invId);
+    }
+
+    // ===== CHARGEMENT INVENTAIRES =====
     async function loadInventories() {
       try {
         const snap = await getDocs(collection(db, 'I'));
@@ -544,18 +676,9 @@
           });
         });
         inventories.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
-        console.log('✅ Inventaires chargés:', inventories.length);
-        inventories.forEach(inv => {
-          console.log(`  📋 ${inv.nom} (${inv.id}) :`, Object.keys(inv.objets).length, 'catégorie(s)');
-        });
       } catch (e) {
-        console.error('❌ Erreur loadInventories:', e);
+        console.error('Erreur loadInventories:', e);
       }
-    }
-
-    function isInventoryActive(invId) {
-      if (allInventoriesSelected) return true;
-      return selectedInventories.includes(invId);
     }
 
     // ===== TEMPS RÉEL USAGES =====
@@ -574,7 +697,7 @@
       });
     }
 
-    // ===== HELPERS (mêmes fonctions que la page de validation) =====
+    // ===== HELPERS =====
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -585,60 +708,8 @@
       return inv ? inv.nom : invId;
     }
 
-    // ⚠️ MÊME LOGIQUE QUE LA PAGE DE VALIDATION : détection sous-catégorie via _sub
     function isSubCategory(item) {
       return item && typeof item === 'object' && item._sub === true;
-    }
-
-    // Compte récursivement les objets d'une catégorie
-    function countObjectsInCategory(categoryData) {
-      let count = 0;
-      Object.keys(categoryData).forEach(key => {
-        if (key === '_sub') return;
-        const item = categoryData[key];
-        if (isSubCategory(item)) {
-          count += countObjectsInCategory(item);
-        } else {
-          count++;
-        }
-      });
-      return count;
-    }
-
-    // Récupère TOUS les objets d'une catégorie avec leur chemin
-    function getObjetsFromCategory(categoryData, path) {
-      const all = [];
-      Object.keys(categoryData).forEach(key => {
-        if (key === '_sub') return;
-        const item = categoryData[key];
-        if (isSubCategory(item)) {
-          const subPath = `${path}.${key}`;
-          all.push(...getObjetsFromCategory(item, subPath));
-        } else {
-          all.push({ cat: path, objName: key });
-        }
-      });
-      return all;
-    }
-
-    // Récupère tous les objets d'un inventaire (avec leur chemin)
-    function getAllObjetsFromInventory(objets) {
-      const all = [];
-      Object.keys(objets).forEach(catName => {
-        all.push(...getObjetsFromCategory(objets[catName], catName));
-      });
-      return all;
-    }
-
-    function getObjetsAtPath(objets, path) {
-      let current = objets;
-      if (!path) return current;
-      const parts = path.split('.');
-      for (const part of parts) {
-        if (current[part] === undefined) return null;
-        current = current[part];
-      }
-      return current;
     }
 
     // ===== RENDU PRINCIPAL =====
@@ -653,119 +724,214 @@
       renderUsageList();
     }
 
+    // ===== VUE GROUPÉE COMME UN INVENTAIRE =====
+    // Affiche les usages regroupés : inventaire → catégorie → sous-catégorie → objet
     function renderUsageList() {
-      const filteredUsages = usages.filter(u => isInventoryActive(u.inventaireId));
-
-      const grouped = {};
-      filteredUsages.forEach(u => {
+      // On affiche TOUS les usages, sans filtre par inventaire
+      const groupedByInv = {};
+      usages.forEach(u => {
         const key = `${u.inventaireId}|${u.path}`;
-        if (!grouped[key]) {
-          grouped[key] = {
+        if (!groupedByInv[u.inventaireId]) {
+          groupedByInv[u.inventaireId] = {
+            nom: getInventoryName(u.inventaireId),
+            items: {}
+          };
+        }
+        if (!groupedByInv[u.inventaireId].items[key]) {
+          groupedByInv[u.inventaireId].items[key] = {
             inventaireId: u.inventaireId,
-            inventaireNom: getInventoryName(u.inventaireId),
             path: u.path,
             objetNom: u.objetNom,
             quantite: 0
           };
         }
-        grouped[key].quantite += u.quantite || 0;
+        groupedByInv[u.inventaireId].items[key].quantite += u.quantite || 0;
       });
 
-      const items = Object.values(grouped);
+      const invIds = Object.keys(groupedByInv);
 
       let html = `
         <div class="section">
           <div class="section-header">
             <span>📋 Matériel utilisé (à réarmer)</span>
-            <span class="badge warning">${items.length} objet(s)</span>
+            <span class="badge warning">${invIds.length} inventaire(s)</span>
           </div>
+          <div style="padding:16px;">
       `;
 
-      if (items.length === 0) {
+      if (invIds.length === 0) {
         html += `<div class="empty-state"><div class="icon">📦</div><p>Aucun matériel utilisé pour le moment.</p></div>`;
       } else {
-        html += '<ul class="list">';
-        items.forEach(item => {
-          html += `
-            <li class="list-item">
-              <div class="user-info">
-                <div class="user-avatar">${escapeHtml(item.inventaireNom.charAt(0).toUpperCase())}</div>
-                <div>
-                  <div class="user-name">${escapeHtml(item.objetNom)} ×${item.quantite}</div>
-                  <div class="user-nivol">📋 ${escapeHtml(item.inventaireNom)} · ${escapeHtml(item.path)}</div>
-                </div>
-              </div>
-              <span class="badge warning">À réarmer</span>
-            </li>
-          `;
+        invIds.forEach(invId => {
+          const invData = groupedByInv[invId];
+          html += `<div class="inventory-summary">
+            <div class="inv-summary-header">
+              <span>📋 ${escapeHtml(invData.nom)}</span>
+              <span class="badge warning">${Object.keys(invData.items).length} objet(s)</span>
+            </div>`;
+          html += renderItemsAsTree(invData.items);
+          html += `</div>`;
         });
-        html += '</ul>';
       }
-      html += '</div>';
+      html += '</div></div>';
 
       contentEl.innerHTML = html;
 
-      if (items.length === 0) {
-        btnRearm.disabled = true;
-        btnRearm.style.opacity = '0.5';
-        btnRearm.style.cursor = 'not-allowed';
-      } else {
-        btnRearm.disabled = false;
-        btnRearm.style.opacity = '1';
-        btnRearm.style.cursor = 'pointer';
-      }
+      btnRearm.disabled = invIds.length === 0;
+      btnRearm.style.opacity = invIds.length === 0 ? '0.5' : '1';
+      btnRearm.style.cursor = invIds.length === 0 ? 'not-allowed' : 'pointer';
     }
 
-    // ===== RÉARMEMENT =====
+    // Rendu d'un ensemble d'items groupés en arbre (catégories → sous-catégories → objets)
+    // items = { "invId|path": { path, objetNom, quantite } }
+    function renderItemsAsTree(items) {
+      // Regrouper par chemin de catégorie
+      const tree = {};
+      Object.values(items).forEach(item => {
+        const parts = item.path.split('.');
+        const objName = parts.pop();
+        const catPath = parts.join('.');
+
+        if (!tree[catPath]) tree[catPath] = {};
+        tree[catPath][objName] = item;
+      });
+
+      // Construire un arbre imbriqué
+      const root = {};
+      Object.keys(tree).forEach(catPath => {
+        if (catPath === '') {
+          // Objets à la racine
+          if (!root.__root__) root.__root__ = {};
+          Object.assign(root.__root__, tree[catPath]);
+        } else {
+          const parts = catPath.split('.');
+          let current = root;
+          parts.forEach((part, idx) => {
+            if (!current[part]) current[part] = { __children__: {}, __objs__: {} };
+            if (idx === parts.length - 1) {
+              Object.assign(current[part].__objs__, tree[catPath]);
+            }
+            current = current[part].__children__;
+          });
+        }
+      });
+
+      // Rendu récursif
+      return renderTreeNodes(root, 0);
+    }
+
+    function renderTreeNodes(node, depth) {
+      let html = '';
+
+      // Objets directs (racine)
+      if (node.__root__) {
+        Object.values(node.__root__).forEach(obj => {
+          html += renderObjSummary(obj, depth);
+        });
+      }
+
+      // Sous-catégories / catégories
+      Object.keys(node).forEach(key => {
+        if (key === '__root__') return;
+        const subNode = node[key];
+        if (!subNode || typeof subNode !== 'object') return;
+
+        const children = subNode.__children__ || {};
+        const objs = subNode.__objs__ || {};
+        const totalObjs = countObjsInNode(subNode);
+
+        let headerClass;
+        if (depth === 0) headerClass = 'cat-summary-header';
+        else if (depth === 1) headerClass = 'subcat-summary-header';
+        else headerClass = 'subsubcat-summary-header';
+
+        html += `<div class="${headerClass}">
+          <span>📂 ${escapeHtml(key)}</span>
+          <span class="badge">${totalObjs} objet(s)</span>
+        </div>`;
+
+        // Objets directs de cette catégorie
+        Object.values(objs).forEach(obj => {
+          html += renderObjSummary(obj, depth + 1);
+        });
+
+        // Enfants (sous-catégories)
+        html += renderTreeNodes(children, depth + 1);
+      });
+
+      return html;
+    }
+
+    function countObjsInNode(node) {
+      let count = Object.keys(node.__objs__ || {}).length;
+      Object.keys(node.__children__ || {}).forEach(k => {
+        if (k === '__root__') return;
+        const child = node.__children__[k];
+        if (child && typeof child === 'object') {
+          count += countObjsInNode(child);
+        }
+      });
+      if (node.__root__) count += Object.keys(node.__root__).length;
+      return count;
+    }
+
+    function renderObjSummary(obj, depth) {
+      return `<div class="obj-summary-item">
+        <div class="obj-summary-info">
+          <span class="obj-summary-name">${escapeHtml(obj.objetNom)}</span>
+        </div>
+        <span class="obj-summary-qty">×${obj.quantite}</span>
+      </div>`;
+    }
+
+    // ===== RÉARMEMENT (même vue groupée) =====
     function renderRearmMode() {
-      const grouped = {};
-      usages.filter(u => isInventoryActive(u.inventaireId)).forEach(u => {
+      const groupedByInv = {};
+      usages.forEach(u => {
         const key = `${u.inventaireId}|${u.path}`;
-        if (!grouped[key]) {
-          grouped[key] = {
+        if (!groupedByInv[u.inventaireId]) {
+          groupedByInv[u.inventaireId] = { nom: getInventoryName(u.inventaireId), items: {} };
+        }
+        if (!groupedByInv[u.inventaireId].items[key]) {
+          groupedByInv[u.inventaireId].items[key] = {
             inventaireId: u.inventaireId,
-            inventaireNom: getInventoryName(u.inventaireId),
             path: u.path,
             objetNom: u.objetNom,
             quantite: 0
           };
         }
-        grouped[key].quantite += u.quantite || 0;
+        groupedByInv[u.inventaireId].items[key].quantite += u.quantite || 0;
       });
 
-      const items = Object.values(grouped);
+      const invIds = Object.keys(groupedByInv);
       const checkedCount = Object.keys(rearmChecked).filter(k => rearmChecked[k]).length;
+      const totalItems = Object.values(groupedByInv).reduce((sum, inv) => sum + Object.keys(inv.items).length, 0);
 
       let html = `
         <div class="section">
           <div class="section-header">
             <span>🔄 Réarmer les inventaires</span>
-            <span class="badge ok">${checkedCount}/${items.length} réarmés</span>
+            <span class="badge ok">${checkedCount}/${totalItems} réarmés</span>
           </div>
           <div style="padding:12px 18px;background:#fff8f0;border-bottom:1px solid #f0f0f0;font-size:0.85rem;color:#666;">
             Cochez chaque objet réarmé. Les non cochés seront marqués <strong>absents</strong>.
           </div>
-          <ul class="list" id="rearm-list">
+          <div style="padding:16px;" id="rearm-content">
       `;
 
-      items.forEach(item => {
-        const key = `${item.inventaireId}|${item.path}`;
-        const checked = rearmChecked[key] ? 'checked' : '';
-        html += `
-          <li class="list-item" data-key="${escapeHtml(key)}">
-            <div class="user-info" style="cursor:pointer;flex:1;">
-              <input type="checkbox" class="rearm-checkbox" data-key="${escapeHtml(key)}" ${checked} style="width:24px;height:24px;cursor:pointer;flex-shrink:0;">
-              <div style="margin-left:10px;">
-                <div class="user-name">${escapeHtml(item.objetNom)} ×${item.quantite}</div>
-                <div class="user-nivol">📋 ${escapeHtml(item.inventaireNom)} · ${escapeHtml(item.path)}</div>
-              </div>
-            </div>
-          </li>
-        `;
+      invIds.forEach(invId => {
+        const invData = groupedByInv[invId];
+        html += `<div class="inventory-summary">
+          <div class="inv-summary-header">
+            <span>📋 ${escapeHtml(invData.nom)}</span>
+            <span class="badge warning">${Object.keys(invData.items).length} objet(s)</span>
+          </div>`;
+        html += renderRearmTree(invData.items);
+        html += `</div>`;
       });
 
       html += `
-          </ul>
+          </div>
         </div>
         <div class="action-buttons" style="margin-top:12px;">
           <button class="btn-action secondary" id="btn-cancel-rearm">✖ Annuler</button>
@@ -793,15 +959,95 @@
       });
 
       document.getElementById('btn-validate-rearm').addEventListener('click', () => {
-        validateRearm(grouped);
+        validateRearm(groupedByInv);
       });
     }
 
-    async function validateRearm(grouped) {
-      const items = Object.values(grouped);
-      if (items.length === 0) return;
+    function renderRearmTree(items) {
+      // Même logique que renderItemsAsTree mais avec checkbox
+      const tree = {};
+      Object.values(items).forEach(item => {
+        const parts = item.path.split('.');
+        const objName = parts.pop();
+        const catPath = parts.join('.');
+        if (!tree[catPath]) tree[catPath] = {};
+        tree[catPath][objName] = item;
+      });
 
-      const missingItems = items.filter(item => {
+      const root = {};
+      Object.keys(tree).forEach(catPath => {
+        if (catPath === '') {
+          if (!root.__root__) root.__root__ = {};
+          Object.assign(root.__root__, tree[catPath]);
+        } else {
+          const parts = catPath.split('.');
+          let current = root;
+          parts.forEach((part, idx) => {
+            if (!current[part]) current[part] = { __children__: {}, __objs__: {} };
+            if (idx === parts.length - 1) Object.assign(current[part].__objs__, tree[catPath]);
+            current = current[part].__children__;
+          });
+        }
+      });
+
+      return renderRearmNodes(root, 0);
+    }
+
+    function renderRearmNodes(node, depth) {
+      let html = '';
+
+      if (node.__root__) {
+        Object.values(node.__root__).forEach(obj => {
+          html += renderRearmObj(obj);
+        });
+      }
+
+      Object.keys(node).forEach(key => {
+        if (key === '__root__') return;
+        const subNode = node[key];
+        if (!subNode || typeof subNode !== 'object') return;
+        const children = subNode.__children__ || {};
+        const objs = subNode.__objs__ || {};
+        const totalObjs = countObjsInNode(subNode);
+
+        let headerClass;
+        if (depth === 0) headerClass = 'cat-summary-header';
+        else if (depth === 1) headerClass = 'subcat-summary-header';
+        else headerClass = 'subsubcat-summary-header';
+
+        html += `<div class="${headerClass}">
+          <span>📂 ${escapeHtml(key)}</span>
+          <span class="badge">${totalObjs} objet(s)</span>
+        </div>`;
+
+        Object.values(objs).forEach(obj => { html += renderRearmObj(obj); });
+        html += renderRearmNodes(children, depth + 1);
+      });
+
+      return html;
+    }
+
+    function renderRearmObj(obj) {
+      const key = `${obj.inventaireId}|${obj.path}`;
+      const checked = rearmChecked[key] ? 'checked' : '';
+      return `<div class="obj-summary-item">
+        <div class="obj-summary-info">
+          <input type="checkbox" class="rearm-checkbox" data-key="${escapeHtml(key)}" ${checked} style="width:20px;height:20px;cursor:pointer;">
+          <span class="obj-summary-name">${escapeHtml(obj.objetNom)}</span>
+        </div>
+        <span class="obj-summary-qty">×${obj.quantite}</span>
+      </div>`;
+    }
+
+    async function validateRearm(groupedByInv) {
+      // Aplatir les items
+      const allItems = [];
+      Object.values(groupedByInv).forEach(inv => {
+        Object.values(inv.items).forEach(item => allItems.push(item));
+      });
+      if (allItems.length === 0) return;
+
+      const missingItems = allItems.filter(item => {
         const key = `${item.inventaireId}|${item.path}`;
         return !rearmChecked[key];
       });
@@ -811,7 +1057,7 @@
         <p>${missingItems.length > 0 ? `${missingItems.length} objet(s) non réarmé(s) seront marqués <strong>absents</strong>.` : 'Tous les objets ont été réarmés.'}</p>
         ${missingItems.length > 0 ? `
           <div style="background:#fff0f0;padding:12px;border-radius:8px;max-height:200px;overflow-y:auto;font-size:0.85rem;">
-            ${missingItems.map(i => `<div style="padding:4px 0;border-bottom:1px solid #f5e5e5;">❌ ${escapeHtml(i.objetNom)} ×${i.quantite} (${escapeHtml(i.inventaireNom)})</div>`).join('')}
+            ${missingItems.map(i => `<div style="padding:4px 0;border-bottom:1px solid #f5e5e5;">❌ ${escapeHtml(i.objetNom)} ×${i.quantite} (${escapeHtml(getInventoryName(i.inventaireId))})</div>`).join('')}
           </div>
         ` : ''}
         <div class="modal-actions">
@@ -824,10 +1070,10 @@
       document.getElementById('modal-cancel').addEventListener('click', closeModal);
       document.getElementById('modal-confirm').addEventListener('click', async () => {
         try {
-          const invIds = new Set(items.map(i => i.inventaireId));
+          const invIds = new Set(allItems.map(i => i.inventaireId));
 
           for (const invId of invIds) {
-            const invItems = items.filter(i => i.inventaireId === invId);
+            const invItems = allItems.filter(i => i.inventaireId === invId);
             const invMissing = invItems.filter(i => !rearmChecked[`${i.inventaireId}|${i.path}`]);
             if (invMissing.length === 0) continue;
 
@@ -838,10 +1084,9 @@
             await updateDoc(doc(db, 'I', invId), { manquants: newManquants });
           }
 
+          // Supprimer tous les usages (pas seulement ceux des inventaires filtrés)
           for (const u of usages) {
-            if (isInventoryActive(u.inventaireId)) {
-              await deleteDoc(doc(db, USAGE_COLLECTION, u.id));
-            }
+            await deleteDoc(doc(db, USAGE_COLLECTION, u.id));
           }
 
           rearmMode = false;
@@ -858,21 +1103,21 @@
     // ===== BOUTONS =====
     btnAddUsage.addEventListener('click', () => openAddUsageModal());
     btnRearm.addEventListener('click', () => {
-      if (usages.filter(u => isInventoryActive(u.inventaireId)).length === 0) return;
+      if (usages.length === 0) return;
       rearmMode = true;
       rearmChecked = {};
       renderMain();
     });
 
-    // ===== MODAL SÉLECTION D'INVENTAIRES =====
+    // ===== MODAL SÉLECTION D'INVENTAIRES (filtre d'ajout) =====
     document.getElementById('btn-select-inv').addEventListener('click', () => {
       openInventorySelectorModal();
     });
 
     function openInventorySelectorModal() {
       modalContent.innerHTML = `
-        <h3>Inventaires à utiliser</h3>
-        <p class="hint">Sélectionnez les inventaires dans lesquels vous souhaitez naviguer.</p>
+        <h3>Inventaires à utiliser pour l'ajout</h3>
+        <p class="hint">Ces inventaires seront proposés dans la recherche lors de l'ajout de matériel. La liste de réapprovisionnement affiche toujours tous les objets.</p>
         <div class="inv-selector" id="inv-selector-modal"></div>
         <div class="modal-actions">
           <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
@@ -925,7 +1170,7 @@
         updateUrlWithSelectedInventories();
         updateInfoBar();
         closeModal();
-        renderMain();
+        // Pas besoin de renderMain() : la liste principale n'est pas filtrée
       });
     }
 
@@ -987,7 +1232,6 @@
       updateCartUI();
     }
 
-    // ===== RENDU ARBORESCENCE (mêmes helpers que la page de validation) =====
     function renderFullTree(activeInvs, searchQuery) {
       const q = (searchQuery || '').toLowerCase().trim();
       let html = '';
@@ -995,13 +1239,8 @@
       activeInvs.forEach(inv => {
         const objets = inv.objets || {};
         const catKeys = Object.keys(objets);
-
-        // Log pour debug
-        console.log(`Rendering ${inv.nom}:`, catKeys.length, 'catégorie(s)', catKeys);
-
         if (catKeys.length === 0) return;
 
-        // Si recherche, vérifier si l'inventaire ou une catégorie/objet matche
         if (q) {
           const invMatches = inv.nom.toLowerCase().includes(q);
           const hasMatch = catKeys.some(catKey => {
@@ -1021,7 +1260,6 @@
       return html;
     }
 
-    // Vérifie récursivement si un objet/catégorie contient un match
     function objectTreeContainsMatch(data, q) {
       if (!data || typeof data !== 'object') return false;
       return Object.keys(data).some(key => {
@@ -1038,7 +1276,6 @@
     function renderInventoryNode(invId, invName, objets, q) {
       const catKeys = Object.keys(objets);
       if (catKeys.length === 0) return '';
-
       const autoExpand = !!q;
       let childrenHtml = '';
 
@@ -1046,7 +1283,6 @@
         if (catKey === '_sub') return;
         const cat = objets[catKey];
         if (!cat || typeof cat !== 'object') return;
-
         childrenHtml += renderCategoryNode(invId, catKey, cat, catKey, 1, q, autoExpand);
       });
 
@@ -1065,27 +1301,22 @@
       `;
     }
 
-    // Rendu d'une catégorie ou sous-catégorie : parcourt les objets (q) et les sous-catégories (_sub)
     function renderCategoryNode(invId, name, data, path, depth, q, autoExpand) {
       const keys = Object.keys(data).filter(k => k !== '_sub');
 
-      // D'abord, filtrer les objets et sous-catégories si q
       const objKeys = keys.filter(k => !isSubCategory(data[k])).filter(k => !q || k.toLowerCase().includes(q));
       const subCatKeys = keys.filter(k => isSubCategory(data[k]));
 
-      // Filtrer les sous-catégories récursivement
       const filteredSubCats = subCatKeys.filter(k => {
         if (!q) return true;
         if (k.toLowerCase().includes(q)) return true;
         return objectTreeContainsMatch(data[k], q);
       });
 
-      // Si recherche et rien ne matche dans cette catégorie → skip
       if (q && objKeys.length === 0 && filteredSubCats.length === 0) return '';
 
       let childrenHtml = '';
 
-      // Objets en premier
       objKeys.forEach(objKey => {
         const obj = data[objKey];
         const fullPath = `${path}.${objKey}`;
@@ -1104,19 +1335,17 @@
         `;
       });
 
-      // Sous-catégories ensuite
       filteredSubCats.forEach(subKey => {
         const subData = data[subKey];
         const subPath = `${path}.${subKey}`;
         const innerHtml = renderCategoryNode(invId, subKey, subData, subPath, depth + 1, q, autoExpand);
-        if (q && !innerHtml) return; // skip si vide en recherche
+        if (q && !innerHtml) return;
 
-        let cls = 'subcat-header';
+        let cls;
         if (depth === 1) cls = 'cat-header';
         else if (depth === 2) cls = 'subcat-header';
-        else if (depth >= 3) cls = 'subsubcat-header';
+        else cls = 'subsubcat-header';
 
-        // Auto-expand si recherche ou si l'enfant contient le match
         const expanded = autoExpand;
 
         childrenHtml += `
@@ -1146,7 +1375,6 @@
     }
 
     function attachTreeEvents() {
-      // Toggles
       document.querySelectorAll('#modal-tree-view .tree-node-header[data-toggle="true"]').forEach(header => {
         header.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
@@ -1160,7 +1388,6 @@
         });
       });
 
-      // Bouton +
       document.querySelectorAll('#modal-tree-view .tree-add-btn[data-add-obj="true"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
