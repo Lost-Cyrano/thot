@@ -9,12 +9,12 @@
       --red: #e60000;
       --red-hover: #b30000;
       --bg: #f5f5f5;
-      --card-bg: #ffffff;
+      --card-bg: #fff;
       --border: #ddd;
       --text: #333;
       --text-light: #666;
       --radius: 12px;
-      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow: 0 2px 8px rgba(0,0,0,.08);
       --ok: #4caf50;
       --warning: #f5a623;
       --danger: #e60000;
@@ -56,73 +56,55 @@
 
     .header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-    .btn-back {
+    .btn-back, .btn-logout {
       background: transparent;
       border: 1.5px solid #ccc;
       padding: 8px 14px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s;
+      font-size: .9rem;
+      transition: all .2s;
       white-space: nowrap;
     }
 
+    .btn-logout { color: var(--red); border-color: var(--red); }
     .btn-back:hover { background: #eee; }
-
-    .btn-logout {
-      background: transparent;
-      color: var(--red);
-      border: 1.5px solid var(--red);
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
     .btn-logout:hover { background: var(--red); color: #fff; }
 
-    .btn-add {
-      background: var(--red);
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s;
+    /* Grille de véhicules */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
     }
 
-    .btn-add:hover { background: var(--red-hover); }
-
-    /* Sélecteur */
-    .selector-bar {
+    .inventory-card {
       background: var(--card-bg);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      padding: 20px;
+      cursor: pointer;
+      transition: all .2s;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
       box-shadow: var(--shadow);
     }
 
-    .selector-bar select {
-      padding: 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      flex: 1;
-      min-width: 200px;
+    .inventory-card:hover {
+      border-color: var(--red);
+      transform: translateY(-2px);
     }
 
-    /* Cards */
-    .card {
+    .inventory-card .card-status {
+      font-size: .8rem;
+      color: var(--text-light);
+      margin-top: 6px;
+    }
+
+    /* Cards de section */
+    .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -131,7 +113,7 @@
       margin-bottom: 16px;
     }
 
-    .card-header {
+    .section-header {
       padding: 14px 18px;
       background: #fafafa;
       border-bottom: 1px solid var(--border);
@@ -143,21 +125,41 @@
       gap: 8px;
     }
 
-    .card-body { padding: 18px; }
+    .section-header .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
+    .btn-icon {
+      background: none;
+      border: 1.5px solid #ccc;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .95rem;
+      transition: all .2s;
+    }
+
+    .btn-icon:hover { background: #f0f0f0; }
+    .btn-icon.delete:hover { color: var(--red); border-color: var(--red); background: #fff0f0; }
+
+    /* Info grid */
     .info-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 14px;
+      padding: 18px;
     }
 
     .info-item { display: flex; flex-direction: column; gap: 2px; }
-    .info-label { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-label { font-size: .8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; }
     .info-value { font-weight: 600; font-size: 1rem; }
     .info-value.editable { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     .badge {
-      font-size: 0.75rem;
+      font-size: .75rem;
       background: #f0f0f0;
       padding: 3px 8px;
       border-radius: 10px;
@@ -168,7 +170,29 @@
     .badge.warning { background: #fff8f0; color: var(--warning); }
     .badge.danger { background: #fff0f0; color: var(--danger); }
 
-    /* Lists */
+    /* Table désinfection */
+    .disinfection-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .disinfection-table th,
+    .disinfection-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .disinfection-table th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-light);
+      font-weight: 600;
+      background: #fafafa;
+    }
+    .disinfection-table tr:last-child td { border-bottom: none; }
+    .disinfection-table td.type-cell { font-weight: 600; text-transform: capitalize; }
+
+    /* List */
     .list { list-style: none; }
 
     .list-item {
@@ -180,19 +204,17 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-
     .list-item:last-child { border-bottom: none; }
     .list-item-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-    .list-item-title { font-weight: 600; font-size: 0.95rem; }
-    .list-item-sub { font-size: 0.8rem; color: var(--text-light); }
-    .list-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .list-item-title { font-weight: 600; font-size: .95rem; }
+    .list-item-sub { font-size: .8rem; color: var(--text-light); }
 
     /* Action buttons */
     .action-buttons {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin-top: 12px;
+      padding: 0 18px 18px;
     }
 
     .action-btn {
@@ -201,47 +223,35 @@
       background: var(--red);
       color: #fff;
       border: none;
-      padding: 14px 20px;
+      padding: 12px 18px;
       border-radius: var(--radius);
       cursor: pointer;
       font-weight: 700;
-      font-size: 1rem;
-      transition: all 0.2s;
+      font-size: .95rem;
+      transition: all .2s;
       text-align: center;
     }
-
     .action-btn:hover { background: var(--red-hover); transform: translateY(-1px); }
-
-    .action-btn.clean {
-      background: #2196f3;
-    }
+    .action-btn.clean { background: #2196f3; }
     .action-btn.clean:hover { background: #1976d2; }
-
-    .action-btn.disinfect {
-      background: var(--ok);
-    }
+    .action-btn.disinfect { background: var(--ok); }
     .action-btn.disinfect:hover { background: #388e3c; }
 
-    .action-btn.incident {
-      background: var(--warning);
-    }
-    .action-btn.incident:hover { background: #e09600; }
-
-    /* Empty state */
+    /* Empty */
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
 
     /* Logs */
     .logs-section { margin-top: 8px; }
-    .logs-section summary { cursor: pointer; font-weight: 600; color: var(--text-light); font-size: 0.9rem; padding: 8px 0; }
-    .log-item { font-size: 0.8rem; color: var(--text-light); padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+    .logs-section summary { cursor: pointer; font-weight: 600; color: var(--text-light); font-size: .9rem; padding: 8px 0; }
+    .log-item { font-size: .8rem; color: var(--text-light); padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
     .log-item:last-child { border-bottom: none; }
 
-    /* Modals */
+    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,.5);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -255,26 +265,25 @@
       padding: 24px;
       width: 100%;
       max-width: 460px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
       display: flex;
       flex-direction: column;
       gap: 14px;
       max-height: 90vh;
       overflow-y: auto;
     }
-
     .modal h3 { font-size: 1.1rem; }
-    .modal label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.9rem; }
+    .modal label { font-weight: 600; display: block; margin-bottom: 4px; font-size: .9rem; }
     .modal input, .modal select, .modal textarea {
       width: 100%;
       padding: 10px;
       border: 1.5px solid var(--border);
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: .95rem;
       font-family: inherit;
     }
     .modal textarea { min-height: 80px; resize: vertical; }
-    .modal .hint { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+    .modal .hint { font-size: .8rem; color: var(--text-light); margin-top: 4px; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
 
     .btn {
@@ -283,8 +292,8 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s;
+      font-size: .9rem;
+      transition: all .2s;
     }
     .btn-cancel { background: #eee; color: #333; }
     .btn-cancel:hover { background: #ddd; }
@@ -296,10 +305,11 @@
     @media (max-width: 480px) {
       .header { flex-direction: column; align-items: flex-start; }
       .list-item { flex-direction: column; align-items: flex-start; }
-      .list-item-actions { align-self: flex-end; }
       .info-grid { grid-template-columns: 1fr; }
       .action-buttons { flex-direction: column; }
       .action-btn { width: 100%; }
+      .disinfection-table { font-size: 0.8rem; }
+      .disinfection-table th, .disinfection-table td { padding: 8px 6px; }
     }
   </style>
 </head>
@@ -308,19 +318,12 @@
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <span style="font-weight: 600;">🚗 Parc Auto</span>
+        <span style="font-weight: 600;" id="header-title">🚗 Parc Auto</span>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn-back" id="btn-home">← Accueil</button>
         <button class="btn-logout" id="btn-logout">Déconnexion</button>
       </div>
-    </div>
-
-    <!-- Sélecteur (si pas de paramètre vehicule) -->
-    <div class="selector-bar" id="selector-bar" style="display:none;">
-      <select id="vehicle-select">
-        <option value="">— Choisir un véhicule —</option>
-      </select>
     </div>
 
     <!-- Contenu -->
@@ -340,7 +343,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, collection, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1V3UybXWyyMmO9fBH7jhuVUSFL3mDBPo",
@@ -365,12 +368,10 @@
     let currentVehicleData = null;
 
     const contentEl = document.getElementById('content');
-    const selectorBar = document.getElementById('selector-bar');
-    const vehicleSelect = document.getElementById('vehicle-select');
+    const headerTitle = document.getElementById('header-title');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Récupérer le paramètre vehicule
     const urlParams = new URLSearchParams(window.location.search);
     const vehiculeParam = urlParams.get('vehicule');
 
@@ -384,7 +385,6 @@
         return;
       }
 
-      // Déterminer le rôle
       try {
         const adminSnap = await getDoc(doc(db, 'A', currentNivol));
         if (adminSnap.exists()) userRole = 'admin';
@@ -392,7 +392,6 @@
           const userSnap = await getDoc(doc(db, 'U', currentNivol));
           if (userSnap.exists()) userRole = 'user';
           else {
-            // Ni admin ni user → refus
             await deleteUser(user).catch(() => {});
             redirectToLogin();
             return;
@@ -402,20 +401,17 @@
         userRole = 'user';
       }
 
-      // Bouton accueil
+      // Bouton accueil → user.html
       document.getElementById('btn-home').onclick = () => {
-        window.location.href = userRole === 'admin' ? '../admin.html' : '../user.html';
+        window.location.href = '../user.html';
       };
 
-      // Charger les véhicules
       await loadVehicles();
 
       if (vehiculeParam) {
-        // Véhicule spécifié dans l'URL
         await loadVehicle(vehiculeParam);
       } else {
-        // Pas de paramètre → afficher le sélecteur
-        showSelector();
+        showVehicleList();
       }
     });
 
@@ -432,16 +428,6 @@
       }
     });
 
-    vehicleSelect.addEventListener('change', () => {
-      const id = vehicleSelect.value;
-      if (id) {
-        // Mettre à jour l'URL sans recharger
-        const newUrl = `${window.location.pathname}?vehicule=${encodeURIComponent(id)}`;
-        window.history.replaceState({}, '', newUrl);
-        loadVehicle(id);
-      }
-    });
-
     // ===== CHARGEMENT =====
     async function loadVehicles() {
       try {
@@ -451,31 +437,47 @@
           vehicles.push({ id: d.id, ...d.data() });
         });
         vehicles.sort((a, b) => (a.n || a.id).localeCompare(b.n || b.id, 'fr'));
-
-        // Remplir le sélecteur (nom uniquement)
-        vehicleSelect.innerHTML = '<option value="">— Choisir un véhicule —</option>';
-        vehicles.forEach(v => {
-          const label = v.n || v.id;
-          const selected = v.id === vehiculeParam ? ' selected' : '';
-          vehicleSelect.innerHTML += `<option value="${v.id}"${selected}>${escapeHtml(label)}</option>`;
-        });
       } catch (e) {
         console.error(e);
       }
     }
 
-    function showSelector() {
-      selectorBar.style.display = 'flex';
-      contentEl.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">🚗</div>
-          <p>Sélectionnez un véhicule pour voir ses informations.</p>
-        </div>
-      `;
+    function showVehicleList() {
+      headerTitle.textContent = '🚗 Parc Auto';
+      let html = '<div class="inventory-grid">';
+      if (vehicles.length === 0) {
+        html += '<p style="text-align:center;padding:20px;grid-column:1/-1;">Aucun véhicule trouvé.</p>';
+      } else {
+        vehicles.forEach(v => {
+          const label = v.n || v.im || v.id;
+          const totalEntretiens = (v.en || []).length;
+          const totalIncidents = (v.inc || []).length;
+          let status = [];
+          if (totalEntretiens > 0) status.push(`${totalEntretiens} entretien(s)`);
+          if (totalIncidents > 0) status.push(`${totalIncidents} incident(s)`);
+          if (status.length === 0) status.push('Aucune alerte');
+          html += `
+            <div class="inventory-card" data-veh="${v.id}">
+              🚗 ${escapeHtml(label)}
+              <div class="card-status">${status.join(' · ')}</div>
+            </div>
+          `;
+        });
+      }
+      html += '</div>';
+      contentEl.innerHTML = html;
+
+      document.querySelectorAll('.inventory-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const vehId = card.dataset.veh;
+          const newUrl = `${window.location.pathname}?vehicule=${encodeURIComponent(vehId)}`;
+          window.history.replaceState({}, '', newUrl);
+          loadVehicle(vehId);
+        });
+      });
     }
 
     async function loadVehicle(vehiculeId) {
-      selectorBar.style.display = 'flex';
       try {
         const docSnap = await getDoc(doc(db, COLLECTION, vehiculeId));
         if (!docSnap.exists()) {
@@ -484,7 +486,6 @@
         }
         currentVehicleId = vehiculeId;
         currentVehicleData = { id: docSnap.id, ...docSnap.data() };
-        vehicleSelect.value = vehiculeId;
         renderVehicle();
       } catch (e) {
         contentEl.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement.</p></div>';
@@ -502,6 +503,11 @@
       return new Date(iso).toLocaleString('fr-FR');
     }
 
+    function formatDateShort(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('fr-FR');
+    }
+
     function getDateStatus(dateStr) {
       if (!dateStr) return null;
       const now = new Date();
@@ -515,7 +521,7 @@
     function getDateBadge(dateStr) {
       if (!dateStr) return '<span class="badge">—</span>';
       const status = getDateStatus(dateStr);
-      const formatted = new Date(dateStr).toLocaleDateString('fr-FR');
+      const formatted = formatDateShort(dateStr);
       const cls = status === 'danger' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
       const label = status === 'danger' ? 'PÉRIMÉ' : status === 'warning' ? 'Proche' : 'OK';
       return `<span class="badge ${cls}">${formatted} · ${label}</span>`;
@@ -538,22 +544,27 @@
       return `<span class="badge ${cls}">${targetKm} km (${diff > 0 ? '+' : ''}${diff}) · ${label}</span>`;
     }
 
-    // Vérifier si un nettoyage/désinfection est requis selon la fréquence
-    function getCleanStatus(lastDate, freqDays) {
-      if (!freqDays || !lastDate) return null;
-      const now = new Date();
+    // Calcul de la prochaine date de nettoyage/désinfection
+    function getNextCleanDate(lastDate, freqDays) {
+      if (!lastDate || !freqDays) return null;
       const last = new Date(lastDate);
-      const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
-      if (diffDays >= freqDays) return 'danger';
-      if (diffDays >= freqDays * 0.8) return 'warning';
-      return 'ok';
+      const next = new Date(last);
+      next.setDate(next.getDate() + parseInt(freqDays));
+      return next.toISOString();
+    }
+
+    function getCleanStatus(lastDate, freqDays) {
+      const next = getNextCleanDate(lastDate, freqDays);
+      if (!next) return null;
+      const status = getDateStatus(next);
+      return status;
     }
 
     function getCleanBadge(lastDate, freqDays) {
-      if (!lastDate) return '<span class="badge">Jamais</span>';
-      if (!freqDays) return `<span class="badge">${formatDate(lastDate)}</span>`;
+      if (!lastDate) return '<span class="badge">Jamais effectué</span>';
       const status = getCleanStatus(lastDate, freqDays);
-      const formatted = new Date(lastDate).toLocaleDateString('fr-FR');
+      const formatted = formatDateShort(lastDate);
+      if (!freqDays) return `<span class="badge">${formatted}</span>`;
       const cls = status === 'danger' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
       const label = status === 'danger' ? 'À faire' : status === 'warning' ? 'Bientôt' : 'OK';
       return `<span class="badge ${cls}">${formatted} · ${label}</span>`;
@@ -565,59 +576,107 @@
       const v = currentVehicleData;
       const currentKm = v.km || 0;
 
-      // === SECTION INFORMATIONS ===
+      headerTitle.textContent = `🚗 ${v.n || v.im || v.id}`;
+
+      // === SECTION INFORMATIONS GÉNÉRALES ===
       let html = `
-        <div class="card">
-          <div class="card-header">
+        <div class="section">
+          <div class="section-header">
             <span>🚗 ${escapeHtml(v.n || v.im || v.id)}</span>
+            <div class="header-actions">
+              <button class="btn-icon" id="btn-edit-km" title="Modifier le kilométrage">✏️ Kilométrage</button>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="info-grid">
-              <div class="info-item"><span class="info-label">Immatriculation</span><span class="info-value">${escapeHtml(v.im || '—')}</span></div>
-              <div class="info-item"><span class="info-label">Nom</span><span class="info-value">${escapeHtml(v.n || '—')}</span></div>
-              <div class="info-item"><span class="info-label">Type de carburant</span><span class="info-value">${escapeHtml(v.car || '—')}</span></div>
-              <div class="info-item"><span class="info-label">Kilométrage</span><span class="info-value">${currentKm} km</span></div>
-              <div class="info-item"><span class="info-label">Assurance</span><span class="info-value">${getDateBadge(v.ass)}</span></div>
-              <div class="info-item"><span class="info-label">Contrôle Technique</span><span class="info-value">${getDateBadge(v.ct)}</span></div>
-            </div>
-            <div style="margin-top:14px;text-align:right;">
-              <button class="btn-sm btn-icon" id="btn-edit-km" title="Mettre à jour le kilométrage">✏️ Modifier le kilométrage</button>
-            </div>
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">Immatriculation</span><span class="info-value">${escapeHtml(v.im || '—')}</span></div>
+            <div class="info-item"><span class="info-label">Nom</span><span class="info-value">${escapeHtml(v.n || '—')}</span></div>
+            <div class="info-item"><span class="info-label">Type de carburant</span><span class="info-value">${escapeHtml(v.car || '—')}</span></div>
+            <div class="info-item"><span class="info-label">Kilométrage</span><span class="info-value">${currentKm} km</span></div>
+            <div class="info-item"><span class="info-label">Assurance</span><span class="info-value">${getDateBadge(v.ass)}</span></div>
+            <div class="info-item"><span class="info-label">Contrôle Technique</span><span class="info-value">${getDateBadge(v.ct)}</span></div>
           </div>
         </div>
       `;
 
-      // === SECTION NETTOYAGE / DÉSINFECTION ===
+      // === SECTION NETTOYAGE & DÉSINFECTION ===
+      const freqNett = v.fn || 0;
+      const freqDes = v.fd || 0;
+      const nextClean = freqNett && v.dn ? formatDateShort(getNextCleanDate(v.dn, freqNett)) : '—';
+      const nextDisinfect = freqDes && v.dd ? formatDateShort(getNextCleanDate(v.dd, freqDes)) : '—';
+
+      // Récupérer l'historique des désinfections par type
+      const disinfectionHistory = v.ddh || []; // { type, date, par }
+      // Trouver la dernière de chaque type
+      const lastByType = {};
+      disinfectionHistory.forEach(h => {
+        if (!lastByType[h.type] || new Date(h.date) > new Date(lastByType[h.type].date)) {
+          lastByType[h.type] = h;
+        }
+      });
+
+      // Si pas d'historique détaillé, on affiche seulement la dernière
+      const types = ['rapide', 'complete', 'total'];
+      const typeLabels = { rapide: 'Rapide', complete: 'Complète', total: 'Totale' };
+
       html += `
-        <div class="card">
-          <div class="card-header">
+        <div class="section">
+          <div class="section-header">
             <span>🧽 Nettoyage & Désinfection</span>
+            <div class="header-actions">
+              <button class="btn-icon" id="btn-clean" title="Nettoyage effectué">🧽 Nettoyage</button>
+              <button class="btn-icon" id="btn-disinfect" title="Désinfection effectuée">🧴 Désinfection</button>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Dernier nettoyage</span>
-                <span class="info-value">${getCleanBadge(v.dn, v.fn)}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Dernière désinfection</span>
-                <span class="info-value">${getCleanBadge(v.dd, v.fd)}</span>
-              </div>
+          <div class="info-grid" style="padding-bottom:0;">
+            <div class="info-item">
+              <span class="info-label">Dernier nettoyage</span>
+              <span class="info-value">${getCleanBadge(v.dn, freqNett)}</span>
+              ${v.dn ? `<span class="info-label" style="margin-top:4px;">Par : ${escapeHtml(v.dnp || '?')}</span>` : ''}
             </div>
-            <div class="action-buttons">
-              <button class="action-btn clean" id="btn-clean">🧽 Nettoyage effectué</button>
-              <button class="action-btn disinfect" id="btn-disinfect">🧴 Désinfection</button>
+            <div class="info-item">
+              <span class="info-label">Prochain nettoyage</span>
+              <span class="info-value">${nextClean !== '—' ? nextClean : (freqNett ? 'À définir' : 'Fréquence non définie')}</span>
             </div>
+            <div class="info-item">
+              <span class="info-label">Dernière désinfection</span>
+              <span class="info-value">${getCleanBadge(v.dd, freqDes)}</span>
+              ${v.dd ? `<span class="info-label" style="margin-top:4px;">Par : ${escapeHtml(v.ddp || '?')} · Type : ${typeLabels[v.ddt] || v.ddt || '?'}</span>` : ''}
+            </div>
+            <div class="info-item">
+              <span class="info-label">Prochaine désinfection</span>
+              <span class="info-value">${nextDisinfect !== '—' ? nextDisinfect : (freqDes ? 'À définir' : 'Fréquence non définie')}</span>
+            </div>
+          </div>
+
+          <div style="padding:0 18px 18px;">
+            <details style="margin-top:8px;">
+              <summary style="cursor:pointer;font-weight:600;color:var(--text-light);font-size:.9rem;padding:8px 0;">Dernière désinfection par type</summary>
+              <table class="disinfection-table">
+                <thead>
+                  <tr><th>Type</th><th>Date</th><th>Par</th></tr>
+                </thead>
+                <tbody>
+                  ${types.map(t => {
+                    const last = lastByType[t];
+                    if (last) {
+                      return `<tr><td class="type-cell">${typeLabels[t]}</td><td>${formatDate(last.date)}</td><td>${escapeHtml(last.par || '?')}</td></tr>`;
+                    } else {
+                      return `<tr><td class="type-cell">${typeLabels[t]}</td><td colspan="2" style="color:#999;">Jamais effectuée</td></tr>`;
+                    }
+                  }).join('')}
+                </tbody>
+              </table>
+            </details>
           </div>
         </div>
       `;
 
-      // === SECTION ENTRETIENS (lecture seule) ===
+      // === SECTION ENTRETIENS ===
       const entretiens = v.en || [];
       if (entretiens.length > 0) {
         html += `
-          <div class="card">
-            <div class="card-header"><span>🔧 Entretiens (${entretiens.length})</span></div>
+          <div class="section">
+            <div class="section-header"><span>🔧 Entretiens (${entretiens.length})</span></div>
             <ul class="list">
               ${entretiens.slice().reverse().map(e => {
                 let statutHtml = '';
@@ -629,7 +688,7 @@
                     <div class="list-item-main">
                       <span class="list-item-title">${escapeHtml(e.type || '—')} ${e.desc ? '· ' + escapeHtml(e.desc) : ''}</span>
                       <span class="list-item-sub">
-                        ${e.date ? 'Date : ' + new Date(e.date).toLocaleDateString('fr-FR') : 'Pas de date'}
+                        ${e.date ? 'Date : ' + formatDateShort(e.date) : 'Pas de date'}
                         · ${recLabel}
                       </span>
                       <span class="list-item-sub">${statutHtml}</span>
@@ -644,9 +703,12 @@
       // === SECTION INCIDENTS ===
       const incidents = v.inc || [];
       html += `
-        <div class="card">
-          <div class="card-header">
+        <div class="section">
+          <div class="section-header">
             <span>⚠️ Incidents signalés (${incidents.length})</span>
+            <div class="header-actions">
+              <button class="btn-icon" id="btn-incident" title="Signaler un incident">⚠️ Signaler</button>
+            </div>
           </div>
           <ul class="list">
             ${incidents.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun incident signalé.</p></li>' : ''}
@@ -657,16 +719,26 @@
                   <div class="list-item-main">
                     <span class="list-item-title">${escapeHtml(inc.t || '—')} <span class="badge ${prioCls}">${escapeHtml(inc.p || '—')}</span></span>
                     <span class="list-item-sub">${escapeHtml(inc.d || '')}</span>
-                    <span class="list-item-sub" style="font-size:0.75rem;color:#999;">${formatDate(inc.dt)} · par ${escapeHtml(inc.n || '?')}</span>
+                    <span class="list-item-sub" style="font-size:.75rem;color:#999;">${formatDate(inc.dt)} · par ${escapeHtml(inc.n || '?')}</span>
                   </div>
                 </li>`;
             }).join('')}
           </ul>
-          <div class="card-body" style="padding-top:0;">
-            <button class="action-btn incident" id="btn-incident" style="width:100%;">⚠️ Signaler un incident</button>
-          </div>
         </div>
       `;
+
+      // === HISTORIQUE ===
+      const logs = v.h || [];
+      if (logs.length > 0) {
+        html += `
+          <details class="logs-section">
+            <summary>Historique (${logs.length})</summary>
+            ${logs.slice().reverse().map(l => `
+              <div class="log-item">${formatDate(l.t)} — ${escapeHtml(l.n || '?')} — ${escapeHtml(l.a || '')}</div>
+            `).join('')}
+          </details>
+        `;
+      }
 
       contentEl.innerHTML = html;
       attachEvents();
@@ -708,14 +780,12 @@
     }
 
     function openCleanModal() {
-      const v = currentVehicleData;
       const now = new Date();
-      const nowStr = now.toLocaleString('fr-FR');
       modalContent.innerHTML = `
         <h3>🧽 Nettoyage effectué</h3>
-        <p style="font-size:0.9rem;color:var(--text-light);">Confirmez-vous avoir effectué le nettoyage extérieur de ce véhicule ?</p>
-        <div style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:0.85rem;">
-          <div><strong>Date :</strong> ${nowStr}</div>
+        <p style="font-size:.9rem;color:var(--text-light);">Confirmez-vous avoir effectué le nettoyage extérieur de ce véhicule ?</p>
+        <div style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.85rem;">
+          <div><strong>Date :</strong> ${now.toLocaleString('fr-FR')}</div>
           <div><strong>Par :</strong> ${escapeHtml(currentNivol)}</div>
         </div>
         <div class="modal-actions">
@@ -740,9 +810,7 @@
     }
 
     function openDisinfectModal() {
-      const v = currentVehicleData;
       const now = new Date();
-      const nowStr = now.toLocaleString('fr-FR');
       modalContent.innerHTML = `
         <h3>🧴 Désinfection</h3>
         <div>
@@ -753,8 +821,8 @@
             <option value="total">Totale</option>
           </select>
         </div>
-        <div style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:0.85rem;">
-          <div><strong>Date :</strong> ${nowStr}</div>
+        <div style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.85rem;">
+          <div><strong>Date :</strong> ${now.toLocaleString('fr-FR')}</div>
           <div><strong>Par :</strong> ${escapeHtml(currentNivol)}</div>
         </div>
         <div class="modal-actions">
@@ -768,10 +836,19 @@
         const type = document.getElementById('modal-type').value;
         try {
           const iso = new Date().toISOString();
-          await updateDoc(doc(db, COLLECTION, currentVehicleId), {
+          // Mettre à jour les infos générales
+          const ref = doc(db, COLLECTION, currentVehicleId);
+          const snap = await getDoc(ref);
+          const data = snap.data();
+          const history = data.ddh || [];
+          // Ajouter à l'historique détaillé
+          history.push({ type, date: iso, par: currentNivol });
+
+          await updateDoc(ref, {
             dd: iso,
             ddp: currentNivol,
-            ddt: type
+            ddt: type,
+            ddh: history
           });
           await addLog(`Désinfection effectuée (${type})`);
           closeModal();
@@ -810,9 +887,7 @@
         try {
           const incident = {
             id: 'inc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            t: t,
-            d: d,
-            p: p,
+            t, d, p,
             dt: new Date().toISOString(),
             n: currentNivol
           };
@@ -842,13 +917,12 @@
       } catch (e) { console.error('Log error:', e); }
     }
 
-    // ===== ERREUR INLINE =====
     function showInlineError(msg) {
       let errEl = document.getElementById('modal-inline-error');
       if (!errEl) {
         errEl = document.createElement('div');
         errEl.id = 'modal-inline-error';
-        errEl.style.cssText = 'background:#fff0f0;color:#c00;padding:10px 14px;border-radius:8px;font-size:0.9rem;font-weight:600;text-align:center;';
+        errEl.style.cssText = 'background:#fff0f0;color:#c00;padding:10px 14px;border-radius:8px;font-size:.9rem;font-weight:600;text-align:center;';
         modalContent.appendChild(errEl);
       }
       errEl.textContent = '⚠️ ' + msg;
