@@ -170,7 +170,7 @@
     .badge.warning { background: #fff8f0; color: var(--warning); }
     .badge.danger { background: #fff0f0; color: var(--danger); }
 
-    /* Table désinfection */
+    /* Tableau récapitulatif désinfection */
     .disinfection-table {
       width: 100%;
       border-collapse: collapse;
@@ -191,6 +191,7 @@
     }
     .disinfection-table tr:last-child td { border-bottom: none; }
     .disinfection-table td.type-cell { font-weight: 600; text-transform: capitalize; }
+    .disinfection-table td.empty-cell { color: #999; font-style: italic; }
 
     /* List */
     .list { list-style: none; }
@@ -209,33 +210,24 @@
     .list-item-title { font-weight: 600; font-size: .95rem; }
     .list-item-sub { font-size: .8rem; color: var(--text-light); }
 
-    /* Action buttons */
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 0 18px 18px;
-    }
-
-    .action-btn {
-      flex: 1;
-      min-width: 160px;
+    /* Action buttons (dans le header de section) */
+    .action-btn-inline {
       background: var(--red);
       color: #fff;
       border: none;
-      padding: 12px 18px;
-      border-radius: var(--radius);
+      padding: 8px 14px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: 700;
-      font-size: .95rem;
+      font-weight: 600;
+      font-size: .85rem;
       transition: all .2s;
-      text-align: center;
+      white-space: nowrap;
     }
-    .action-btn:hover { background: var(--red-hover); transform: translateY(-1px); }
-    .action-btn.clean { background: #2196f3; }
-    .action-btn.clean:hover { background: #1976d2; }
-    .action-btn.disinfect { background: var(--ok); }
-    .action-btn.disinfect:hover { background: #388e3c; }
+    .action-btn-inline:hover { background: var(--red-hover); }
+    .action-btn-inline.clean { background: #2196f3; }
+    .action-btn-inline.clean:hover { background: #1976d2; }
+    .action-btn-inline.disinfect { background: var(--ok); }
+    .action-btn-inline.disinfect:hover { background: #388e3c; }
 
     /* Empty */
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
@@ -306,10 +298,9 @@
       .header { flex-direction: column; align-items: flex-start; }
       .list-item { flex-direction: column; align-items: flex-start; }
       .info-grid { grid-template-columns: 1fr; }
-      .action-buttons { flex-direction: column; }
-      .action-btn { width: 100%; }
       .disinfection-table { font-size: 0.8rem; }
       .disinfection-table th, .disinfection-table td { padding: 8px 6px; }
+      .action-btn-inline { padding: 6px 10px; font-size: 0.8rem; }
     }
   </style>
 </head>
@@ -375,7 +366,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const vehiculeParam = urlParams.get('vehicule');
 
-    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { redirectToLogin(); return; }
       currentNivol = user.displayName;
@@ -553,20 +543,13 @@
       return next.toISOString();
     }
 
-    function getCleanStatus(lastDate, freqDays) {
-      const next = getNextCleanDate(lastDate, freqDays);
-      if (!next) return null;
-      const status = getDateStatus(next);
-      return status;
-    }
-
-    function getCleanBadge(lastDate, freqDays) {
-      if (!lastDate) return '<span class="badge">Jamais effectué</span>';
-      const status = getCleanStatus(lastDate, freqDays);
-      const formatted = formatDateShort(lastDate);
-      if (!freqDays) return `<span class="badge">${formatted}</span>`;
+    // Badge de statut pour la PROCHAINE date (ok / proche / à faire)
+    function getNextDateBadge(nextDateStr) {
+      if (!nextDateStr) return '<span class="badge">—</span>';
+      const status = getDateStatus(nextDateStr);
+      const formatted = formatDateShort(nextDateStr);
       const cls = status === 'danger' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
-      const label = status === 'danger' ? 'À faire' : status === 'warning' ? 'Bientôt' : 'OK';
+      const label = status === 'danger' ? 'À FAIRE' : status === 'warning' ? 'Bientôt' : 'OK';
       return `<span class="badge ${cls}">${formatted} · ${label}</span>`;
     }
 
@@ -598,15 +581,14 @@
         </div>
       `;
 
-      // === SECTION NETTOYAGE & DÉSINFECTION ===
+      // === SECTION DÉSINFECTION & NETTOYAGE ===
       const freqNett = v.fn || 0;
       const freqDes = v.fd || 0;
-      const nextClean = freqNett && v.dn ? formatDateShort(getNextCleanDate(v.dn, freqNett)) : '—';
-      const nextDisinfect = freqDes && v.dd ? formatDateShort(getNextCleanDate(v.dd, freqDes)) : '—';
+      const nextClean = getNextCleanDate(v.dn, freqNett);
+      const nextDisinfect = getNextCleanDate(v.dd, freqDes);
 
       // Récupérer l'historique des désinfections par type
-      const disinfectionHistory = v.ddh || []; // { type, date, par }
-      // Trouver la dernière de chaque type
+      const disinfectionHistory = v.ddh || [];
       const lastByType = {};
       disinfectionHistory.forEach(h => {
         if (!lastByType[h.type] || new Date(h.date) > new Date(lastByType[h.type].date)) {
@@ -614,59 +596,50 @@
         }
       });
 
-      // Si pas d'historique détaillé, on affiche seulement la dernière
       const types = ['rapide', 'complete', 'total'];
       const typeLabels = { rapide: 'Rapide', complete: 'Complète', total: 'Totale' };
 
       html += `
         <div class="section">
           <div class="section-header">
-            <span>🧽 Nettoyage & Désinfection</span>
+            <span>🧴 Désinfection & Nettoyage</span>
             <div class="header-actions">
-              <button class="btn-icon" id="btn-clean" title="Nettoyage effectué">🧽 Nettoyage</button>
-              <button class="btn-icon" id="btn-disinfect" title="Désinfection effectuée">🧴 Désinfection</button>
+              <button class="action-btn-inline disinfect" id="btn-disinfect" title="Désinfection effectuée">🧴 Désinfection</button>
+              <button class="action-btn-inline clean" id="btn-clean" title="Nettoyage effectué">🧽 Nettoyage</button>
             </div>
           </div>
-          <div class="info-grid" style="padding-bottom:0;">
-            <div class="info-item">
-              <span class="info-label">Dernier nettoyage</span>
-              <span class="info-value">${getCleanBadge(v.dn, freqNett)}</span>
-              ${v.dn ? `<span class="info-label" style="margin-top:4px;">Par : ${escapeHtml(v.dnp || '?')}</span>` : ''}
-            </div>
-            <div class="info-item">
-              <span class="info-label">Prochain nettoyage</span>
-              <span class="info-value">${nextClean !== '—' ? nextClean : (freqNett ? 'À définir' : 'Fréquence non définie')}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Dernière désinfection</span>
-              <span class="info-value">${getCleanBadge(v.dd, freqDes)}</span>
-              ${v.dd ? `<span class="info-label" style="margin-top:4px;">Par : ${escapeHtml(v.ddp || '?')} · Type : ${typeLabels[v.ddt] || v.ddt || '?'}</span>` : ''}
-            </div>
-            <div class="info-item">
-              <span class="info-label">Prochaine désinfection</span>
-              <span class="info-value">${nextDisinfect !== '—' ? nextDisinfect : (freqDes ? 'À définir' : 'Fréquence non définie')}</span>
-            </div>
-          </div>
-
-          <div style="padding:0 18px 18px;">
-            <details style="margin-top:8px;">
-              <summary style="cursor:pointer;font-weight:600;color:var(--text-light);font-size:.9rem;padding:8px 0;">Dernière désinfection par type</summary>
-              <table class="disinfection-table">
-                <thead>
-                  <tr><th>Type</th><th>Date</th><th>Par</th></tr>
-                </thead>
-                <tbody>
-                  ${types.map(t => {
-                    const last = lastByType[t];
-                    if (last) {
-                      return `<tr><td class="type-cell">${typeLabels[t]}</td><td>${formatDate(last.date)}</td><td>${escapeHtml(last.par || '?')}</td></tr>`;
-                    } else {
-                      return `<tr><td class="type-cell">${typeLabels[t]}</td><td colspan="2" style="color:#999;">Jamais effectuée</td></tr>`;
-                    }
-                  }).join('')}
-                </tbody>
-              </table>
-            </details>
+          <div style="padding:18px;">
+            <table class="disinfection-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Dernière</th>
+                  <th>Par</th>
+                  <th>Prochaine</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${types.map(t => {
+                  const last = lastByType[t];
+                  const lastDate = last ? last.date : null;
+                  const nextDate = lastDate && freqDes ? getNextCleanDate(lastDate, freqDes) : null;
+                  return `
+                    <tr>
+                      <td class="type-cell">${typeLabels[t]}</td>
+                      <td>${last ? formatDateShort(last.date) : '<span class="empty-cell">Jamais</span>'}</td>
+                      <td>${last ? escapeHtml(last.par || '?') : '<span class="empty-cell">—</span>'}</td>
+                      <td>${nextDate ? getNextDateBadge(nextDate) : '<span class="empty-cell">—</span>'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr>
+                  <td class="type-cell">Nettoyage</td>
+                  <td>${v.dn ? formatDateShort(v.dn) : '<span class="empty-cell">Jamais</span>'}</td>
+                  <td>${v.dn ? escapeHtml(v.dnp || '?') : '<span class="empty-cell">—</span>'}</td>
+                  <td>${nextClean ? getNextDateBadge(nextClean) : '<span class="empty-cell">—</span>'}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       `;
@@ -836,12 +809,10 @@
         const type = document.getElementById('modal-type').value;
         try {
           const iso = new Date().toISOString();
-          // Mettre à jour les infos générales
           const ref = doc(db, COLLECTION, currentVehicleId);
           const snap = await getDoc(ref);
           const data = snap.data();
           const history = data.ddh || [];
-          // Ajouter à l'historique détaillé
           history.push({ type, date: iso, par: currentNivol });
 
           await updateDoc(ref, {
