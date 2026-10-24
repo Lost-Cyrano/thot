@@ -35,6 +35,34 @@
     .btn-icon:hover { background: #f0f0f0; }
     .btn-icon.delete:hover { color: var(--red); border-color: var(--red); background: #fff0f0; }
 
+    /* Bouton QR (même style que le bouton téléchargement de la page QR) */
+    .btn-qr {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-qr:hover { background: var(--red-hover); }
+
+    /* Bouton suppression (même style) */
+    .btn-delete-vehicle-style {
+      background: #c00;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-delete-vehicle-style:hover { background: #a00; }
+
     .selector-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; box-shadow: var(--shadow); }
     .selector-bar select { padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; flex: 1; min-width: 200px; }
 
@@ -62,6 +90,7 @@
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
 
+    /* Modal général */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
     .modal { background: #fff; border-radius: var(--radius); padding: 24px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 14px; max-height: 90vh; overflow-y: auto; }
     .modal h3 { font-size: 1.1rem; }
@@ -70,8 +99,51 @@
     .modal textarea { min-height: 80px; resize: vertical; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
 
+    /* Modal de confirmation (style intégré au site) */
+    .confirm-modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      border-top: 4px solid var(--red);
+    }
+    .confirm-modal .confirm-icon { font-size: 3rem; line-height: 1; }
+    .confirm-modal h3 { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .confirm-modal p { font-size: 0.95rem; color: var(--text-light); line-height: 1.5; }
+    .confirm-modal .confirm-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .confirm-modal .btn { flex: 1; min-width: 120px; padding: 12px 18px; font-size: 0.95rem; }
+
     .log-item { font-size: 0.8rem; color: var(--text-light); padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
     .log-item:last-child { border-bottom: none; }
+
+    /* QR modal spécifique */
+    .qr-preview-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+    }
+    .qr-preview-container img {
+      width: 220px;
+      height: 220px;
+      border: 3px solid var(--red);
+      border-radius: 12px;
+      padding: 8px;
+      background: #fff;
+    }
 
     @media (max-width: 480px) {
       .header { flex-direction: column; align-items: flex-start; }
@@ -132,7 +204,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Abréviation : collection "P" pour ParcAuto
     const COLLECTION = 'P';
 
     let currentAdmin = null;
@@ -145,7 +216,7 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
 
-    // Vérification connexion
+    // ===== VÉRIFICATION CONNEXION =====
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = '../login.html'; return; }
       const nivol = user.displayName;
@@ -281,23 +352,40 @@
       return `<span class="badge ${cls}">${targetKm} km (${diff > 0 ? '+' : ''}${diff}) · ${label}</span>`;
     }
 
-    // Calcule la prochaine date/kilométrage d'un entretien selon sa récurrence
     function computeNextOccurrence(entretien, currentKm) {
-      if (!entretien.rec) return null; // Pas de récurrence
-
+      if (!entretien.rec) return null;
       if (entretien.recType === 'jour') {
-        // rec = nombre de jours
         const baseDate = entretien.date ? new Date(entretien.date) : new Date();
         if (isNaN(baseDate.getTime())) return null;
         const nextDate = new Date(baseDate);
         nextDate.setDate(nextDate.getDate() + parseInt(entretien.rec));
         return { date: nextDate.toISOString().split('T')[0] };
       } else if (entretien.recType === 'km') {
-        // rec = nombre de km
         const baseKm = entretien.kmDeclencheur || currentKm || 0;
         return { kmDeclencheur: baseKm + parseInt(entretien.rec) };
       }
       return null;
+    }
+
+    // ===== CONFIRMATION STYLÉE =====
+    function showConfirm({ icon = '⚠️', title = 'Confirmation', message = '', confirmLabel = 'Confirmer', confirmClass = 'btn-danger', onConfirm }) {
+      modalContent.innerHTML = `
+        <div class="confirm-modal" style="border:none;padding:0;box-shadow:none;max-width:none;">
+          <div class="confirm-icon">${icon}</div>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${message}</p>
+          <div class="confirm-actions">
+            <button class="btn btn-cancel" id="confirm-cancel">Annuler</button>
+            <button class="btn ${confirmClass}" id="confirm-ok">${escapeHtml(confirmLabel)}</button>
+          </div>
+        </div>
+      `;
+      modalOverlay.style.display = 'flex';
+      document.getElementById('confirm-cancel').addEventListener('click', closeModal);
+      document.getElementById('confirm-ok').addEventListener('click', async () => {
+        closeModal();
+        if (onConfirm) await onConfirm();
+      });
     }
 
     // ===== RENDU =====
@@ -306,15 +394,14 @@
       const v = currentVehicleData;
       const currentKm = v.km || 0;
 
-      // Header véhicule
       let html = `
         <div class="card">
           <div class="card-header">
             <span>🚗 ${escapeHtml(v.n || v.im || v.id)}</span>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
               <button class="btn-icon" id="btn-edit-vehicle" title="Modifier">✏️</button>
-              <button class="btn-icon" id="btn-qr" title="QR Code">📱</button>
-              <button class="btn-icon delete" id="btn-delete-vehicle" title="Supprimer">🗑️</button>
+              <button class="btn-qr btn-sm" id="btn-qr">📱 QR Code</button>
+              <button class="btn-delete-vehicle-style btn-sm" id="btn-delete-vehicle">🗑️ Supprimer</button>
             </div>
           </div>
           <div class="card-body">
@@ -333,7 +420,6 @@
         </div>
       `;
 
-      // Nettoyage / désinfection
       html += `
         <div class="card">
           <div class="card-header">
@@ -351,7 +437,6 @@
         </div>
       `;
 
-      // Entretiens
       const entretiens = v.en || [];
       html += `
         <div class="card">
@@ -363,7 +448,6 @@
             ${entretiens.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun entretien enregistré.</p></li>' : ''}
             ${entretiens.slice().reverse().map((e, i) => {
               const realIdx = entretiens.length - 1 - i;
-              // Statut : proche ou passé
               let statutHtml = '';
               if (e.recType === 'km' && e.kmDeclencheur) {
                 statutHtml = getKmBadge(e.kmDeclencheur, currentKm);
@@ -383,7 +467,7 @@
                     <span class="list-item-sub">${statutHtml}</span>
                   </div>
                   <div class="list-item-actions">
-                    <button class="btn-icon valider-entretien" data-idx="${realIdx}" title="Valider (supprime et reprogramme)">✅</button>
+                    <button class="btn-icon valider-entretien" data-idx="${realIdx}" title="Valider">✅</button>
                     <button class="btn-icon edit-entretien" data-idx="${realIdx}" title="Modifier">✏️</button>
                     <button class="btn-icon delete delete-entretien" data-idx="${realIdx}" title="Supprimer">🗑️</button>
                   </div>
@@ -393,7 +477,6 @@
         </div>
       `;
 
-      // Incidents
       const incidents = v.inc || [];
       html += `
         <div class="card">
@@ -418,7 +501,6 @@
         </div>
       `;
 
-      // Historique
       const logs = v.h || [];
       html += `
         <div class="card">
@@ -494,12 +576,12 @@
       document.getElementById('m-save').addEventListener('click', async () => {
         const im = document.getElementById('m-immat').value.trim();
         const n = document.getElementById('m-nom').value.trim();
-        if (!im) return alert('Immatriculation requise.');
-        if (!n) return alert('Nom requis.');
+        if (!im) { showInlineError('Immatriculation requise.'); return; }
+        if (!n) { showInlineError('Nom requis.'); return; }
 
         const docId = im.replace(/[^a-zA-Z0-9]/g, '_');
         const exists = await getDoc(doc(db, COLLECTION, docId));
-        if (exists.exists()) return alert('Un véhicule avec cette immatriculation existe déjà.');
+        if (exists.exists()) { showInlineError('Un véhicule avec cette immatriculation existe déjà.'); return; }
 
         const data = {
           im: im,
@@ -518,7 +600,7 @@
           await loadVehicles();
           vehicleSelect.value = docId;
           selectVehicle(docId);
-        } catch (e) { alert('Erreur : ' + e.message); }
+        } catch (e) { showInlineError('Erreur : ' + e.message); }
       });
     }
 
@@ -544,7 +626,7 @@
       document.getElementById('m-save').addEventListener('click', async () => {
         const im = document.getElementById('m-immat').value.trim();
         const n = document.getElementById('m-nom').value.trim();
-        if (!im || !n) return alert('Immatriculation et nom requis.');
+        if (!im || !n) { showInlineError('Immatriculation et nom requis.'); return; }
         try {
           await updateDoc(doc(db, COLLECTION, currentVehicleId), {
             im: im,
@@ -556,32 +638,28 @@
           await addLog(`Modification des informations du véhicule`);
           closeModal();
           await loadVehicles();
-        } catch (e) { alert('Erreur : ' + e.message); }
+        } catch (e) { showInlineError('Erreur : ' + e.message); }
       });
     }
 
     function openDeleteVehicleModal() {
       const v = currentVehicleData;
-      modalContent.innerHTML = `
-        <h3>Supprimer le véhicule</h3>
-        <p>Supprimer définitivement <strong>${escapeHtml(v.n)}</strong> (${escapeHtml(v.im || '')}) ?</p>
-        <p style="color:var(--red);font-weight:600;">Action irréversible.</p>
-        <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-danger" id="m-delete">Supprimer</button>
-        </div>`;
-      modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-delete').addEventListener('click', async () => {
-        try {
-          await deleteDoc(doc(db, COLLECTION, currentVehicleId));
-          closeModal();
-          currentVehicleId = null;
-          currentVehicleData = null;
-          await loadVehicles();
-          vehicleSelect.value = '';
-          contentEl.innerHTML = '<div class="empty-state"><p>Sélectionnez un véhicule.</p></div>';
-        } catch (e) { alert('Erreur : ' + e.message); }
+      showConfirm({
+        icon: '🗑️',
+        title: 'Supprimer le véhicule',
+        message: `Voulez-vous vraiment supprimer <strong>${escapeHtml(v.n)}</strong> (${escapeHtml(v.im || '')}) ?<br><br><span style="color:var(--red);font-weight:600;">Cette action est irréversible.</span>`,
+        confirmLabel: 'Supprimer',
+        confirmClass: 'btn-danger',
+        onConfirm: async () => {
+          try {
+            await deleteDoc(doc(db, COLLECTION, currentVehicleId));
+            currentVehicleId = null;
+            currentVehicleData = null;
+            await loadVehicles();
+            vehicleSelect.value = '';
+            contentEl.innerHTML = '<div class="empty-state"><p>Sélectionnez un véhicule.</p></div>';
+          } catch (e) { showInlineError('Erreur : ' + e.message); }
+        }
       });
     }
 
@@ -603,7 +681,7 @@
           await addLog(`Kilométrage mis à jour : ${km} km`);
           closeModal();
           await loadVehicles();
-        } catch (e) { alert('Erreur : ' + e.message); }
+        } catch (e) { showInlineError('Erreur : ' + e.message); }
       });
     }
 
@@ -630,15 +708,32 @@
           await addLog(`Fréquences mises à jour (nettoyage:${f1}j, désinfection:${f2}j)`);
           closeModal();
           await loadVehicles();
-        } catch (e) { alert('Erreur : ' + e.message); }
+        } catch (e) { showInlineError('Erreur : ' + e.message); }
       });
     }
 
-    // ===== QR CODE (redirection vers page dédiée) =====
+    // ===== QR CODE =====
     function openQRModal() {
-      // Redirection vers la page de génération QR (même principe que pour les inventaires)
+      const v = currentVehicleData;
       const qrPageUrl = `../qr.html?type=vehicule&id=${encodeURIComponent(currentVehicleId)}`;
-      window.open(qrPageUrl, '_blank');
+
+      modalContent.innerHTML = `
+        <h3>QR Code du véhicule</h3>
+        <div class="qr-preview-container">
+          <p style="font-size:0.9rem;color:var(--text-light);text-align:center;">${escapeHtml(v.n)} (${escapeHtml(v.im || '')})</p>
+          <div style="text-align:center;font-size:0.8rem;color:var(--text-light);">
+            Le QR code sera généré sur une page dédiée.
+          </div>
+          <button class="btn-qr" style="width:100%;" id="m-open-qr">📱 Ouvrir la page QR Code</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" id="m-cancel">Fermer</button>
+        </div>`;
+      modalOverlay.style.display = 'flex';
+      document.getElementById('m-cancel').addEventListener('click', closeModal);
+      document.getElementById('m-open-qr').addEventListener('click', () => {
+        window.open(qrPageUrl, '_blank');
+      });
     }
 
     // ===== ENTRETIENS =====
@@ -701,7 +796,6 @@
           type,
           desc: type === 'Autre' ? desc : ''
         };
-        // Si récurrence km, initialiser kmDeclencheur au km actuel + rec
         if (recType === 'km' && recValue > 0) {
           data.kmDeclencheur = (v.km || 0) + recValue;
         }
@@ -717,69 +811,105 @@
           await addLog(`${isEdit ? 'Modification' : 'Ajout'} entretien "${type}"`);
           closeModal();
           await loadVehicles();
-        } catch (e) { alert('Erreur : ' + e.message); }
+        } catch (e) { showInlineError('Erreur : ' + e.message); }
       });
     }
 
-    // Valider un entretien : supprime l'entretien et reprogramme si récurrence
-    async function validerEntretien(idx) {
+    function validerEntretien(idx) {
       const v = currentVehicleData;
-      const entretiens = [...(v.en || [])];
-      const e = entretiens[idx];
+      const e = (v.en || [])[idx];
       if (!e) return;
 
-      if (!confirm(`Valider l'entretien "${e.type}" ? Il sera supprimé${e.rec ? ' et reprogrammé' : ''}.`)) return;
+      showConfirm({
+        icon: '✅',
+        title: 'Valider l\'entretien',
+        message: `Valider l'entretien <strong>${escapeHtml(e.type)}</strong> ?<br><br>Il sera supprimé${e.rec ? ' et reprogrammé automatiquement' : ''}.`,
+        confirmLabel: 'Valider',
+        confirmClass: 'btn-save',
+        onConfirm: async () => {
+          try {
+            const entretiens = [...(v.en || [])];
+            let newEntretiens = entretiens.filter((_, i) => i !== idx);
 
-      try {
-        let newEntretiens = entretiens.filter((_, i) => i !== idx);
-
-        // Reprogrammer si récurrence
-        if (e.rec && e.recType) {
-          const next = computeNextOccurrence(e, v.km || 0);
-          if (next) {
-            const newE = {
-              type: e.type,
-              desc: e.desc || '',
-              recType: e.recType,
-              rec: e.rec,
-              cree: new Date().toISOString(),
-              creePar: currentAdmin.nivol
-            };
-            if (e.recType === 'jour') {
-              newE.date = next.date;
-            } else if (e.recType === 'km') {
-              newE.kmDeclencheur = next.kmDeclencheur;
-              newE.date = e.date || '';
+            if (e.rec && e.recType) {
+              const next = computeNextOccurrence(e, v.km || 0);
+              if (next) {
+                const newE = {
+                  type: e.type,
+                  desc: e.desc || '',
+                  recType: e.recType,
+                  rec: e.rec,
+                  cree: new Date().toISOString(),
+                  creePar: currentAdmin.nivol
+                };
+                if (e.recType === 'jour') {
+                  newE.date = next.date;
+                } else if (e.recType === 'km') {
+                  newE.kmDeclencheur = next.kmDeclencheur;
+                  newE.date = e.date || '';
+                }
+                newEntretiens.push(newE);
+              }
             }
-            newEntretiens.push(newE);
-          }
+
+            await updateDoc(doc(db, COLLECTION, currentVehicleId), { en: newEntretiens });
+            await addLog(`Validation et suppression de l'entretien "${e.type}"${e.rec ? ' (reprogrammé)' : ''}`);
+            await loadVehicles();
+          } catch (err) { showInlineError('Erreur : ' + err.message); }
         }
-
-        await updateDoc(doc(db, COLLECTION, currentVehicleId), { en: newEntretiens });
-        await addLog(`Validation et suppression de l'entretien "${e.type}"${e.rec ? ' (reprogrammé)' : ''}`);
-        await loadVehicles();
-      } catch (err) { alert('Erreur : ' + err.message); }
+      });
     }
 
-    async function deleteEntretien(idx) {
-      if (!confirm('Supprimer cet entretien ?')) return;
-      try {
-        const entretiens = [...(currentVehicleData.en || [])];
-        const removed = entretiens.splice(idx, 1)[0];
-        await updateDoc(doc(db, COLLECTION, currentVehicleId), { en: entretiens });
-        await addLog(`Suppression de l'entretien "${removed.type}"`);
-        await loadVehicles();
-      } catch (e) { alert('Erreur : ' + e.message); }
+    function deleteEntretien(idx) {
+      const e = (currentVehicleData.en || [])[idx];
+      if (!e) return;
+      showConfirm({
+        icon: '🗑️',
+        title: 'Supprimer l\'entretien',
+        message: `Supprimer l'entretien <strong>${escapeHtml(e.type)}</strong> ?`,
+        confirmLabel: 'Supprimer',
+        confirmClass: 'btn-danger',
+        onConfirm: async () => {
+          try {
+            const entretiens = [...(currentVehicleData.en || [])];
+            entretiens.splice(idx, 1);
+            await updateDoc(doc(db, COLLECTION, currentVehicleId), { en: entretiens });
+            await addLog(`Suppression de l'entretien "${e.type}"`);
+            await loadVehicles();
+          } catch (err) { showInlineError('Erreur : ' + err.message); }
+        }
+      });
     }
 
-    async function deleteIncident(incId) {
-      if (!confirm('Supprimer cet incident ?')) return;
-      try {
-        const incidents = (currentVehicleData.inc || []).filter(i => i.id !== incId);
-        await updateDoc(doc(db, COLLECTION, currentVehicleId), { inc: incidents });
-        await addLog(`Suppression d'un incident`);
-        await loadVehicles();
-      } catch (e) { alert('Erreur : ' + e.message); }
+    function deleteIncident(incId) {
+      showConfirm({
+        icon: '🗑️',
+        title: 'Supprimer l\'incident',
+        message: 'Voulez-vous vraiment supprimer cet incident ?',
+        confirmLabel: 'Supprimer',
+        confirmClass: 'btn-danger',
+        onConfirm: async () => {
+          try {
+            const incidents = (currentVehicleData.inc || []).filter(i => i.id !== incId);
+            await updateDoc(doc(db, COLLECTION, currentVehicleId), { inc: incidents });
+            await addLog(`Suppression d'un incident`);
+            await loadVehicles();
+          } catch (err) { showInlineError('Erreur : ' + err.message); }
+        }
+      });
+    }
+
+    // ===== ERREUR INLINE DANS MODAL =====
+    function showInlineError(msg) {
+      let errEl = document.getElementById('modal-inline-error');
+      if (!errEl) {
+        errEl = document.createElement('div');
+        errEl.id = 'modal-inline-error';
+        errEl.style.cssText = 'background:#fff0f0;color:#c00;padding:10px 14px;border-radius:8px;font-size:0.9rem;font-weight:600;text-align:center;';
+        modalContent.appendChild(errEl);
+      }
+      errEl.textContent = '⚠️ ' + msg;
+      setTimeout(() => { if (errEl && errEl.parentNode) errEl.parentNode.removeChild(errEl); }, 4000);
     }
 
     function closeModal() {
