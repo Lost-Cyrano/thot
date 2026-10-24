@@ -6,100 +6,336 @@
   <title>Thot – Parc Auto (Admin)</title>
   <style>
     :root {
-      --red: #e60000; --red-hover: #b30000; --bg: #f5f5f5; --card-bg: #fff;
-      --border: #ddd; --text: #333; --text-light: #666; --radius: 12px;
-      --shadow: 0 2px 8px rgba(0,0,0,.08); --ok: #4caf50; --warning: #f5a623;
+      --red: #e60000;
+      --red-hover: #b30000;
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #333;
+      --text-light: #666;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --warning: #f5a623;
       --danger: #e60000;
+      --ok: #4caf50;
+      --sub-cat-bg: #faf8f5;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; padding: 16px; }
-    .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 16px; }
-    .header { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: var(--shadow); }
-    .header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .header-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
-    .btn-back { background: transparent; border: 1.5px solid #ccc; color: var(--text); }
-    .btn-back:hover { background: #eee; }
-    .btn-logout { background: transparent; color: var(--red); border: 1.5px solid var(--red); }
-    .btn-logout:hover { background: var(--red); color: #fff; }
-    .btn-add { background: var(--red); color: #fff; }
-    .btn-add:hover { background: var(--red-hover); }
-    .btn-save { background: var(--ok); color: #fff; }
-    .btn-save:hover { background: #388e3c; }
-    .btn-danger { background: #c00; color: #fff; }
-    .btn-danger:hover { background: #a00; }
-    .btn-cancel { background: #eee; color: #333; }
-    .btn-cancel:hover { background: #ddd; }
-    .btn-sm { padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; }
-    .btn-icon { background: none; border: 1.5px solid #ccc; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.95rem; transition: all 0.2s; }
-    .btn-icon:hover { background: #f0f0f0; }
-    .btn-icon.delete:hover { color: var(--red); border-color: var(--red); background: #fff0f0; }
 
-    /* Bouton QR (même style que le bouton téléchargement de la page QR) */
-    .btn-qr {
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover { background: #eee; }
+
+    .btn-logout {
+      background: transparent;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover { background: var(--red); color: #fff; }
+
+    .btn-add {
       background: var(--red);
       color: #fff;
       border: none;
-      padding: 12px 24px;
+      padding: 10px 20px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 1rem;
+      font-size: 0.9rem;
       transition: all 0.2s;
     }
-    .btn-qr:hover { background: var(--red-hover); }
 
-    /* Bouton suppression (même style) */
-    .btn-delete-vehicle-style {
-      background: #c00;
-      color: #fff;
-      border: none;
-      padding: 12px 24px;
+    .btn-add:hover { background: var(--red-hover); }
+
+    /* Sélecteur de véhicule (même style que .inventory-selector) */
+    .vehicle-selector {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+    }
+
+    .vehicle-selector select {
+      padding: 10px;
+      border: 1.5px solid var(--border);
       border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: all 0.2s;
+      font-size: 0.95rem;
+      flex: 1;
+      min-width: 200px;
     }
-    .btn-delete-vehicle-style:hover { background: #a00; }
 
-    .selector-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; box-shadow: var(--shadow); }
-    .selector-bar select { padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; flex: 1; min-width: 200px; }
+    /* Sections */
+    .section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
 
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px; }
-    .card-header { padding: 14px 18px; background: #fafafa; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    .card-body { padding: 18px; }
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-    .info-item { display: flex; flex-direction: column; gap: 2px; }
-    .info-label { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { font-weight: 600; font-size: 1rem; }
-    .info-value.editable { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .badge { font-size: 0.75rem; background: #f0f0f0; padding: 3px 8px; border-radius: 10px; color: var(--text-light); white-space: nowrap; }
-    .badge.ok { background: #e8f5e9; color: #2e7d32; }
-    .badge.warning { background: #fff8f0; color: var(--warning); }
-    .badge.danger { background: #fff0f0; color: var(--danger); }
+    .section:last-child { margin-bottom: 0; }
+
+    .section-header {
+      padding: 14px 18px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .section-header:hover { background: #f0f0f0; }
+
+    .section-header .collapse-icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    .section-header.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .section-body {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 100000px;
+      opacity: 1;
+    }
+
+    .section-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
 
     .list { list-style: none; }
-    .list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 8px; }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
     .list-item:last-child { border-bottom: none; }
-    .list-item-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .list-item:hover { background: #fafafa; }
+
+    .list-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+
     .list-item-title { font-weight: 600; font-size: 0.95rem; }
     .list-item-sub { font-size: 0.8rem; color: var(--text-light); }
     .list-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+    .obj-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .obj-name { font-weight: 600; }
+
+    .obj-date {
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .date-ok { color: var(--ok); }
+    .date-warning { color: var(--warning); font-weight: 600; }
+    .date-danger { color: var(--danger); font-weight: 700; }
+
+    .item-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      background: none;
+      border: 1.5px solid #ccc;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover { background: #f0f0f0; }
+    .btn-icon.delete:hover { color: var(--red); border-color: var(--red); background: #fff0f0; }
+
+    .badge {
+      font-size: 0.75rem;
+      background: #f0f0f0;
+      padding: 3px 8px;
+      border-radius: 10px;
+      color: var(--text-light);
+      white-space: nowrap;
+    }
+    .badge.ok { background: #e8f5e9; color: #2e7d32; }
+    .badge.warning { background: #fff8f0; color: var(--warning); }
+    .badge.danger { background: #fff0f0; color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
 
-    /* Modal général */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
-    .modal { background: #fff; border-radius: var(--radius); padding: 24px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 14px; max-height: 90vh; overflow-y: auto; }
+    /* Logs */
+    .logs-section { margin-top: 8px; }
+    .logs-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      padding: 8px 0;
+    }
+    .log-item {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      padding: 4px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
     .modal h3 { font-size: 1.1rem; }
     .modal label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.9rem; }
-    .modal input, .modal select, .modal textarea { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; }
+    .modal input, .modal select, .modal textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
     .modal textarea { min-height: 80px; resize: vertical; }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+    .modal .hint { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
-    /* Modal de confirmation (style intégré au site) */
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .btn-cancel { background: #eee; color: #333; }
+    .btn-cancel:hover { background: #ddd; }
+    .btn-save { background: var(--red); color: #fff; }
+    .btn-save:hover { background: var(--red-hover); }
+    .btn-danger { background: #c00; color: #fff; }
+    .btn-danger:hover { background: #a00; }
+
+    /* Confirm modal stylé */
     .confirm-modal {
       background: #fff;
       border-radius: var(--radius);
@@ -114,7 +350,7 @@
       border-top: 4px solid var(--red);
     }
     .confirm-modal .confirm-icon { font-size: 3rem; line-height: 1; }
-    .confirm-modal h3 { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .confirm-modal h3 { font-size: 1.2rem; font-weight: 700; }
     .confirm-modal p { font-size: 0.95rem; color: var(--text-light); line-height: 1.5; }
     .confirm-modal .confirm-actions {
       display: flex;
@@ -125,63 +361,67 @@
     }
     .confirm-modal .btn { flex: 1; min-width: 120px; padding: 12px 18px; font-size: 0.95rem; }
 
-    .log-item { font-size: 0.8rem; color: var(--text-light); padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
-    .log-item:last-child { border-bottom: none; }
-
-    /* QR modal spécifique */
-    .qr-preview-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 16px 0;
+    /* Switch */
+    .switch-container { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .switch-container input[type="checkbox"] { display: none; }
+    .switch {
+      width: 44px; height: 24px; background: #ccc; border-radius: 12px;
+      position: relative; transition: background 0.3s; flex-shrink: 0;
     }
-    .qr-preview-container img {
-      width: 220px;
-      height: 220px;
-      border: 3px solid var(--red);
-      border-radius: 12px;
-      padding: 8px;
-      background: #fff;
+    .switch::after {
+      content: ''; position: absolute; width: 20px; height: 20px; background: #fff;
+      border-radius: 50%; top: 2px; left: 2px; transition: left 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
+    .switch-container input:checked + .switch { background: var(--red); }
+    .switch-container input:checked + .switch::after { left: 22px; }
+    .switch-label { font-size: 0.9rem; font-weight: 500; color: var(--text); }
 
+    /* Responsive */
     @media (max-width: 480px) {
-      .header { flex-direction: column; align-items: flex-start; }
-      .header-buttons { width: 100%; justify-content: flex-end; }
       .list-item { flex-direction: column; align-items: flex-start; }
-      .list-item-actions { align-self: flex-end; }
-      .info-grid { grid-template-columns: 1fr; }
+      .item-actions { align-self: flex-end; }
+      .header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <span style="font-weight: 600;">🚗 Parc Auto – Administration</span>
+        <span style="font-weight:600;">🚗 Gestion du parc auto</span>
       </div>
-      <div class="header-buttons">
-        <button class="btn btn-back" id="btn-admin">← Administration</button>
-        <button class="btn btn-logout" id="btn-logout">Déconnexion</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-back" id="btn-admin">← Administration</button>
+        <button class="btn-logout" id="btn-logout">Déconnexion</button>
       </div>
     </div>
 
-    <div class="selector-bar">
-      <select id="vehicle-select">
-        <option value="">— Choisir un véhicule —</option>
-      </select>
-      <button class="btn btn-add btn-sm" id="btn-create-vehicle">+ Nouveau véhicule</button>
+    <!-- Actions (sélecteur + boutons) -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div class="vehicle-selector">
+        <select id="vehicle-select">
+          <option value="">— Choisir un véhicule —</option>
+        </select>
+        <button class="btn-back" id="btn-edit-vehicle" title="Modifier" style="display:none;">✏️</button>
+        <button class="btn-icon delete" id="btn-delete-vehicle" title="Supprimer" style="display:none;">🗑️</button>
+        <button class="btn-add" id="btn-qrcode" style="display:none; margin-left:8px;">📱 QR Code</button>
+      </div>
+      <button class="btn-add" id="btn-create">+ Créer</button>
     </div>
 
-    <div id="content">
+    <!-- Contenu du véhicule sélectionné -->
+    <div id="vehicle-content">
       <div class="empty-state">
         <div class="icon">🚗</div>
-        <p>Sélectionnez un véhicule pour gérer ses informations.</p>
+        <p>Sélectionnez un véhicule pour voir ses informations.</p>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="modal-overlay" style="display: none;">
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none;">
     <div class="modal" id="modal-content"></div>
   </div>
 
@@ -205,22 +445,32 @@
     const db = getFirestore(app);
 
     const COLLECTION = 'P';
+    const HIERARCHY = ['Dieu', 'PUL', 'MOT'];
 
     let currentAdmin = null;
     let vehicles = [];
     let currentVehicleId = null;
     let currentVehicleData = null;
 
+    const collapsedState = {};
+
     const vehicleSelect = document.getElementById('vehicle-select');
-    const contentEl = document.getElementById('content');
+    const vehicleContent = document.getElementById('vehicle-content');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-content');
+    const btnEditVehicle = document.getElementById('btn-edit-vehicle');
+    const btnDeleteVehicle = document.getElementById('btn-delete-vehicle');
+    const btnQRCode = document.getElementById('btn-qrcode');
 
-    // ===== VÉRIFICATION CONNEXION =====
+    // Vérification connexion
     onAuthStateChanged(auth, async (user) => {
       if (!user) { window.location.href = '../login.html'; return; }
       const nivol = user.displayName;
-      if (!nivol) { await deleteUser(user).catch(() => {}); window.location.href = '../login.html'; return; }
+      if (!nivol) {
+        await deleteUser(user).catch(() => {});
+        window.location.href = '../login.html';
+        return;
+      }
 
       try {
         const adminSnap = await getDoc(doc(db, 'A', nivol));
@@ -229,12 +479,15 @@
           window.location.href = '../login.html';
           return;
         }
+
         currentAdmin = {
           nivol,
           nom: adminSnap.data().I || 'Inconnu',
           fonction: adminSnap.data().F || ''
         };
+
         await loadVehicles();
+
       } catch (err) {
         console.error(err);
         if (auth.currentUser) await deleteUser(auth.currentUser).catch(() => {});
@@ -244,26 +497,53 @@
 
     document.getElementById('btn-logout').addEventListener('click', async () => {
       const user = auth.currentUser;
-      if (user) { await deleteUser(user).catch(() => {}); window.location.href = '../login.html'; }
+      if (user) {
+        await deleteUser(user).catch(() => {});
+        window.location.href = '../login.html';
+      }
     });
 
     document.getElementById('btn-admin').addEventListener('click', () => {
       window.location.href = '../admin.html';
     });
 
-    document.getElementById('btn-create-vehicle').addEventListener('click', () => openCreateVehicleModal());
+    document.getElementById('btn-create').addEventListener('click', () => openCreateModal());
 
-    vehicleSelect.addEventListener('change', () => {
-      const id = vehicleSelect.value;
-      if (id) selectVehicle(id);
-      else {
-        currentVehicleId = null;
-        currentVehicleData = null;
-        contentEl.innerHTML = '<div class="empty-state"><div class="icon">🚗</div><p>Sélectionnez un véhicule pour gérer ses informations.</p></div>';
+    btnQRCode.addEventListener('click', () => {
+      if (currentVehicleId) {
+        window.location.href = `../qr.html?type=vehicule&id=${encodeURIComponent(currentVehicleId)}`;
       }
     });
 
-    // ===== CHARGEMENT =====
+    btnEditVehicle.addEventListener('click', () => {
+      if (currentVehicleId && currentVehicleData) openEditVehicleModal();
+    });
+
+    btnDeleteVehicle.addEventListener('click', () => {
+      if (currentVehicleId && currentVehicleData) openDeleteVehicleModal();
+    });
+
+    vehicleSelect.addEventListener('change', () => {
+      const id = vehicleSelect.value;
+      if (id) {
+        selectVehicle(id);
+      } else {
+        currentVehicleId = null;
+        currentVehicleData = null;
+        btnEditVehicle.style.display = 'none';
+        btnDeleteVehicle.style.display = 'none';
+        btnQRCode.style.display = 'none';
+        vehicleContent.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🚗</div>
+            <p>Sélectionnez un véhicule pour voir ses informations.</p>
+          </div>
+        `;
+      }
+    });
+
+    // ========== FONCTIONS ==========
+
     async function loadVehicles() {
       try {
         const snap = await getDocs(collection(db, COLLECTION));
@@ -285,14 +565,17 @@
           const still = vehicles.find(v => v.id === currentVehicleId);
           if (still) {
             currentVehicleData = still;
-            renderVehicle();
+            renderVehicleContent();
           } else {
             currentVehicleId = null;
             currentVehicleData = null;
-            contentEl.innerHTML = '<div class="empty-state"><p>Ce véhicule n\'existe plus.</p></div>';
+            btnEditVehicle.style.display = 'none';
+            btnDeleteVehicle.style.display = 'none';
+            btnQRCode.style.display = 'none';
+            vehicleContent.innerHTML = '<div class="empty-state"><p>Ce véhicule n\'existe plus.</p></div>';
           }
         }
-      } catch (e) {
+      } catch(e) {
         console.error(e);
       }
     }
@@ -302,7 +585,10 @@
       if (!v) return;
       currentVehicleId = id;
       currentVehicleData = v;
-      renderVehicle();
+      btnEditVehicle.style.display = 'inline-block';
+      btnDeleteVehicle.style.display = 'inline-block';
+      btnQRCode.style.display = 'inline-block';
+      renderVehicleContent();
     }
 
     // ===== HELPERS =====
@@ -334,22 +620,36 @@
       return 'ok';
     }
 
-    function getDateBadge(dateStr) {
-      if (!dateStr) return '<span class="badge">—</span>';
+    function getDateLabel(dateStr) {
+      if (!dateStr) return '';
       const status = getDateStatus(dateStr);
       const formatted = new Date(dateStr).toLocaleDateString('fr-FR');
-      const cls = status === 'danger' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
-      const label = status === 'danger' ? 'PÉRIMÉ' : status === 'warning' ? 'Proche' : 'OK';
-      return `<span class="badge ${cls}">${formatted} · ${label}</span>`;
+      if (status === 'danger') return `⚠️ ${formatted} — PÉRIMÉ`;
+      if (status === 'warning') return `🟠 ${formatted} — Proche`;
+      return `🟢 ${formatted}`;
     }
 
-    function getKmBadge(targetKm, currentKm) {
-      if (!targetKm) return '<span class="badge">—</span>';
+    function getDateClass(dateStr) {
+      const status = getDateStatus(dateStr);
+      if (status === 'danger') return 'date-danger';
+      if (status === 'warning') return 'date-warning';
+      return 'date-ok';
+    }
+
+    function getKmLabel(targetKm, currentKm) {
+      if (!targetKm) return '';
       const status = getKmStatus(targetKm, currentKm);
-      const cls = status === 'danger' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
-      const label = status === 'danger' ? 'DÉPASSÉ' : status === 'warning' ? 'Proche' : 'OK';
       const diff = targetKm - currentKm;
-      return `<span class="badge ${cls}">${targetKm} km (${diff > 0 ? '+' : ''}${diff}) · ${label}</span>`;
+      if (status === 'danger') return `⚠️ ${targetKm} km (dépassé de ${Math.abs(diff)} km)`;
+      if (status === 'warning') return `🟠 ${targetKm} km (dans ${diff} km)`;
+      return `🟢 ${targetKm} km (dans ${diff} km)`;
+    }
+
+    function getKmClass(targetKm, currentKm) {
+      const status = getKmStatus(targetKm, currentKm);
+      if (status === 'danger') return 'date-danger';
+      if (status === 'warning') return 'date-warning';
+      return 'date-ok';
     }
 
     function computeNextOccurrence(entretien, currentKm) {
@@ -365,6 +665,14 @@
         return { kmDeclencheur: baseKm + parseInt(entretien.rec) };
       }
       return null;
+    }
+
+    function isCollapsed(path) {
+      return collapsedState[path] === true;
+    }
+
+    function toggleCollapse(path) {
+      collapsedState[path] = !collapsedState[path];
     }
 
     // ===== CONFIRMATION STYLÉE =====
@@ -389,138 +697,188 @@
     }
 
     // ===== RENDU =====
-    function renderVehicle() {
+    function renderVehicleContent() {
       if (!currentVehicleData) return;
       const v = currentVehicleData;
       const currentKm = v.km || 0;
 
+      // Section Informations générales
       let html = `
-        <div class="card">
-          <div class="card-header">
-            <span>🚗 ${escapeHtml(v.n || v.im || v.id)}</span>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <button class="btn-icon" id="btn-edit-vehicle" title="Modifier">✏️</button>
-              <button class="btn-qr btn-sm" id="btn-qr">📱 QR Code</button>
-              <button class="btn-delete-vehicle-style btn-sm" id="btn-delete-vehicle">🗑️ Supprimer</button>
-            </div>
+        <div class="section">
+          <div class="section-header">
+            <span>🚗 Informations générales</span>
+            <span class="badge">${escapeHtml(v.im || '')}</span>
           </div>
-          <div class="card-body">
-            <div class="info-grid">
-              <div class="info-item"><span class="info-label">Immatriculation</span><span class="info-value">${escapeHtml(v.im || '—')}</span></div>
-              <div class="info-item"><span class="info-label">Nom</span><span class="info-value">${escapeHtml(v.n || '—')}</span></div>
-              <div class="info-item"><span class="info-label">Type de carburant</span><span class="info-value">${escapeHtml(v.car || '—')}</span></div>
-              <div class="info-item">
-                <span class="info-label">Kilométrage</span>
-                <span class="info-value editable">${currentKm} km <button class="btn-sm btn-icon" id="btn-edit-km" title="Modifier">✏️</button></span>
-              </div>
-              <div class="info-item"><span class="info-label">Assurance</span><span class="info-value">${getDateBadge(v.ass)}</span></div>
-              <div class="info-item"><span class="info-label">Contrôle Technique</span><span class="info-value">${getDateBadge(v.ct)}</span></div>
-            </div>
+          <div class="section-body">
+            <ul class="list">
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Immatriculation</span>
+                </div>
+                <span style="font-weight:600;">${escapeHtml(v.im || '—')}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Nom</span>
+                </div>
+                <span style="font-weight:600;">${escapeHtml(v.n || '—')}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Type de carburant</span>
+                </div>
+                <span style="font-weight:600;">${escapeHtml(v.car || '—')}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Kilométrage</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:600;">${currentKm} km</span>
+                  <button class="btn-icon" id="btn-edit-km" title="Modifier">✏️</button>
+                </div>
+              </li>
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Assurance</span>
+                </div>
+                <span class="obj-date ${getDateClass(v.ass)}">${getDateLabel(v.ass)}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info">
+                  <span class="obj-name">Contrôle technique</span>
+                </div>
+                <span class="obj-date ${getDateClass(v.ct)}">${getDateLabel(v.ct)}</span>
+              </li>
+            </ul>
           </div>
         </div>
       `;
 
+      // Section Nettoyage / Désinfection
       html += `
-        <div class="card">
-          <div class="card-header">
+        <div class="section">
+          <div class="section-header">
             <span>🧽 Nettoyage & Désinfection</span>
-            <button class="btn-sm btn-icon" id="btn-edit-clean-freq" title="Fréquence">⚙️</button>
+            <button class="btn-icon" id="btn-edit-clean-freq" title="Fréquence">⚙️</button>
           </div>
-          <div class="card-body">
-            <div class="info-grid">
-              <div class="info-item"><span class="info-label">Fréquence nettoyage</span><span class="info-value">${v.fn ? v.fn + ' jour(s)' : 'Non définie'}</span></div>
-              <div class="info-item"><span class="info-label">Fréquence désinfection</span><span class="info-value">${v.fd ? v.fd + ' jour(s)' : 'Non définie'}</span></div>
-              <div class="info-item"><span class="info-label">Dernier nettoyage</span><span class="info-value">${v.dn ? formatDate(v.dn) + ' par ' + escapeHtml(v.dnp || '?') : 'Jamais'}</span></div>
-              <div class="info-item"><span class="info-label">Dernière désinfection</span><span class="info-value">${v.dd ? formatDate(v.dd) + ' (' + escapeHtml(v.ddt || '?') + ') par ' + escapeHtml(v.ddp || '?') : 'Jamais'}</span></div>
-            </div>
+          <div class="section-body">
+            <ul class="list">
+              <li class="list-item">
+                <div class="obj-info"><span class="obj-name">Fréquence nettoyage</span></div>
+                <span>${v.fn ? v.fn + ' jour(s)' : 'Non définie'}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info"><span class="obj-name">Fréquence désinfection</span></div>
+                <span>${v.fd ? v.fd + ' jour(s)' : 'Non définie'}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info"><span class="obj-name">Dernier nettoyage</span></div>
+                <span>${v.dn ? formatDate(v.dn) + ' par ' + escapeHtml(v.dnp || '?') : 'Jamais'}</span>
+              </li>
+              <li class="list-item">
+                <div class="obj-info"><span class="obj-name">Dernière désinfection</span></div>
+                <span>${v.dd ? formatDate(v.dd) + ' (' + escapeHtml(v.ddt || '?') + ') par ' + escapeHtml(v.ddp || '?') : 'Jamais'}</span>
+              </li>
+            </ul>
           </div>
         </div>
       `;
 
+      // Section Entretiens
       const entretiens = v.en || [];
       html += `
-        <div class="card">
-          <div class="card-header">
-            <span>🔧 Entretiens (${entretiens.length})</span>
-            <button class="btn-sm btn-add" id="btn-add-entretien">+ Ajouter</button>
+        <div class="section">
+          <div class="section-header">
+            <span>🔧 Entretiens</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="badge">${entretiens.length}</span>
+              <button class="btn-add" id="btn-add-entretien" style="padding:6px 12px;font-size:0.85rem;">+ Ajouter</button>
+            </div>
           </div>
-          <ul class="list">
-            ${entretiens.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun entretien enregistré.</p></li>' : ''}
-            ${entretiens.slice().reverse().map((e, i) => {
-              const realIdx = entretiens.length - 1 - i;
-              let statutHtml = '';
-              if (e.recType === 'km' && e.kmDeclencheur) {
-                statutHtml = getKmBadge(e.kmDeclencheur, currentKm);
-              } else if (e.date) {
-                statutHtml = getDateBadge(e.date);
-              }
-              const recLabel = e.rec ? (e.recType === 'jour' ? `tous les ${e.rec}j` : `tous les ${e.rec}km`) : 'sans récurrence';
-              return `
-                <li class="list-item">
-                  <div class="list-item-main">
-                    <span class="list-item-title">${escapeHtml(e.type || '—')} ${e.desc ? '· ' + escapeHtml(e.desc) : ''}</span>
-                    <span class="list-item-sub">
-                      ${e.date ? 'Date : ' + new Date(e.date).toLocaleDateString('fr-FR') : 'Pas de date'}
-                      · ${recLabel}
-                      ${e.recType === 'km' && e.kmDeclencheur ? ' · Déclencheur : ' + e.kmDeclencheur + ' km' : ''}
-                    </span>
-                    <span class="list-item-sub">${statutHtml}</span>
-                  </div>
-                  <div class="list-item-actions">
-                    <button class="btn-icon valider-entretien" data-idx="${realIdx}" title="Valider">✅</button>
-                    <button class="btn-icon edit-entretien" data-idx="${realIdx}" title="Modifier">✏️</button>
-                    <button class="btn-icon delete delete-entretien" data-idx="${realIdx}" title="Supprimer">🗑️</button>
-                  </div>
-                </li>`;
-            }).join('')}
-          </ul>
+          <div class="section-body">
+            <ul class="list">
+              ${entretiens.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun entretien enregistré.</p></li>' : ''}
+              ${entretiens.slice().reverse().map((e, i) => {
+                const realIdx = entretiens.length - 1 - i;
+                let statutHtml = '';
+                if (e.recType === 'km' && e.kmDeclencheur) {
+                  statutHtml = `<span class="obj-date ${getKmClass(e.kmDeclencheur, currentKm)}">${getKmLabel(e.kmDeclencheur, currentKm)}</span>`;
+                } else if (e.date) {
+                  statutHtml = `<span class="obj-date ${getDateClass(e.date)}">${getDateLabel(e.date)}</span>`;
+                }
+                const recLabel = e.rec ? (e.recType === 'jour' ? `tous les ${e.rec}j` : `tous les ${e.rec}km`) : 'sans récurrence';
+                return `
+                  <li class="list-item">
+                    <div class="obj-info">
+                      <span class="obj-name">${escapeHtml(e.type || '—')} ${e.desc ? '· ' + escapeHtml(e.desc) : ''}</span>
+                      <span class="obj-date" style="color:var(--text-light);">
+                        ${e.date ? 'Date : ' + new Date(e.date).toLocaleDateString('fr-FR') : 'Pas de date'}
+                        · ${recLabel}
+                        ${e.recType === 'km' && e.kmDeclencheur ? ' · Déclencheur : ' + e.kmDeclencheur + ' km' : ''}
+                      </span>
+                      ${statutHtml}
+                    </div>
+                    <div class="item-actions">
+                      <button class="btn-icon valider-entretien" data-idx="${realIdx}" title="Valider">✅</button>
+                      <button class="btn-icon edit-entretien" data-idx="${realIdx}" title="Modifier">✏️</button>
+                      <button class="btn-icon delete delete-entretien" data-idx="${realIdx}" title="Supprimer">🗑️</button>
+                    </div>
+                  </li>`;
+              }).join('')}
+            </ul>
+          </div>
         </div>
       `;
 
+      // Section Incidents
       const incidents = v.inc || [];
       html += `
-        <div class="card">
-          <div class="card-header"><span>⚠️ Incidents signalés (${incidents.length})</span></div>
-          <ul class="list">
-            ${incidents.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun incident.</p></li>' : ''}
-            ${incidents.slice().reverse().map(inc => {
-              const prioCls = inc.p === 'Haute' ? 'danger' : inc.p === 'Moyenne' ? 'warning' : '';
-              return `
-                <li class="list-item">
-                  <div class="list-item-main">
-                    <span class="list-item-title">${escapeHtml(inc.t || '—')} <span class="badge ${prioCls}">${escapeHtml(inc.p || '—')}</span></span>
-                    <span class="list-item-sub">${escapeHtml(inc.d || '')}</span>
-                    <span class="list-item-sub" style="font-size:0.75rem;color:#999;">${formatDate(inc.dt)} · par ${escapeHtml(inc.n || '?')}</span>
-                  </div>
-                  <div class="list-item-actions">
-                    <button class="btn-icon delete delete-incident" data-id="${escapeHtml(inc.id || '')}" title="Supprimer">🗑️</button>
-                  </div>
-                </li>`;
-            }).join('')}
-          </ul>
-        </div>
-      `;
-
-      const logs = v.h || [];
-      html += `
-        <div class="card">
-          <div class="card-header"><span>📜 Historique (${logs.length})</span></div>
-          <div class="card-body" style="max-height:300px;overflow-y:auto;">
-            ${logs.length === 0 ? '<p style="color:#999;">Aucune activité.</p>' : logs.slice().reverse().map(l => `
-              <div class="log-item">${formatDate(l.t)} — <strong>${escapeHtml(l.n || '?')}</strong> — ${escapeHtml(l.a || '')}</div>
-            `).join('')}
+        <div class="section">
+          <div class="section-header">
+            <span>⚠️ Incidents signalés</span>
+            <span class="badge">${incidents.length}</span>
+          </div>
+          <div class="section-body">
+            <ul class="list">
+              ${incidents.length === 0 ? '<li class="empty-state" style="padding:20px;"><p>Aucun incident.</p></li>' : ''}
+              ${incidents.slice().reverse().map(inc => {
+                const prioCls = inc.p === 'Haute' ? 'danger' : inc.p === 'Moyenne' ? 'warning' : '';
+                return `
+                  <li class="list-item">
+                    <div class="obj-info">
+                      <span class="obj-name">${escapeHtml(inc.t || '—')} <span class="badge ${prioCls}">${escapeHtml(inc.p || '—')}</span></span>
+                      <span class="obj-date" style="color:var(--text-light);">${escapeHtml(inc.d || '')}</span>
+                      <span class="obj-date" style="font-size:0.75rem;color:#999;">${formatDate(inc.dt)} · par ${escapeHtml(inc.n || '?')}</span>
+                    </div>
+                    <div class="item-actions">
+                      <button class="btn-icon delete delete-incident" data-id="${escapeHtml(inc.id || '')}" title="Supprimer">🗑️</button>
+                    </div>
+                  </li>`;
+              }).join('')}
+            </ul>
           </div>
         </div>
       `;
 
-      contentEl.innerHTML = html;
-      attachVehicleEvents();
+      // Section Historique
+      const logs = v.h || [];
+      if (logs.length > 0) {
+        html += `
+          <details class="logs-section">
+            <summary>Historique (${logs.length})</summary>
+            ${logs.slice().reverse().map(l => `
+              <div class="log-item">${formatDate(l.t)} — ${escapeHtml(l.n || '?')} — ${escapeHtml(l.a || '')}</div>
+            `).join('')}
+          </details>
+        `;
+      }
+
+      vehicleContent.innerHTML = html;
+      attachContentEvents();
     }
 
-    function attachVehicleEvents() {
-      document.getElementById('btn-edit-vehicle')?.addEventListener('click', () => openEditVehicleModal());
-      document.getElementById('btn-delete-vehicle')?.addEventListener('click', () => openDeleteVehicleModal());
-      document.getElementById('btn-qr')?.addEventListener('click', () => openQRModal());
+    function attachContentEvents() {
       document.getElementById('btn-edit-km')?.addEventListener('click', () => openEditKmModal());
       document.getElementById('btn-edit-clean-freq')?.addEventListener('click', () => openCleanFreqModal());
       document.getElementById('btn-add-entretien')?.addEventListener('click', () => openEntretienModal());
@@ -552,30 +910,31 @@
       } catch (e) { console.error('Log error:', e); }
     }
 
-    // ===== MODALS VÉHICULE =====
-    function openCreateVehicleModal() {
+    // ===== MODALS =====
+    function openCreateModal() {
       modalContent.innerHTML = `
         <h3>Nouveau véhicule</h3>
-        <div><label>Immatriculation</label><input type="text" id="m-immat" placeholder="AB-123-CD"></div>
-        <div><label>Nom</label><input type="text" id="m-nom" placeholder="Nom du véhicule"></div>
+        <div><label>Immatriculation</label><input type="text" id="modal-im" placeholder="AB-123-CD"></div>
+        <div><label>Nom</label><input type="text" id="modal-nom" placeholder="Nom du véhicule"></div>
         <div><label>Type de carburant</label>
-          <select id="m-carburant">
+          <select id="modal-car">
             <option value="">— Choisir —</option>
             <option>Essence</option><option>Diesel</option><option>Électrique</option><option>Hybride</option><option>GPL</option>
           </select>
         </div>
-        <div><label>Kilométrage initial</label><input type="number" id="m-km" value="0" min="0"></div>
-        <div><label>Assurance (date d'échéance)</label><input type="date" id="m-assurance"></div>
-        <div><label>Contrôle technique (date d'échéance)</label><input type="date" id="m-ct"></div>
+        <div><label>Kilométrage initial</label><input type="number" id="modal-km" value="0" min="0"></div>
+        <div><label>Assurance (date d'échéance)</label><input type="date" id="modal-ass"></div>
+        <div><label>Contrôle technique (date d'échéance)</label><input type="date" id="modal-ct"></div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-save" id="m-save">Créer</button>
-        </div>`;
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Créer</button>
+        </div>
+      `;
       modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-save').addEventListener('click', async () => {
-        const im = document.getElementById('m-immat').value.trim();
-        const n = document.getElementById('m-nom').value.trim();
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const im = document.getElementById('modal-im').value.trim();
+        const n = document.getElementById('modal-nom').value.trim();
         if (!im) { showInlineError('Immatriculation requise.'); return; }
         if (!n) { showInlineError('Nom requis.'); return; }
 
@@ -586,10 +945,10 @@
         const data = {
           im: im,
           n: n,
-          car: document.getElementById('m-carburant').value,
-          km: parseInt(document.getElementById('m-km').value) || 0,
-          ass: document.getElementById('m-assurance').value || '',
-          ct: document.getElementById('m-ct').value || '',
+          car: document.getElementById('modal-car').value,
+          km: parseInt(document.getElementById('modal-km').value) || 0,
+          ass: document.getElementById('modal-ass').value || '',
+          ct: document.getElementById('modal-ct').value || '',
           en: [],
           inc: [],
           h: [{ n: currentAdmin.nivol, t: new Date().toISOString(), a: `Création du véhicule "${n}"` }]
@@ -608,32 +967,33 @@
       const v = currentVehicleData;
       modalContent.innerHTML = `
         <h3>Modifier "${escapeHtml(v.n)}"</h3>
-        <div><label>Immatriculation</label><input type="text" id="m-immat" value="${escapeHtml(v.im || '')}"></div>
-        <div><label>Nom</label><input type="text" id="m-nom" value="${escapeHtml(v.n || '')}"></div>
+        <div><label>Immatriculation</label><input type="text" id="modal-im" value="${escapeHtml(v.im || '')}"></div>
+        <div><label>Nom</label><input type="text" id="modal-nom" value="${escapeHtml(v.n || '')}"></div>
         <div><label>Type de carburant</label>
-          <select id="m-carburant">
+          <select id="modal-car">
             ${['Essence','Diesel','Électrique','Hybride','GPL'].map(c => `<option ${v.car === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
         </div>
-        <div><label>Assurance (date d'échéance)</label><input type="date" id="m-assurance" value="${v.ass || ''}"></div>
-        <div><label>Contrôle technique (date d'échéance)</label><input type="date" id="m-ct" value="${v.ct || ''}"></div>
+        <div><label>Assurance (date d'échéance)</label><input type="date" id="modal-ass" value="${v.ass || ''}"></div>
+        <div><label>Contrôle technique (date d'échéance)</label><input type="date" id="modal-ct" value="${v.ct || ''}"></div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-save" id="m-save">Enregistrer</button>
-        </div>`;
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
       modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-save').addEventListener('click', async () => {
-        const im = document.getElementById('m-immat').value.trim();
-        const n = document.getElementById('m-nom').value.trim();
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const im = document.getElementById('modal-im').value.trim();
+        const n = document.getElementById('modal-nom').value.trim();
         if (!im || !n) { showInlineError('Immatriculation et nom requis.'); return; }
         try {
           await updateDoc(doc(db, COLLECTION, currentVehicleId), {
             im: im,
             n: n,
-            car: document.getElementById('m-carburant').value,
-            ass: document.getElementById('m-assurance').value || '',
-            ct: document.getElementById('m-ct').value || ''
+            car: document.getElementById('modal-car').value,
+            ass: document.getElementById('modal-ass').value || '',
+            ct: document.getElementById('modal-ct').value || ''
           });
           await addLog(`Modification des informations du véhicule`);
           closeModal();
@@ -655,9 +1015,12 @@
             await deleteDoc(doc(db, COLLECTION, currentVehicleId));
             currentVehicleId = null;
             currentVehicleData = null;
+            btnEditVehicle.style.display = 'none';
+            btnDeleteVehicle.style.display = 'none';
+            btnQRCode.style.display = 'none';
             await loadVehicles();
             vehicleSelect.value = '';
-            contentEl.innerHTML = '<div class="empty-state"><p>Sélectionnez un véhicule.</p></div>';
+            vehicleContent.innerHTML = '<div class="empty-state"><p>Sélectionnez un véhicule.</p></div>';
           } catch (e) { showInlineError('Erreur : ' + e.message); }
         }
       });
@@ -667,15 +1030,16 @@
       const v = currentVehicleData;
       modalContent.innerHTML = `
         <h3>Modifier le kilométrage</h3>
-        <div><label>Kilométrage (km)</label><input type="number" id="m-km" value="${v.km || 0}" min="0"></div>
+        <div><label>Kilométrage (km)</label><input type="number" id="modal-km" value="${v.km || 0}" min="0"></div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-save" id="m-save">Enregistrer</button>
-        </div>`;
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
       modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-save').addEventListener('click', async () => {
-        const km = parseInt(document.getElementById('m-km').value) || 0;
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const km = parseInt(document.getElementById('modal-km').value) || 0;
         try {
           await updateDoc(doc(db, COLLECTION, currentVehicleId), { km: km });
           await addLog(`Kilométrage mis à jour : ${km} km`);
@@ -689,17 +1053,18 @@
       const v = currentVehicleData;
       modalContent.innerHTML = `
         <h3>Fréquences de nettoyage / désinfection</h3>
-        <div><label>Nettoyage tous les X jours</label><input type="number" id="m-freq-nett" value="${v.fn || ''}" min="0" placeholder="Laisser vide pour désactiver"></div>
-        <div><label>Désinfection tous les X jours</label><input type="number" id="m-freq-des" value="${v.fd || ''}" min="0" placeholder="Laisser vide pour désactiver"></div>
+        <div><label>Nettoyage tous les X jours</label><input type="number" id="modal-fn" value="${v.fn || ''}" min="0" placeholder="Laisser vide pour désactiver"></div>
+        <div><label>Désinfection tous les X jours</label><input type="number" id="modal-fd" value="${v.fd || ''}" min="0" placeholder="Laisser vide pour désactiver"></div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-save" id="m-save">Enregistrer</button>
-        </div>`;
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">Enregistrer</button>
+        </div>
+      `;
       modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-save').addEventListener('click', async () => {
-        const f1 = parseInt(document.getElementById('m-freq-nett').value) || 0;
-        const f2 = parseInt(document.getElementById('m-freq-des').value) || 0;
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const f1 = parseInt(document.getElementById('modal-fn').value) || 0;
+        const f2 = parseInt(document.getElementById('modal-fd').value) || 0;
         try {
           await updateDoc(doc(db, COLLECTION, currentVehicleId), {
             fn: f1 > 0 ? f1 : deleteField(),
@@ -712,30 +1077,6 @@
       });
     }
 
-    // ===== QR CODE =====
-    function openQRModal() {
-      const v = currentVehicleData;
-      const qrPageUrl = `../qr.html?type=vehicule&id=${encodeURIComponent(currentVehicleId)}`;
-
-      modalContent.innerHTML = `
-        <h3>QR Code du véhicule</h3>
-        <div class="qr-preview-container">
-          <p style="font-size:0.9rem;color:var(--text-light);text-align:center;">${escapeHtml(v.n)} (${escapeHtml(v.im || '')})</p>
-          <div style="text-align:center;font-size:0.8rem;color:var(--text-light);">
-            Le QR code sera généré sur une page dédiée.
-          </div>
-          <button class="btn-qr" style="width:100%;" id="m-open-qr">📱 Ouvrir la page QR Code</button>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Fermer</button>
-        </div>`;
-      modalOverlay.style.display = 'flex';
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-open-qr').addEventListener('click', () => {
-        window.open(qrPageUrl, '_blank');
-      });
-    }
-
     // ===== ENTRETIENS =====
     function openEntretienModal(editIdx = null) {
       const v = currentVehicleData;
@@ -745,34 +1086,35 @@
 
       modalContent.innerHTML = `
         <h3>${isEdit ? 'Modifier' : 'Nouvel'} entretien</h3>
-        <div><label>Date</label><input type="date" id="m-date" value="${e.date || ''}"></div>
+        <div><label>Date</label><input type="date" id="modal-date" value="${e.date || ''}"></div>
         <div><label>Récurrence</label>
-          <select id="m-rec-type">
+          <select id="modal-rec-type">
             <option value="">— Aucune —</option>
             <option value="jour" ${e.recType === 'jour' ? 'selected' : ''}>En jours</option>
             <option value="km" ${e.recType === 'km' ? 'selected' : ''}>En kilométrage</option>
           </select>
         </div>
-        <div id="m-rec-value-wrap" style="display:none;">
+        <div id="modal-rec-value-wrap" style="display:none;">
           <label>Valeur de la récurrence</label>
-          <input type="number" id="m-rec-value" value="${e.rec || ''}" min="1" placeholder="ex: 62 (jours ou km)">
+          <input type="number" id="modal-rec-value" value="${e.rec || ''}" min="1" placeholder="ex: 62 (jours ou km)">
         </div>
         <div><label>Type</label>
-          <select id="m-type">
+          <select id="modal-type">
             ${types.map(t => `<option ${e.type === t ? 'selected' : ''}>${t}</option>`).join('')}
           </select>
         </div>
-        <div id="m-desc-wrap" style="display:none;"><label>Description (type Autre)</label><input type="text" id="m-desc" value="${escapeHtml(e.desc || '')}"></div>
+        <div id="modal-desc-wrap" style="display:none;"><label>Description (type Autre)</label><input type="text" id="modal-desc" value="${escapeHtml(e.desc || '')}"></div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" id="m-cancel">Annuler</button>
-          <button class="btn btn-save" id="m-save">${isEdit ? 'Enregistrer' : 'Ajouter'}</button>
-        </div>`;
+          <button class="btn btn-cancel" id="modal-cancel">Annuler</button>
+          <button class="btn btn-save" id="modal-save">${isEdit ? 'Enregistrer' : 'Ajouter'}</button>
+        </div>
+      `;
       modalOverlay.style.display = 'flex';
 
-      const recTypeSel = document.getElementById('m-rec-type');
-      const recValueWrap = document.getElementById('m-rec-value-wrap');
-      const typeSel = document.getElementById('m-type');
-      const descWrap = document.getElementById('m-desc-wrap');
+      const recTypeSel = document.getElementById('modal-rec-type');
+      const recValueWrap = document.getElementById('modal-rec-value-wrap');
+      const typeSel = document.getElementById('modal-type');
+      const descWrap = document.getElementById('modal-desc-wrap');
 
       const toggleRec = () => { recValueWrap.style.display = recTypeSel.value ? 'block' : 'none'; };
       const toggleDesc = () => { descWrap.style.display = typeSel.value === 'Autre' ? 'block' : 'none'; };
@@ -781,13 +1123,13 @@
       toggleRec();
       toggleDesc();
 
-      document.getElementById('m-cancel').addEventListener('click', closeModal);
-      document.getElementById('m-save').addEventListener('click', async () => {
-        const date = document.getElementById('m-date').value;
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('modal-save').addEventListener('click', async () => {
+        const date = document.getElementById('modal-date').value;
         const recType = recTypeSel.value;
-        const recValue = parseInt(document.getElementById('m-rec-value').value) || 0;
+        const recValue = parseInt(document.getElementById('modal-rec-value').value) || 0;
         const type = typeSel.value;
-        const desc = document.getElementById('m-desc').value.trim();
+        const desc = document.getElementById('modal-desc').value.trim();
 
         const data = {
           date,
@@ -899,7 +1241,7 @@
       });
     }
 
-    // ===== ERREUR INLINE DANS MODAL =====
+    // ===== ERREUR INLINE =====
     function showInlineError(msg) {
       let errEl = document.getElementById('modal-inline-error');
       if (!errEl) {
@@ -916,7 +1258,10 @@
       modalOverlay.style.display = 'none';
       modalContent.innerHTML = '';
     }
-    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
   </script>
 </body>
 </html>
